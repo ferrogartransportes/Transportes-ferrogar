@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transportes - Ferretería Ferrogar S.A. de C.V.</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                        accentBlue: '#3b82f6',
+                        accentEmerald: '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .map-container { width: 100%; height: 100%; border-radius: 0.75rem; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-accentBlue selection:text-white">
+
+    <div id="app" class="flex-1 flex flex-col">
+
+        <!-- ================= LOGIN SCREEN ================= -->
+        <div id="loginScreen" class="flex-1 flex items-center justify-center p-4">
+            <div class="bg-darkCard border border-slate-700/60 shadow-2xl rounded-2xl w-full max-w-md p-8 relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-accentBlue/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-accentEmerald/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 text-white text-2xl shadow-lg mb-4">
+                        <i class="fa-solid fa-truck-fast"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold tracking-tight">Ferretería Ferrogar</h1>
+                    <p class="text-slate-400 text-sm mt-1">Sistema de Transporte y Logística con Waze Live Map</p>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Seleccionar Rol de Acceso</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="setRole('admin')" id="roleAdminBtn" class="flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-accentBlue bg-accentBlue/10 text-accentBlue font-medium transition-all text-sm">
+                                <i class="fa-solid fa-user-shield"></i>
+                                <span>Administrador</span>
+                            </button>
+                            <button type="button" onclick="setRole('driver')" id="roleDriverBtn" class="flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-medium transition-all text-sm">
+                                <i class="fa-solid fa-id-card-clip"></i>
+                                <span>Conductor</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="adminUserContainer">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Usuario Administrador</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" id="loginAdminUser" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-accentBlue text-slate-200" placeholder="Ingrese usuario administrador">
+                        </div>
+                    </div>
+
+                    <div id="driverUserContainer" class="hidden">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Usuario Conductor</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500"><i class="fa-solid fa-id-card"></i></span>
+                            <input type="text" id="loginDriverUser" class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-accentBlue text-slate-200" placeholder="Ingrese su nombre o ID de usuario">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Contraseña</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500"><i class="fa-solid fa-lock"></i></span>
+                            <input type="password" id="loginPassword" required class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-accentBlue text-slate-200" placeholder="Ingrese contraseña">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center space-x-2">
+                        <span>Iniciar Sesión</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= ADMIN DASHBOARD ================= -->
+        <div id="adminDashboard" class="hidden flex-1 flex flex-col">
+            <header class="bg-darkCard border-b border-slate-700/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-accentBlue/20 text-accentBlue flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base leading-tight">Panel Ejecutivo - Ferretería Ferrogar S.A. de C.V.</h2>
+                        <span id="currentAdminDateLabel" class="text-xs text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="adminDateText">Cargando fecha y hora...</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span class="hidden sm:inline">Sincronizar Datos</span>
+                    </button>
+                    <button onclick="openConfigModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-gear text-slate-400"></i>
+                        <span class="hidden sm:inline">Google Sheets</span>
+                    </button>
+                    <button onclick="logout()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Cerrar Sesión</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+                
+                <!-- PESTAÑAS DE NAVEGACIÓN ADMIN -->
+                <div class="flex flex-wrap border-b border-slate-700/60 pb-3 gap-3">
+                    <button onclick="switchAdminTab('diario')" id="adminTabDiarioBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-day"></i> Operación del Día (KPIs Diarios)
+                    </button>
+                    <button onclick="switchAdminTab('asignacion')" id="adminTabAsignacionBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-plus-circle"></i> Asignación de Envíos
+                    </button>
+                    <button onclick="switchAdminTab('monitoreo')" id="adminTabMonitoreoBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-truck-ramp-box"></i> Monitoreo de Entregas y Disponibilidad
+                    </button>
+                    <button onclick="switchAdminTab('conductores')" id="adminTabConductoresBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear"></i> Gestión de Conductores y Unidades
+                    </button>
+                    <button onclick="switchAdminTab('historico')" id="adminTabHistoricoBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Histórico y Archivo General
+                    </button>
+                </div>
+
+                <!-- ================= VISTA 1: OPERACIÓN DEL DÍA ================= -->
+                <div id="adminViewDiario" class="space-y-6">
+                    <!-- KPIs Generales -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-users-viewfinder"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Conductores Disponibles</p>
+                                <h3 id="kpiActiveDrivers" class="text-2xl font-bold mt-1 text-slate-100">7 / 7</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 text-accentBlue flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Viajes Totales (Hoy)</p>
+                                <h3 id="kpiTotalTrips" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
+                            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada (Hoy)</p>
+                                <h3 id="kpiInvoices" class="text-2xl font-bold mt-1 text-slate-100">$0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPIS DE ESTADO POR CADA CONDUCTOR -->
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5">
+                        <h3 class="font-bold text-sm flex items-center gap-2 mb-4 text-accentBlue">
+                            <i class="fa-solid fa-id-card-clip"></i> KPIs de Estado por Conductor y Unidad (Hoy)
+                        </h3>
+                        <div id="driversKpiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    </div>
+
+                    <!-- KPIS POR CADA SUCURSAL DE ORIGEN -->
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5">
+                        <h3 class="font-bold text-sm flex items-center gap-2 mb-4 text-emerald-400">
+                            <i class="fa-solid fa-store"></i> Rendimiento por Sucursal de Origen (Hoy)
+                        </h3>
+                        <div id="sucursalesKpiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                    </div>
+
+                    <!-- Waze Live Map Container Admin -->
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex flex-col h-[450px]">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm flex items-center gap-2">
+                                <i class="fa-brands fa-waze text-[#33ccff]"></i>
+                                Monitoreo General de Tráfico - Waze Live Map (El Salvador)
+                            </h3>
+                            <span class="text-xs text-[#33ccff] bg-slate-800 px-2.5 py-1 rounded-lg">Waze Embed</span>
+                        </div>
+                        <div class="map-container flex-1 bg-slate-900">
+                            <iframe id="adminWazeIframe" src="https://embed.waze.com/iframe?zoom=12&lat=13.6929&lon=-89.2182&ct=livemap" width="100%" height="100%" style="border:0;" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de la Operación del Día -->
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-base">Registros de Hoy (<span id="tableTitleDate"></span>)</h3>
+                                <p class="text-xs text-slate-400">Envíos procesados y despachados en la fecha actual.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl">Conductor</th>
+                                        <th class="py-3 px-4">Camión / Unidad</th>
+                                        <th class="py-3 px-4">Origen (Sucursal)</th>
+                                        <th class="py-3 px-4">Factura</th>
+                                        <th class="py-3 px-4">Cliente / Monto</th>
+                                        <th class="py-3 px-4">Transporte</th>
+                                        <th class="py-3 px-4">Destino Waze</th>
+                                        <th class="py-3 px-4">Estado</th>
+                                        <th class="py-3 px-4 rounded-r-xl text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminTableBodyDiario" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: ASIGNACIÓN DE ENVÍOS ================= -->
+                <div id="adminViewAsignacion" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-sm flex items-center gap-2 text-emerald-400">
+                                    <i class="fa-solid fa-plus-circle"></i> Asignación de Factura, Origen, Destino Waze Live Map y Camión
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Elija la sucursal de salida, escoja o escriba el destino Waze, asigne conductor y camión.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="abrirWazeAdminSeleccion()" class="px-3.5 py-2 bg-[#33ccff]/20 hover:bg-[#33ccff]/30 text-[#33ccff] border border-[#33ccff]/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow">
+                                    <i class="fa-brands fa-waze text-sm"></i> Abrir Waze Live Map (PC/Móvil)
+                                </button>
+                                <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
+                                    <button type="button" onclick="switchAdminInputMode('ocr')" id="tabModeOcr" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accentBlue text-white transition-all flex items-center gap-1.5">
+                                        <i class="fa-solid fa-camera"></i> Captura OCR
+                                    </button>
+                                    <button type="button" onclick="switchAdminInputMode('manual')" id="tabModeManual" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                                        <i class="fa-solid fa-keyboard"></i> Entrada Manual
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODO 1: OCR -->
+                        <div id="adminOcrContainer" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Origen</label>
+                                    <select id="adminOcrOrigen" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                        <option value="" disabled selected>Seleccione...</option>
+                                        <option value="FG MATRIZ">FG MATRIZ</option>
+                                        <option value="FG HIERROGAR">FG HIERROGAR</option>
+                                        <option value="FG VIÑEDO">FG VIÑEDO</option>
+                                        <option value="FG COMALAPA">FG COMALAPA</option>
+                                        <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
+                                        <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino Waze</label>
+                                    <input type="text" id="adminOcrDestino" list="listaDestinosWaze" placeholder="Ej. San Salvador Centro" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
+                                    <select id="adminOcrConductor" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
+                                    <select id="adminOcrCamion" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Transporte ($)</label>
+                                    <input type="text" id="adminOcrTransporte" placeholder="Ej. $25.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" onclick="triggerAdminOcrScan()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-1.5">
+                                        <i class="fa-solid fa-camera-retro"></i>
+                                        <span>Escanear</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="adminOcrBox" class="hidden border-2 border-dashed border-slate-700 rounded-xl p-4 bg-slate-900/40 space-y-3">
+                                <div id="adminOcrLoading" class="hidden py-4 text-center space-y-2">
+                                    <div class="w-6 h-6 rounded-full border-2 border-accentBlue border-t-transparent animate-spin mx-auto"></div>
+                                    <p class="text-xs text-accentBlue font-medium">Extrayendo datos de la factura...</p>
+                                </div>
+                                <div id="adminOcrResultPreview" class="hidden w-full space-y-3">
+                                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-xs text-emerald-400 font-bold flex items-center gap-1"><i class="fa-solid fa-check-circle"></i> OCR Exitoso</span>
+                                        <span class="text-[10px] text-slate-400 font-mono">Confianza: 98.4%</span>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                            <span class="text-slate-400 block text-[10px]">Nº Factura:</span>
+                                            <span id="resOcrInvoice" class="font-bold text-accentBlue font-mono">CCF-00492</span>
+                                        </div>
+                                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                            <span class="text-slate-400 block text-[10px]">Cliente:</span>
+                                            <span id="resOcrClient" class="font-bold text-slate-200">Constructora San Benito</span>
+                                        </div>
+                                        <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                                            <span class="text-slate-400 block text-[10px]">Monto:</span>
+                                            <span id="resOcrAmount" class="font-bold text-emerald-400">$2,340.00</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos</label>
+                                        <input type="text" id="resOcrDescription" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue" placeholder="Ej. Varilla corrugada 3/8, Cemento Rey">
+                                    </div>
+                                    <button type="button" onclick="confirmarAsignacionOcr()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow transition-all flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-paper-plane"></i> Guardar en Hoja del Día, Asignar Destino Waze y Notificar WhatsApp
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODO 2: MANUAL -->
+                        <form id="adminManualForm" onsubmit="asignarFacturaManual(event)" class="hidden space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Origen (Salida)</label>
+                                    <select id="manInputOrigen" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                        <option value="" disabled selected>Seleccione...</option>
+                                        <option value="FG MATRIZ">FG MATRIZ</option>
+                                        <option value="FG HIERROGAR">FG HIERROGAR</option>
+                                        <option value="FG VIÑEDO">FG VIÑEDO</option>
+                                        <option value="FG COMALAPA">FG COMALAPA</option>
+                                        <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
+                                        <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nº Factura / CCF</label>
+                                    <input type="text" id="manInputFactura" required placeholder="Ej. CCF-00428" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cliente</label>
+                                    <input type="text" id="manInputCliente" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía ($)</label>
+                                    <input type="text" id="manInputMonto" required placeholder="Ej. $1,150.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cobro Transporte ($)</label>
+                                    <input type="text" id="manInputTransporte" required placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos</label>
+                                    <input type="text" id="manInputDescription" required placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
+                                    <select id="manSelectConductor" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
+                                    <select id="manSelectCamion" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino Waze (Escriba o Seleccione)</label>
+                                    <input type="text" id="manInputDestino" list="listaDestinosWaze" required placeholder="Ej. Santa Tecla, Parque Central" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-keyboard"></i>
+                                        <span>Guardar Asignación, Destino y Notificar WhatsApp</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <datalist id="listaDestinosWaze">
+                            <option value="San Salvador Centro">
+                            <option value="Sucursal Comalapa">
+                            <option value="Centro Comercial Galerías">
+                            <option value="Boulevard Los Héroes">
+                            <option value="Santa Tecla, Parque Central">
+                            <option value="Soyapango, Plaza Mundo">
+                            <option value="Avenida Independencia, San Salvador">
+                            <option value="Antiguo Cuscatlán, Multiplaza">
+                            <option value="San Miguel, Centro">
+                            <option value="Santa Ana, Metrocentro">
+                        </datalist>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: MONITOREO DE ENTREGAS Y DISPONIBILIDAD ================= -->
+                <div id="adminViewMonitoreo" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
+                                    <i class="fa-solid fa-truck-ramp-box"></i> Estado de Conductores y Control de Envíos
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Vea viajes pendientes, entregas finalizadas y la disponibilidad de cada conductor para asignar nuevos envíos.</p>
+                            </div>
+                        </div>
+                        <div id="monitoreoConductoresGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: GESTIÓN DE CONDUCTORES Y UNIDADES ================= -->
+                <div id="adminViewConductores" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-6">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
+                                    <i class="fa-solid fa-users-gear"></i> Registrar Nuevo Conductor y Camión de forma Independiente
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Mantenga separado el personal conductor de la flota vehicular disponible.</p>
+                            </div>
+                        </div>
+
+                        <form id="formNuevoConductor" onsubmit="agregarNuevoConductor(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nombre Empleado</label>
+                                <input type="text" id="newDriverName" required placeholder="Ej. Juan Martínez" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nombre del Camión / Unidad</label>
+                                <input type="text" id="newDriverUnit" required placeholder="Ej. Camión 04 (Hino)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Teléfono WhatsApp</label>
+                                <input type="text" id="newDriverPhone" required placeholder="Ej. 50370004444" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Contraseña Acceso</label>
+                                <input type="password" id="newDriverPass" required placeholder="Contraseña..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-user-plus"></i> Registrar Conductor
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="pt-4 border-t border-slate-800">
+                            <h4 class="font-bold text-sm mb-4 text-slate-200">Personal y Unidades Registradas</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-900/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                        <tr>
+                                            <th class="py-3 px-4 rounded-l-xl">Conductor</th>
+                                            <th class="py-3 px-4">Unidad / Camión Asignado Base</th>
+                                            <th class="py-3 px-4">Teléfono WhatsApp</th>
+                                            <th class="py-3 px-4">Usuario ID</th>
+                                            <th class="py-3 px-4 rounded-r-xl text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaConductoresGestion" class="divide-y divide-slate-800/60"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: HISTÓRICO Y ARCHIVO GENERAL ================= -->
+                <div id="adminViewHistorico" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
+                                    <i class="fa-solid fa-folder-open"></i> Histórico General de Envíos y Facturación
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Filtre por fecha (día, mes, año) o busque por factura/CCF, sucursal, cliente o conductor.</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <!-- Selector Tipo de Búsqueda -->
+                                <select id="filterType" onchange="renderHistoricoTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <option value="todos">Todos los Registros</option>
+                                    <option value="fecha">Filtrar por Fecha Exacta</option>
+                                </select>
+                                
+                                <!-- Campo Fecha -->
+                                <input type="date" id="historicoDateInput" onchange="renderHistoricoTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+
+                                <!-- Campo Búsqueda Texto (Factura, Sucursal, Cliente, Conductor) -->
+                                <div class="relative">
+                                    <input type="text" id="historicoSearchInput" oninput="renderHistoricoTable()" placeholder="Buscar nº factura/CCF, sucursal, cliente..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-64 focus:outline-none focus:border-accentBlue">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                                </div>
+
+                                <button onclick="limpiarFiltrosHistorico()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPIs Dinámicos Histórico -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400">Total Viajes</span>
+                                <h4 id="histKpiViajes" class="text-xl font-bold text-slate-100 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400">Total Transporte (Fletes)</span>
+                                <h4 id="histKpiTransporte" class="text-xl font-bold text-cyan-400 mt-1">$0.00</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400">Total Facturado</span>
+                                <h4 id="histKpiFacturado" class="text-xl font-bold text-emerald-400 mt-1">$0.00</h4>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl">Fecha / Hora</th>
+                                        <th class="py-3 px-4">Conductor / Camión</th>
+                                        <th class="py-3 px-4">Origen (Sucursal)</th>
+                                        <th class="py-3 px-4">Nº Factura / CCF</th>
+                                        <th class="py-3 px-4">Cliente</th>
+                                        <th class="py-3 px-4">Transporte</th>
+                                        <th class="py-3 px-4">Monto Factura</th>
+                                        <th class="py-3 px-4 rounded-r-xl">Destino Waze</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historicoTableBody" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- ================= DRIVER DASHBOARD ================= -->
+        <div id="driverDashboard" class="hidden flex-1 flex flex-col">
+            <header class="bg-darkCard border-b border-slate-700/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+                <div class="flex items-center space-x-3">
+                    <div id="driverAvatarBadge" class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                    <div>
+                        <h2 id="driverHeaderName" class="font-bold text-base leading-tight">Nombre Conductor</h2>
+                        <span id="driverHeaderUnit" class="text-xs text-slate-400">Unidad • En Ruta</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span class="hidden sm:inline">Actualizar Mis Viajes</span>
+                    </button>
+                    <div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
+                        <span id="connectionDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="connectionText" class="text-xs font-medium text-emerald-400">Disponible</span>
+                        <button onclick="toggleDriverStatus()" class="ml-2 text-slate-400 hover:text-white text-xs underline cursor-pointer">Cambiar</button>
+                    </div>
+                    <button onclick="logout()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="hidden sm:inline">Salir</span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-accentBlue flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-route"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mis Viajes Hoy</p>
+                            <h3 id="driverKpiTrips" class="text-xl font-bold mt-0.5 text-slate-100">0</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total en Transporte</p>
+                            <h3 id="driverKpiTransport" class="text-xl font-bold mt-0.5 text-slate-100">$0.00</h3>
+                        </div>
+                    </div>
+
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada</p>
+                            <h3 id="driverKpiAmount" class="text-xl font-bold mt-0.5 text-slate-100">$0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Waze Embed para el Conductor -->
+                    <div class="lg:col-span-2 bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex flex-col h-[400px]">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-sm flex items-center gap-2">
+                                <i class="fa-brands fa-waze text-[#33ccff]"></i>
+                                Vista de Navegación del Viaje Actual (Waze Live Map)
+                            </h3>
+                            <span id="driverDestinationLabel" class="text-xs bg-[#33ccff]/10 text-[#33ccff] border border-[#33ccff]/30 px-2.5 py-1 rounded-lg font-medium">Destino: Sin Asignar</span>
+                        </div>
+                        <div class="map-container flex-1 bg-slate-900">
+                            <iframe id="driverWazeIframe" src="https://embed.waze.com/iframe?zoom=14&lat=13.6929&lon=-89.2182&ct=livemap" width="100%" height="100%" style="border:0;" allowfullscreen></iframe>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 flex flex-col">
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex-1 flex flex-col justify-between">
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-bold text-sm flex items-center gap-2 mb-1">
+                                        <i class="fa-solid fa-receipt text-accentBlue"></i>
+                                        Viaje Activo / Ficha
+                                    </h3>
+                                    <span id="driverQueueBadge" class="hidden text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full"></span>
+                                </div>
+
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs">
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400"><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino Waze:</span>
+                                        <span id="driverInfoDestino" class="font-bold text-[#33ccff]">Sin Asignar</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Sucursal Origen:</span>
+                                        <span id="driverInfoOrigen" class="font-bold text-emerald-400">FG MATRIZ</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Unidad Asignada:</span>
+                                        <span id="driverInfoCamion" class="font-bold text-accentBlue">N/A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Nº Factura:</span>
+                                        <span id="driverInfoInvoice" class="font-bold text-accentBlue font-mono">N/A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Cliente:</span>
+                                        <span id="driverInfoClient" class="font-bold text-slate-200">N/A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Monto:</span>
+                                        <span id="driverInfoAmount" class="font-bold text-emerald-400">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Transporte:</span>
+                                        <span id="driverInfoTransport" class="font-bold text-cyan-400">$0.00</span>
+                                    </div>
+                                </div>
+
+                                <!-- BOTÓN DIRECTO WAZE LIVE MAP PARA EL CONDUCTOR -->
+                                <button onclick="abrirWazeDriver()" class="w-full py-3 bg-[#33ccff]/20 hover:bg-[#33ccff]/30 text-[#33ccff] border border-[#33ccff]/40 font-semibold rounded-xl text-xs shadow transition-all flex items-center justify-center space-x-2">
+                                    <i class="fa-brands fa-waze text-base"></i>
+                                    <span>Abrir Waze Live Map (PC o Móvil)</span>
+                                </button>
+                            </div>
+
+                            <button id="btnCompletarViaje" onclick="confirmarEntregaConductor()" class="w-full mt-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Marcar Mi Ficha / Viaje como Entregado</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LISTA DE FACTURAS Y ENVÍOS DEL DÍA DEL CONDUCTOR -->
+                <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 space-y-4">
+                    <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> Mis Envíos Asignados Hoy
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/70 text-slate-400 uppercase border-b border-slate-800">
+                                <tr>
+                                    <th class="py-2.5 px-3">Factura</th>
+                                    <th class="py-2.5 px-3">Origen</th>
+                                    <th class="py-2.5 px-3">Destino</th>
+                                    <th class="py-2.5 px-3">Cliente</th>
+                                    <th class="py-2.5 px-3">Monto</th>
+                                    <th class="py-2.5 px-3">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="driverTripsTableBody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- ================= MODAL DE EDICIÓN DE CONDUCTOR ================= -->
+        <div id="modalEditarConductor" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-darkCard border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="font-bold text-sm text-accentBlue flex items-center gap-2">
+                        <i class="fa-solid fa-user-pen"></i> Editar Conductor / Empleado
+                    </h3>
+                    <button onclick="cerrarModalEditar()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <input type="hidden" id="edit-driver-key">
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Nombre Empleado</label>
+                        <input type="text" id="edit-nombreEmpleado" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-accentBlue">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Nombre del Camión / Unidad</label>
+                        <input type="text" id="edit-nombreCamion" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-accentBlue">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Teléfono WhatsApp</label>
+                        <input type="text" id="edit-telefonoWhatsApp" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-accentBlue">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 font-semibold mb-1">Contraseña de Acceso</label>
+                        <input type="password" id="edit-contrasenaAcceso" placeholder="Dejar en blanco para mantener actual" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-accentBlue">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button onclick="cerrarModalEditar()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium text-xs">Cancelar</button>
+                    <button onclick="guardarEdicionConductor()" class="px-4 py-2 bg-accentBlue hover:bg-blue-600 text-white rounded-xl font-medium text-xs">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CONFIG MODAL ================= -->
+        <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-darkCard border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-base flex items-center gap-2">
+                        <i class="fa-solid fa-file-excel text-emerald-400"></i> Google Sheets Apps Script URL
+                    </h3>
+                    <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="space-y-4 text-xs text-slate-300">
+                    <p>Ingrese la URL del Web App de su Google Apps Script:</p>
+                    <input type="text" id="scriptEndpointInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-accentBlue font-mono text-slate-200" placeholder="https://script.google.com/macros/s/.../exec">
+                    <div class="flex justify-end space-x-3 pt-2">
+                        <button onclick="closeConfigModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium">Cancelar</button>
+                        <button onclick="saveEndpointConfig()" class="px-4 py-2 bg-accentBlue hover:bg-blue-600 text-white rounded-xl font-medium">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 z-50 transform translate-y-24 opacity-0 transition-all duration-300">
+            <div id="toastIcon" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-check"></i></div>
+            <div>
+                <h4 id="toastTitle" class="font-bold text-xs">Operación Exitosa</h4>
+                <p id="toastMsg" class="text-[11px] text-slate-400">Datos actualizados correctamente.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA CON INTEGRACIÓN DIRECTA DE GOOGLE SHEETS APPS SCRIPT Y MAPEO DE WAZE -->
+    <script>
+        const DEFAULT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyyFfqbdAMS6Yysa_hMBLWjBU44i02JjNtQ7-EgXW5wsISTuCDkj80SHnAaL9yH8IRS/exec';
+        
+        let currentRole = 'admin';
+        let currentDriverKey = 'giovanni';
+
+        let scriptEndpoint = localStorage.getItem('logiflow_endpoint_v2') || DEFAULT_ENDPOINT;
+
+        let fechaActualStr = '';
+
+        // DICCIONARIO DE COORDENADAS PARA PUNTOS DE EL SALVADOR
+        const coordenadasDestinos = {
+            "San Salvador Centro": { lat: 13.6980, lng: -89.1914 },
+            "Sucursal Comalapa": { lat: 13.4350, lng: -89.0583 },
+            "Centro Comercial Galerías": { lat: 13.7011, lng: -89.2244 },
+            "Boulevard Los Héroes": { lat: 13.7065, lng: -89.2023 },
+            "Santa Tecla, Parque Central": { lat: 13.6769, lng: -89.2796 },
+            "Soyapango, Plaza Mundo": { lat: 13.7128, lng: -89.1398 },
+            "Avenida Independencia, San Salvador": { lat: 13.6991, lng: -89.1820 },
+            "Antiguo Cuscatlán, Multiplaza": { lat: 13.6789, lng: -89.2366 },
+            "San Miguel, Centro": { lat: 13.4833, lng: -88.1833 },
+            "Santa Ana, Metrocentro": { lat: 13.9778, lng: -89.5639 }
+        };
+
+        function obtenerCoordenadas(destinoStr) {
+            if (!destinoStr) return { lat: 13.6929, lng: -89.2182 };
+            const clave = Object.keys(coordenadasDestinos).find(k => k.toLowerCase() === destinoStr.toLowerCase());
+            if (clave) {
+                return coordenadasDestinos[clave];
+            }
+            return { lat: 13.6929, lng: -89.2182 };
+        }
+
+        function obtenerFechaHoraActual() {
+            const ahora = new Date();
+            const opcionesFecha = { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' };
+            const fechaFormateada = reordenarFecha(ahora.toLocaleDateString('es-ES', opcionesFecha));
+            const horaFormateada = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            return `${fechaFormateada} - ${horaFormateada}`;
+        }
+
+        function reordenarFecha(strFecha) {
+            const partes = strFecha.split(',');
+            if (partes.length < 2) return strFecha;
+            const diaSemana = partes[0].charAt(0).toUpperCase() + partes[0].slice(1);
+            const fechaPartes = partes[1].trim().split('/');
+            if (fechaPartes.length < 3) return strFecha;
+            const dia = fechaPartes[0].padStart(2, '0');
+            const mes = fechaPartes[1].padStart(2, '0');
+            const anio = fechaPartes[2];
+            return `${diaSemana}, ${dia}-${mes}-${anio}`;
+        }
+
+        function actualizarReloj() {
+            fechaActualStr = obtenerFechaHoraActual();
+            const adminLabel = document.getElementById('adminDateText');
+            const tableTitle = document.getElementById('tableTitleDate');
+            if (adminLabel) adminLabel.innerText = 'Hoy: ' + fechaActualStr;
+            if (tableTitle) tableTitle.innerText = fechaActualStr;
+        }
+
+        const sucursalesOficiales = [
+            'FG MATRIZ', 'FG HIERROGAR', 'FG VIÑEDO', 'FG COMALAPA', 'CONSTRUGAR AGUILA', 'CONSTRUGAR AUTOPISTA'
+        ];
+
+        let camionesDisponibles = [
+            { id: 'camion_01', name: 'EQ 4' },
+            { id: 'camion_02', name: 'EQ 7' },
+            { id: 'camion_03', name: 'EQ 8' },
+            { id: 'camion_04', name: 'EQ 9' },
+            { id: 'camion_05', name: 'EQ 10' },
+            { id: 'camion_06', name: 'EQ 11' },
+            { id: 'camion_07', name: 'EQ 12' }
+        ];
+
+        // Conductores configurados
+        let driversData = {
+            giovanni: { key: 'giovanni', name: 'Giovanni Beltran', unit: 'Camión 01', phone: '50370001111', pass: 'Beltran2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'FG MATRIZ', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            antonio: { key: 'antonio', name: 'Antonio Hernandez', unit: 'Camión 02', phone: '50370002222', pass: 'Hernandez 2026', active: true, lat: 13.4229, lng: -89.0482, origen: 'FG HIERROGAR', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            javier: { key: 'javier', name: 'Javier Huezo', unit: 'Camión 03', phone: '50370003333', pass: 'Huezo2026', active: true, lat: 13.6729, lng: -89.1982, origen: 'FG VIÑEDO', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            german: { key: 'german', name: 'German Amaya', unit: 'Camión 04', phone: '50370004444', pass: 'Amaya2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'FG COMALAPA', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            bryan: { key: 'bryan', name: 'Bryan Carrillo', unit: 'Camión 05', phone: '50370005555', pass: 'Carillo2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'CONSTRUGAR AGUILA', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            mario: { key: 'mario', name: 'Mario Aguilar', unit: 'Camión 06', phone: '50370006666', pass: 'Aguilar2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'CONSTRUGAR AUTOPISTA', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            hanz: { key: 'hanz', name: 'Hanz Garcia', unit: 'Camión 07', phone: '50370007777', pass: 'Teocles101', active: true, lat: 13.6929, lng: -89.2182, origen: 'FG MATRIZ', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 }
+        };
+
+        let registrosGlobales = [];
+
+        window.onload = function() {
+            actualizarReloj();
+            setInterval(actualizarReloj, 1000);
+            
+            // A) Temporizador automático cada 15 segundos (Silencioso para B)
+            setInterval(() => {
+                cargarDatosDesdeGoogleSheets(true);
+            }, 15000);
+        };
+
+        function showToast(title, msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastTitle || !toastMsg || !toastIcon) return;
+
+            toastTitle.innerText = title;
+            toastMsg.innerText = msg;
+
+            if (type === 'error') {
+                toastIcon.className = 'w-7 h-7 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm';
+                toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else if (type === 'info') {
+                toastIcon.className = 'w-7 h-7 rounded-full bg-blue-500/20 text-accentBlue flex items-center justify-center text-sm';
+                toastIcon.innerHTML = '<i class="fa-solid fa-info"></i>';
+            } else {
+                toastIcon.className = 'w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm';
+                toastIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            }
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        // ===============================================
+        // LEER DATOS DESDE GOOGLE SHEETS
+        // ===============================================
+        async function cargarDatosDesdeGoogleSheets(silent = false) {
+            if (!scriptEndpoint) return;
+            if (!silent) showToast('Sincronizando', 'Consultando hoja de cálculo...', 'info');
+
+            try {
+                const response = await fetch(scriptEndpoint);
+                const data = await response.json();
+
+                if (data.status === 'success' && Array.isArray(data.registros)) {
+                    registrosGlobales = data.registros.map((item, index) => {
+                        const estadoLimpio = (item.estado || '').toString().trim();
+                        const esEntregado = estadoLimpio.toLowerCase() === 'entregado';
+                        const coords = obtenerCoordenadas(item.destino);
+
+                        const fechaRecuperada = item.fecha || item.fechaHora || fechaActualStr;
+
+                        return {
+                            id: index + 1,
+                            fecha: fechaRecuperada,
+                            origen: item.origen || '',
+                            driverKey: item.driverKey || '',
+                            conductor: item.conductor || '',
+                            camion: item.camion || '',
+                            factura: item.factura || '',
+                            cliente: item.cliente || '',
+                            monto: parseFloat(item.monto) || 0,
+                            transporte: parseFloat(item.transporte) || 0,
+                            descripcion: item.descripcion || '',
+                            destino: item.destino || '',
+                            lat: coords.lat,
+                            lng: coords.lng,
+                            estado: esEntregado ? 'Entregado' : 'Pendiente'
+                        };
+                    });
+
+                    if (currentRole === 'admin') {
+                        actualizarTodoAdmin();
+                    } else {
+                        initDriverDashboard();
+                    }
+
+                    // B) Silenciar las alertas emergentes (Toasts) automáticas cada 15 segundos
+                    if (!silent) showToast('Sincronizado', `Se cargaron ${registrosGlobales.length} registros desde la nube.`);
+                }
+            } catch (err) {
+                console.error('Error al cargar datos desde Google Sheets:', err);
+                if (!silent) showToast('Aviso', 'No se pudieron descargar los datos remotos.', 'error');
+            }
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            const adminBtn = document.getElementById('roleAdminBtn');
+            const driverBtn = document.getElementById('roleDriverBtn');
+            const adminUserContainer = document.getElementById('adminUserContainer');
+            const driverUserContainer = document.getElementById('driverUserContainer');
+
+            document.getElementById('loginAdminUser').value = '';
+            document.getElementById('loginDriverUser').value = '';
+            document.getElementById('loginPassword').value = '';
+
+            if (role === 'admin') {
+                adminBtn.className = "flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-accentBlue bg-accentBlue/10 text-accentBlue font-medium transition-all text-sm";
+                driverBtn.className = "flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-medium transition-all text-sm";
+                adminUserContainer.classList.remove('hidden');
+                driverUserContainer.classList.add('hidden');
+            } else {
+                driverBtn.className = "flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-accentBlue bg-accentBlue/10 text-accentBlue font-medium transition-all text-sm";
+                adminBtn.className = "flex items-center justify-center space-x-2 py-3 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-medium transition-all text-sm";
+                adminUserContainer.classList.add('hidden');
+                driverUserContainer.classList.remove('hidden');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
+
+            if (currentRole === 'admin') {
+                const userInput = document.getElementById('loginAdminUser').value.trim();
+                if (userInput !== 'Ferrogar' || passwordInput !== 'Transportesferrogar') {
+                    showToast('Error de Autenticación', 'Usuario o contraseña de Administrador incorrectos.', 'error');
+                    return;
+                }
+            } else {
+                const driverUserInput = document.getElementById('loginDriverUser').value.trim().toLowerCase();
+                
+                let matchedKey = null;
+                for (const [key, d] of Object.entries(driversData)) {
+                    if (key === driverUserInput || d.name.toLowerCase() === driverUserInput) {
+                        matchedKey = key;
+                        break;
+                    }
+                }
+
+                if (!matchedKey) {
+                    showToast('Error de Autenticación', 'El usuario conductor no existe.', 'error');
+                    return;
+                }
+
+                const driver = driversData[matchedKey];
+                if (passwordInput !== driver.pass) {
+                    showToast('Error de Autenticación', 'Contraseña de Conductor incorrecta.', 'error');
+                    return;
+                }
+                currentDriverKey = matchedKey;
+            }
+
+            document.getElementById('loginScreen').classList.add('hidden');
+            if (currentRole === 'admin') {
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                initAdminDashboard();
+            } else {
+                document.getElementById('driverDashboard').classList.remove('hidden');
+                initDriverDashboard();
+            }
+
+            cargarDatosDesdeGoogleSheets();
+            showToast('Sesión Iniciada', `Bienvenido en modo ${currentRole.toUpperCase()}`);
+        }
+
+        function logout() {
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('driverDashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginAdminUser').value = '';
+            document.getElementById('loginDriverUser').value = '';
+            document.getElementById('loginPassword').value = '';
+            showToast('Sesión Finalizada', 'Has salido del sistema', 'info');
+        }
+
+        function initAdminDashboard() {
+            renderAdminKPIs();
+            renderDriversKPIs();
+            renderSucursalesKPIs();
+            renderAdminTableDiario();
+            renderConductoresGestionTable();
+            poblarSelectsAsignacionConductores();
+            renderHistoricoTable();
+            renderMonitoreoConductores();
+        }
+
+        function initDriverDashboard() {
+            const driver = driversData[currentDriverKey];
+            if (!driver) return;
+
+            document.getElementById('driverHeaderName').innerText = driver.name;
+            document.getElementById('driverHeaderUnit').innerText = `${driver.unit} • En Ruta`;
+
+            let misViajes = registrosGlobales.filter(r => r.driverKey === currentDriverKey);
+            let totalTrips = misViajes.length;
+            let totalTransport = misViajes.reduce((sum, r) => sum + r.transporte, 0);
+            let totalAmount = misViajes.reduce((sum, r) => sum + r.monto, 0);
+
+            document.getElementById('driverKpiTrips').innerText = totalTrips;
+            document.getElementById('driverKpiTransport').innerText = `$${totalTransport.toFixed(2)}`;
+            document.getElementById('driverKpiAmount').innerText = `$${totalAmount.toFixed(2)}`;
+
+            let viajeActivo = misViajes.find(r => r.estado === 'Pendiente');
+
+            if (viajeActivo) {
+                document.getElementById('driverDestinationLabel').innerText = `Destino: ${viajeActivo.destino}`;
+                document.getElementById('driverInfoDestino').innerText = viajeActivo.destino;
+                document.getElementById('driverInfoOrigen').innerText = viajeActivo.origen;
+                document.getElementById('driverInfoCamion').innerText = viajeActivo.camion;
+                document.getElementById('driverInfoInvoice').innerText = viajeActivo.factura;
+                document.getElementById('driverInfoClient').innerText = viajeActivo.cliente;
+                document.getElementById('driverInfoAmount').innerText = `$${viajeActivo.monto.toFixed(2)}`;
+                document.getElementById('driverInfoTransport').innerText = `$${viajeActivo.transporte.toFixed(2)}`;
+
+                const iframe = document.getElementById('driverWazeIframe');
+                if (iframe) {
+                    iframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${viajeActivo.lat}&lon=${viajeActivo.lng}&ct=livemap`;
+                }
+            } else {
+                document.getElementById('driverDestinationLabel').innerText = 'Destino: Sin Asignar';
+                document.getElementById('driverInfoDestino').innerText = 'Sin Asignar';
+                document.getElementById('driverInfoOrigen').innerText = 'FG MATRIZ';
+                document.getElementById('driverInfoCamion').innerText = driver.unit;
+                document.getElementById('driverInfoInvoice').innerText = 'N/A';
+                document.getElementById('driverInfoClient').innerText = 'N/A';
+                document.getElementById('driverInfoAmount').innerText = '$0.00';
+                document.getElementById('driverInfoTransport').innerText = '$0.00';
+            }
+
+            const tbody = document.getElementById('driverTripsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '';
+                misViajes.forEach(r => {
+                    const badge = r.estado === 'Entregado'
+                        ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`
+                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-900/40">
+                            <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${r.origen}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
+                            <td class="py-2.5 px-3 text-slate-300">${r.cliente}</td>
+                            <td class="py-2.5 px-3 font-bold text-emerald-400">$${r.monto.toFixed(2)}</td>
+                            <td class="py-2.5 px-3">${badge}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function switchAdminTab(tab) {
+            const btnDiario = document.getElementById('adminTabDiarioBtn');
+            const btnAsignacion = document.getElementById('adminTabAsignacionBtn');
+            const btnMonitoreo = document.getElementById('adminTabMonitoreoBtn');
+            const btnCond = document.getElementById('adminTabConductoresBtn');
+            const btnHistorico = document.getElementById('adminTabHistoricoBtn');
+            
+            const viewDiario = document.getElementById('adminViewDiario');
+            const viewAsignacion = document.getElementById('adminViewAsignacion');
+            const viewMonitoreo = document.getElementById('adminViewMonitoreo');
+            const viewCond = document.getElementById('adminViewConductores');
+            const viewHistorico = document.getElementById('adminViewHistorico');
+
+            btnDiario.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            btnAsignacion.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            btnMonitoreo.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            btnCond.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            btnHistorico.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+
+            viewDiario.classList.add('hidden');
+            viewAsignacion.classList.add('hidden');
+            viewMonitoreo.classList.add('hidden');
+            viewCond.classList.add('hidden');
+            viewHistorico.classList.add('hidden');
+
+            if (tab === 'diario') {
+                btnDiario.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                viewDiario.classList.remove('hidden');
+            } else if (tab === 'asignacion') {
+                btnAsignacion.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                viewAsignacion.classList.remove('hidden');
+            } else if (tab === 'monitoreo') {
+                btnMonitoreo.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                viewMonitoreo.classList.remove('hidden');
+                renderMonitoreoConductores();
+            } else if (tab === 'conductores') {
+                btnCond.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                viewCond.classList.remove('hidden');
+                renderConductoresGestionTable();
+            } else {
+                btnHistorico.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                viewHistorico.classList.remove('hidden');
+                renderHistoricoTable();
+            }
+        }
+
+        function poblarSelectsAsignacionConductores() {
+            const selectOcrCond = document.getElementById('adminOcrConductor');
+            const selectOcrCam = document.getElementById('adminOcrCamion');
+            const selectManCond = document.getElementById('manSelectConductor');
+            const selectManCam = document.getElementById('manSelectCamion');
+
+            selectOcrCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
+            selectOcrCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
+            selectManCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
+            selectManCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
+
+            for (const [key, d] of Object.entries(driversData)) {
+                let opt = `<option value="${key}">${d.name}</option>`;
+                selectOcrCond.innerHTML += opt;
+                selectManCond.innerHTML += opt;
+            }
+
+            camionesDisponibles.forEach(c => {
+                let optCam = `<option value="${c.name}">${c.name}</option>`;
+                selectOcrCam.innerHTML += optCam;
+                selectManCam.innerHTML += optCam;
+            });
+        }
+
+        function agregarNuevoConductor(e) {
+            e.preventDefault();
+            const name = document.getElementById('newDriverName').value;
+            const unit = document.getElementById('newDriverUnit').value;
+            const phone = document.getElementById('newDriverPhone').value;
+            const pass = document.getElementById('newDriverPass').value;
+            const key = name.toLowerCase().replace(/\s+/g, '_');
+
+            driversData[key] = {
+                key: key, name: name, unit: unit, phone: phone, pass: pass, active: true,
+                lat: 13.6929, lng: -89.2182, origen: 'FG MATRIZ', destination: 'Sin Asignar',
+                invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0
+            };
+
+            if (!camionesDisponibles.some(c => c.name === unit)) {
+                camionesDisponibles.push({ id: key, name: unit });
+            }
+
+            document.getElementById('formNuevoConductor').reset();
+            renderConductoresGestionTable();
+            poblarSelectsAsignacionConductores();
+            renderAdminKPIs();
+            renderDriversKPIs();
+            renderMonitoreoConductores();
+            showToast('Conductor Registrado', `${name} y unidad ${unit} registrados correctamente.`);
+        }
+
+        function renderConductoresGestionTable() {
+            const tbody = document.getElementById('tablaConductoresGestion');
+            tbody.innerHTML = '';
+            for (const [key, d] of Object.entries(driversData)) {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="py-3 px-4 font-bold text-slate-200">${d.name}</td>
+                        <td class="py-3 px-4 text-accentBlue font-medium">${d.unit}</td>
+                        <td class="py-3 px-4 text-slate-300"><i class="fab fa-whatsapp text-green-400 mr-1"></i> ${d.phone}</td>
+                        <td class="py-3 px-4 font-mono text-slate-400">${key}</td>
+                        <td class="py-3 px-4 text-right space-x-1">
+                            <button onclick="abrirModalEditarConductor('${key}')" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-accentBlue border border-blue-500/30 rounded-lg text-[10px] font-medium"><i class="fa-solid fa-pen"></i> Editar</button>
+                            <button onclick="eliminarConductor('${key}')" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-lg text-[10px] font-medium"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function abrirModalEditarConductor(key) {
+            const d = driversData[key];
+            if (!d) return;
+            document.getElementById('edit-driver-key').value = key;
+            document.getElementById('edit-nombreEmpleado').value = d.name;
+            document.getElementById('edit-nombreCamion').value = d.unit;
+            document.getElementById('edit-telefonoWhatsApp').value = d.phone;
+            document.getElementById('edit-contrasenaAcceso').value = '';
+            document.getElementById('modalEditarConductor').classList.remove('hidden');
+        }
+
+        function cerrarModalEditar() {
+            document.getElementById('modalEditarConductor').classList.add('hidden');
+        }
+
+        function guardarEdicionConductor() {
+            const key = document.getElementById('edit-driver-key').value;
+            const d = driversData[key];
+            if (!d) return;
+
+            d.name = document.getElementById('edit-nombreEmpleado').value;
+            d.unit = document.getElementById('edit-nombreCamion').value;
+            d.phone = document.getElementById('edit-telefonoWhatsApp').value;
+            const newPass = document.getElementById('edit-contrasenaAcceso').value;
+            if (newPass.trim() !== '') {
+                d.pass = newPass;
+            }
+
+            cerrarModalEditar();
+            renderConductoresGestionTable();
+            poblarSelectsAsignacionConductores();
+            renderDriversKPIs();
+            renderMonitoreoConductores();
+            showToast('Actualizado', `Datos de ${d.name} actualizados correctamente.`);
+        }
+
+        function eliminarConductor(key) {
+            const d = driversData[key];
+            if (!d) return;
+            if (confirm(`¿Estás seguro de que deseas eliminar al conductor "${d.name}"?`)) {
+                delete driversData[key];
+                renderConductoresGestionTable();
+                poblarSelectsAsignacionConductores();
+                renderAdminKPIs();
+                renderDriversKPIs();
+                renderMonitoreoConductores();
+                showToast('Eliminado', `Conductor ${d.name} eliminado de la gestión.`);
+            }
+        }
+
+        function switchAdminInputMode(mode) {
+            const tabOcr = document.getElementById('tabModeOcr');
+            const tabManual = document.getElementById('tabModeManual');
+            const boxOcr = document.getElementById('adminOcrContainer');
+            const boxManual = document.getElementById('adminManualForm');
+
+            if (mode === 'ocr') {
+                tabOcr.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-accentBlue text-white transition-all flex items-center gap-1.5";
+                tabManual.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5";
+                boxOcr.classList.remove('hidden');
+                boxManual.classList.add('hidden');
+            } else {
+                tabManual.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-accentBlue text-white transition-all flex items-center gap-1.5";
+                tabOcr.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5";
+                boxManual.classList.remove('hidden');
+                boxOcr.classList.add('hidden');
+            }
+        }
+
+        function triggerAdminOcrScan() {
+            const box = document.getElementById('adminOcrBox');
+            const loading = document.getElementById('adminOcrLoading');
+            const preview = document.getElementById('adminOcrResultPreview');
+
+            box.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            preview.classList.add('hidden');
+
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                preview.classList.remove('hidden');
+                showToast('OCR Exitoso', 'Datos extraídos correctamente.');
+            }, 1200);
+        }
+
+        function abrirWazeAdminSeleccion() {
+            let destinoInput = '';
+            const ocrContainer = document.getElementById('adminOcrContainer');
+            if (!ocrContainer.classList.contains('hidden')) {
+                destinoInput = document.getElementById('adminOcrDestino').value;
+            } else {
+                destinoInput = document.getElementById('manInputDestino').value;
+            }
+
+            if (!destinoInput || destinoInput.trim() === '') {
+                showToast('Aviso', 'Por favor escriba o seleccione un destino de Waze', 'info');
+                return;
+            }
+
+            const coords = obtenerCoordenadas(destinoInput);
+            const wazeUrl = `https://www.waze.com/ul?q=${encodeURIComponent(destinoInput)}&navigate=yes&ll=${coords.lat},${coords.lng}`;
+            window.open(wazeUrl, '_blank');
+            showToast('Waze Live Map Abierto', `Consultando destino: ${destinoInput}`);
+        }
+
+        function enviarWhatsApp(phone, factura, origen, destino, descripcion, camion) {
+            const msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}\n• *Origen:* ${origen}\n• *Destino Waze:* ${destino}\n• *Unidad:* ${camion}\n• *Descripción:* ${descripcion}\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+            const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        function enviarDatosAGoogleSheets(registro) {
+            if (!scriptEndpoint) return;
+
+            fetch(scriptEndpoint, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(registro)
+            }).then(() => {
+                showToast('Google Sheets', 'Datos sincronizados con la hoja de cálculo');
+            }).catch(err => {
+                console.error('Error al sincronizar con Google Sheets:', err);
+            });
+        }
+
+        function confirmarAsignacionOcr() {
+            const origen = document.getElementById('adminOcrOrigen').value;
+            const driverKey = document.getElementById('adminOcrConductor').value;
+            const camion = document.getElementById('adminOcrCamion').value;
+            const destino = document.getElementById('adminOcrDestino').value;
+            const transporteVal = parseFloat(document.getElementById('adminOcrTransporte').value.replace('$', '')) || 0;
+            const factura = document.getElementById('resOcrInvoice').innerText;
+            const cliente = document.getElementById('resOcrClient').innerText;
+            const montoVal = parseFloat(document.getElementById('resOcrAmount').innerText.replace('$', '').replace(',', '')) || 0;
+            const descripcion = document.getElementById('resOcrDescription').value;
+
+            if (!origen || !driverKey || !camion || !destino) {
+                showToast('Atención', 'Asegúrese de seleccionar sucursal, conductor, camión y destino.', 'info');
+                return;
+            }
+
+            const coords = obtenerCoordenadas(destino);
+            registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcion, destino, coords.lat, coords.lng);
+        }
+
+        function asignarFacturaManual(e) {
+            e.preventDefault();
+            const origen = document.getElementById('manInputOrigen').value;
+            const factura = document.getElementById('manInputFactura').value;
+            const cliente = document.getElementById('manInputCliente').value;
+            const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace('$', '').replace(',', '')) || 0;
+            const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace('$', '').replace(',', '')) || 0;
+            const descripcion = document.getElementById('manInputDescription').value;
+            const driverKey = document.getElementById('manSelectConductor').value;
+            const camion = document.getElementById('manSelectCamion').value;
+            const destino = document.getElementById('manInputDestino').value;
+
+            const coords = obtenerCoordenadas(destino);
+            registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcion, destino, coords.lat, coords.lng);
+            document.getElementById('adminManualForm').reset();
+            poblarSelectsAsignacionConductores();
+        }
+
+        function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng) {
+            const d = driversData[driverKey];
+            if(!d) return;
+
+            d.destination = destino;
+            d.lat = lat;
+            d.lng = lng;
+
+            const nuevoReg = {
+                fecha: fechaActualStr,
+                fechaHora: fechaActualStr,
+                origen: origen,
+                driverKey: driverKey,
+                conductor: d.name,
+                camion: camion,
+                factura: factura,
+                cliente: cliente,
+                monto: monto,
+                transporte: transporte,
+                descripcion: descripcion,
+                destino: destino,
+                lat: lat,
+                lng: lng,
+                estado: 'Pendiente'
+            };
+
+            registrosGlobales.unshift(nuevoReg);
+
+            const adminIframe = document.getElementById('adminWazeIframe');
+            if (adminIframe) {
+                adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
+            }
+
+            enviarDatosAGoogleSheets(nuevoReg);
+            actualizarTodoAdmin();
+            showToast('Asignación Exitosa', `Destino "${destino}" asignado a ${d.name}`);
+            enviarWhatsApp(d.phone, factura, origen, destino, descripcion, camion);
+        }
+
+        function actualizarTodoAdmin() {
+            renderAdminKPIs();
+            renderDriversKPIs();
+            renderSucursalesKPIs();
+            renderAdminTableDiario();
+            renderHistoricoTable();
+            renderMonitoreoConductores();
+        }
+
+        function renderAdminKPIs() {
+            let totalConductores = Object.keys(driversData).length;
+            let disponibles = 0;
+            for (const key of Object.keys(driversData)) {
+                let pendientes = registrosGlobales.filter(r => r.driverKey === key && r.estado === 'Pendiente').length;
+                if (pendientes === 0) disponibles++;
+            }
+
+            let totalViajes = registrosGlobales.length;
+            let totalMonto = registrosGlobales.reduce((acc, r) => acc + r.monto, 0);
+
+            document.getElementById('kpiActiveDrivers').innerText = `${disponibles} / ${totalConductores}`;
+            document.getElementById('kpiTotalTrips').innerText = totalViajes;
+            document.getElementById('kpiInvoices').innerText = `$${totalMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        }
+
+        function renderDriversKPIs() {
+            const grid = document.getElementById('driversKpiGrid');
+            grid.innerHTML = '';
+
+            for (const [key, d] of Object.entries(driversData)) {
+                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key);
+                let totalViajes = viajesDriver.length;
+                let transporteTotal = viajesDriver.reduce((acc, r) => acc + r.transporte, 0);
+                let facturadoTotal = viajesDriver.reduce((acc, r) => acc + r.monto, 0);
+
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-xs text-slate-100">${d.name}</span>
+                            <span class="text-[10px] bg-accentBlue/20 text-accentBlue px-2 py-0.5 rounded font-medium">${d.unit}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800 text-center text-xs">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Viajes</span>
+                                <span class="font-bold text-slate-100">${totalViajes}</span>
+                            </div>
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Transporte</span>
+                                <span class="font-bold text-cyan-400">$${transporteTotal.toFixed(0)}</span>
+                            </div>
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Facturado</span>
+                                <span class="font-bold text-emerald-400">$${facturadoTotal.toFixed(0)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderSucursalesKPIs() {
+            const grid = document.getElementById('sucursalesKpiGrid');
+            grid.innerHTML = '';
+
+            sucursalesOficiales.forEach(suc => {
+                let itemsSuc = registrosGlobales.filter(r => r.origen === suc);
+                let viajes = itemsSuc.length;
+                let transporteTotal = itemsSuc.reduce((acc, r) => acc + r.transporte, 0);
+                let facturadoTotal = itemsSuc.reduce((acc, r) => acc + r.monto, 0);
+
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-xs text-accentBlue">${suc}</span>
+                            <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Hoy</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800 text-center text-xs">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Viajes</span>
+                                <span class="font-bold text-slate-100">${viajes}</span>
+                            </div>
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Transporte</span>
+                                <span class="font-bold text-cyan-400">$${transporteTotal.toFixed(0)}</span>
+                            </div>
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                                <span class="text-[9px] text-slate-400 block">Facturado</span>
+                                <span class="font-bold text-emerald-400">$${facturadoTotal.toFixed(0)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderAdminTableDiario() {
+            const tbody = document.getElementById('adminTableBodyDiario');
+            tbody.innerHTML = '';
+
+            registrosGlobales.forEach(r => {
+                const badgeEstado = r.estado === 'Entregado' 
+                    ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i>Entregado</span>`
+                    : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i>Pendiente</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="py-3 px-4 font-semibold text-slate-200">${r.conductor}</td>
+                        <td class="py-3 px-4 font-bold text-accentBlue">${r.camion}</td>
+                        <td class="py-3 px-4 text-slate-300">${r.origen}</td>
+                        <td class="py-3 px-4 font-mono text-emerald-400">${r.factura}</td>
+                        <td class="py-3 px-4">
+                            <div>${r.cliente}</div>
+                            <div class="text-[10px] text-slate-400">$${r.monto.toFixed(2)}</div>
+                        </td>
+                        <td class="py-3 px-4 font-bold text-cyan-400">$${r.transporte.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${r.destino}</td>
+                        <td class="py-3 px-4">${badgeEstado}</td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="enviarWhatsApp('${driversData[r.driverKey]?.phone || '50370001111'}', '${r.factura}', '${r.origen}', '${r.destino}', '${r.descripcion}', '${r.camion}')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg text-[10px]"><i class="fab fa-whatsapp"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderMonitoreoConductores() {
+            const grid = document.getElementById('monitoreoConductoresGrid');
+            if(!grid) return;
+            grid.innerHTML = '';
+
+            for (const [key, d] of Object.entries(driversData)) {
+                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key);
+                let pendientes = viajesDriver.filter(r => r.estado === 'Pendiente');
+                let entregados = viajesDriver.filter(r => r.estado === 'Entregado');
+
+                let estaDisponible = pendientes.length === 0;
+                let statusBadge = estaDisponible 
+                    ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Disponible</span>`
+                    : `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> En Ruta (${pendientes.length} pend.)</span>`;
+
+                let listaViajesHTML = '';
+                if (viajesDriver.length === 0) {
+                    listaViajesHTML = `<p class="text-[11px] text-slate-500 italic py-2">Sin viajes asignados hoy.</p>`;
+                } else {
+                    viajesDriver.forEach(v => {
+                        let isDone = v.estado === 'Entregado';
+                        listaViajesHTML += `
+                            <div class="p-2.5 rounded-xl ${isDone ? 'bg-slate-900/40 border border-slate-800/80' : 'bg-slate-800/80 border border-slate-700'} space-y-1">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-mono font-bold ${isDone ? 'text-slate-400 line-through' : 'text-accentBlue'}">${v.factura}</span>
+                                    <span class="${isDone ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'} text-[10px]">
+                                        ${isDone ? '<i class="fa-solid fa-check-circle"></i> Entregado' : '<i class="fa-solid fa-clock"></i> Pendiente'}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-[11px] text-slate-300">
+                                    <span>${v.cliente}</span>
+                                    <span class="text-slate-400">$${v.monto.toFixed(2)}</span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 truncate">
+                                    <i class="fa-solid fa-location-dot text-rose-400 mr-1"></i>${v.destino}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border ${estaDisponible ? 'border-emerald-500/40' : 'border-amber-500/40'} rounded-2xl p-5 space-y-4 shadow-lg">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-100">${d.name}</h4>
+                                <span class="text-xs text-accentBlue font-medium">${d.unit}</span>
+                            </div>
+                            ${statusBadge}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                            <div class="bg-slate-800/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block">Completados</span>
+                                <span class="font-bold text-emerald-400 text-sm">${entregados.length}</span>
+                            </div>
+                            <div class="bg-slate-800/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block">Pendientes</span>
+                                <span class="font-bold text-amber-400 text-sm">${pendientes.length}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Viajes del Día</span>
+                            <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                ${listaViajesHTML}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // ===============================================
+        // BÚSQUEDA Y FILTRADO AVANZADO EN HISTÓRICO
+        // ===============================================
+        function renderHistoricoTable() {
+            const tbody = document.getElementById('historicoTableBody');
+            const searchType = document.getElementById('filterType').value;
+            const selectedDate = document.getElementById('historicoDateInput').value;
+            const search = document.getElementById('historicoSearchInput').value.toLowerCase().trim();
+            tbody.innerHTML = '';
+
+            let filtrados = registrosGlobales.filter(r => {
+                if (searchType === 'fecha' && selectedDate) {
+                    let fechaRegistro = (r.fecha || '').toLowerCase();
+                    
+                    const [year, month, day] = selectedDate.split('-'); 
+                    const fechaFormatoBuscado = `${day}-${month}-${year}`;
+
+                    if (!fechaRegistro.includes(fechaFormatoBuscado) && !fechaRegistro.includes(`${year}-${month}-${day}`)) {
+                        return false;
+                    }
+                }
+
+                if (search) {
+                    const matchFactura = (r.factura || '').toLowerCase().includes(search);
+                    const matchSucursal = (r.origen || '').toLowerCase().includes(search);
+                    const matchCliente = (r.cliente || '').toLowerCase().includes(search);
+                    const matchConductor = (r.conductor || '').toLowerCase().includes(search);
+                    const matchDestino = (r.destino || '').toLowerCase().includes(search);
+
+                    if (!matchFactura && !matchSucursal && !matchCliente && !matchConductor && !matchDestino) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            let tViajes = filtrados.length;
+            let tTrans = filtrados.reduce((acc, r) => acc + r.transporte, 0);
+            let tFact = filtrados.reduce((acc, r) => acc + r.monto, 0);
+
+            document.getElementById('histKpiViajes').innerText = tViajes;
+            document.getElementById('histKpiTransporte').innerText = `$${tTrans.toFixed(2)}`;
+            document.getElementById('histKpiFacturado').innerText = `$${tFact.toFixed(2)}`;
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500 italic">No se encontraron registros que coincidan con el filtro.</td></tr>`;
+                return;
+            }
+
+            filtrados.forEach(r => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="py-3 px-4 font-mono text-xs text-accentBlue font-bold">${r.fecha || 'Sin fecha'}</td>
+                        <td class="py-3 px-4 text-slate-200">${r.conductor} <span class="text-[10px] text-accentBlue">(${r.camion})</span></td>
+                        <td class="py-3 px-4 text-slate-300 font-medium">${r.origen}</td>
+                        <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
+                        <td class="py-3 px-4 text-slate-300">${r.cliente}</td>
+                        <td class="py-3 px-4 text-cyan-400 font-bold">$${r.transporte.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-emerald-400 font-bold">$${r.monto.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-slate-300">${r.destino}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function limpiarFiltrosHistorico() {
+            document.getElementById('filterType').value = 'todos';
+            document.getElementById('historicoDateInput').value = '';
+            document.getElementById('historicoSearchInput').value = '';
+            renderHistoricoTable();
+        }
+
+        function abrirWazeDriver() {
+            let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
+            if (!viajeActivo || !viajeActivo.destino || viajeActivo.destino === 'Sin Asignar') {
+                showToast('Aviso', 'No tiene ningún viaje activo con destino asignado.', 'info');
+                return;
+            }
+            const coords = obtenerCoordenadas(viajeActivo.destino);
+            const wazeUrl = `https://www.waze.com/ul?q=${encodeURIComponent(viajeActivo.destino)}&navigate=yes&ll=${coords.lat},${coords.lng}`;
+            window.open(wazeUrl, '_blank');
+        }
+
+        function confirmarEntregaConductor() {
+            let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
+            if (!viajeActivo) {
+                showToast('Aviso', 'No hay ningún viaje pendiente por marcar como entregado.', 'info');
+                return;
+            }
+
+            if (confirm(`¿Marcar como Entregado el envío con Factura ${viajeActivo.factura}?`)) {
+                viajeActivo.estado = 'Entregado';
+                showToast('Entrega Confirmada', `La factura ${viajeActivo.factura} ha sido marcada como entregada.`);
+                
+                enviarDatosAGoogleSheets({
+                    action: 'updateStatus',
+                    factura: viajeActivo.factura,
+                    estado: 'Entregado'
+                });
+
+                initDriverDashboard();
+            }
+        }
+
+        function toggleDriverStatus() {
+            const text = document.getElementById('connectionText');
+            const dot = document.getElementById('connectionDot');
+            if (text.innerText === 'Disponible') {
+                text.innerText = 'En Pausa';
+                text.className = 'text-xs font-medium text-amber-400';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                showToast('Estado Cambiado', 'Se ha puesto en modo Pausa', 'info');
+            } else {
+                text.innerText = 'Disponible';
+                text.className = 'text-xs font-medium text-emerald-400';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+                showToast('Estado Cambiado', 'Ahora está Disponible', 'success');
+            }
+        }
+
+        function openConfigModal() {
+            document.getElementById('scriptEndpointInput').value = scriptEndpoint;
+            document.getElementById('configModal').classList.remove('hidden');
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').classList.add('hidden');
+        }
+
+        function saveEndpointConfig() {
+            const val = document.getElementById('scriptEndpointInput').value.trim();
+            if (val) {
+                scriptEndpoint = val;
+                localStorage.setItem('logiflow_endpoint_v2', val);
+                closeConfigModal();
+                showToast('Configuración Guardada', 'URL de Google Sheets actualizada correctamente.');
+                cargarDatosDesdeGoogleSheets();
+            }
+        }
+    </script>
+</body>
+</html>
