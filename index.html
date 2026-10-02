@@ -132,32 +132,39 @@
                 <!-- PESTAÑAS DE NAVEGACIÓN ADMIN -->
                 <div class="flex flex-wrap border-b border-slate-700/60 pb-3 gap-3">
                     <button onclick="switchAdminTab('diario')" id="adminTabDiarioBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-calendar-day"></i> Operación del Día (KPIs Diarios)
+                        <i class="fa-solid fa-calendar-day"></i> Operación del Día (KPIs)
                     </button>
                     <button onclick="switchAdminTab('asignacion')" id="adminTabAsignacionBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
                         <i class="fa-solid fa-plus-circle"></i> Asignación de Envíos
                     </button>
+                    <button onclick="switchAdminTab('programados')" id="adminTabProgramadosBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-check"></i> Viajes Programados
+                    </button>
+                    <!-- NUEVA PESTAÑA DE TRASLADOS INTERNOS -->
+                    <button onclick="switchAdminTab('traslados')" id="adminTabTrasladosBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-truck-arrow-right"></i> Traslados Internos
+                    </button>
                     <button onclick="switchAdminTab('monitoreo')" id="adminTabMonitoreoBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-truck-ramp-box"></i> Monitoreo de Entregas y Disponibilidad
+                        <i class="fa-solid fa-truck-ramp-box"></i> Monitoreo de Entregas
                     </button>
                     <button onclick="switchAdminTab('conductores')" id="adminTabConductoresBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-users-gear"></i> Gestión de Conductores y Unidades
+                        <i class="fa-solid fa-users-gear"></i> Gestión Personal
                     </button>
                     <button onclick="switchAdminTab('historico')" id="adminTabHistoricoBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-clock-rotate-left"></i> Histórico y Archivo General
+                        <i class="fa-solid fa-clock-rotate-left"></i> Histórico General
                     </button>
                 </div>
 
                 <!-- ================= VISTA 1: OPERACIÓN DEL DÍA ================= -->
                 <div id="adminViewDiario" class="space-y-6">
                     <!-- KPIs Generales -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                         <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
                             <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">
                                 <i class="fa-solid fa-users-viewfinder"></i>
                             </div>
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Conductores Disponibles</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cond. Disponibles</p>
                                 <h3 id="kpiActiveDrivers" class="text-2xl font-bold mt-1 text-slate-100">0 / 0</h3>
                             </div>
                         </div>
@@ -167,7 +174,7 @@
                                 <i class="fa-solid fa-route"></i>
                             </div>
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Viajes Totales (Hoy)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Viajes Totales (Hoy)</p>
                                 <h3 id="kpiTotalTrips" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
                             </div>
                         </div>
@@ -177,8 +184,18 @@
                                 <i class="fa-solid fa-file-invoice-dollar"></i>
                             </div>
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada (Hoy)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada (Hoy)</p>
                                 <h3 id="kpiInvoices" class="text-2xl font-bold mt-1 text-slate-100">$0.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
+                            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-calendar-plus"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturas Prog. (Futuro)</p>
+                                <h3 id="kpiScheduledInvoices" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
                             </div>
                         </div>
                     </div>
@@ -242,7 +259,7 @@
                     </div>
                 </div>
 
-                <!-- ================= VISTA: ASIGNACIÓN DE ENVÍOS ================= -->
+                <!-- ================= VISTA 2: ASIGNACIÓN DE ENVÍOS ================= -->
                 <div id="adminViewAsignacion" class="hidden space-y-6">
                     
                     <!-- ================= FORMULARIO 1: ENVÍOS A CLIENTES ================= -->
@@ -361,18 +378,14 @@
                         </div>
 
                         <form id="adminLogisticsForm" onsubmit="asignarLogisticaManual(event)" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nº de Traslado</label>
+                                    <input type="text" id="logInputTransferNumber" required placeholder="Ej. TR-001" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Origen (Salida)</label>
-                                    <select id="logInputOrigen" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
-                                        <option value="" disabled selected>Seleccione...</option>
-                                        <option value="FG MATRIZ">FG MATRIZ</option>
-                                        <option value="FG HIERROGAR">FG HIERROGAR</option>
-                                        <option value="FG VIÑEDO">FG VIÑEDO</option>
-                                        <option value="FG COMALAPA">FG COMALAPA</option>
-                                        <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
-                                        <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
-                                    </select>
+                                    <input type="text" id="logInputOrigen" list="listaSucursalesData" required placeholder="Seleccione o escriba..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal donde se dirige (Destino)</label>
@@ -406,7 +419,7 @@
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
                                     <select id="logSelectConductor" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
-                                <div>
+                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
                                     <select id="logSelectCamion" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
@@ -417,6 +430,16 @@
                             </button>
                         </form>
                     </div>
+                    
+                    <!-- Datalist para el origen de traslados -->
+                    <datalist id="listaSucursalesData">
+                        <option value="FG MATRIZ">
+                        <option value="FG HIERROGAR">
+                        <option value="FG VIÑEDO">
+                        <option value="FG COMALAPA">
+                        <option value="CONSTRUGAR AGUILA">
+                        <option value="CONSTRUGAR AUTOPISTA">
+                    </datalist>
 
                     <datalist id="listaDestinosWaze">
                         <option value="San Salvador Centro">
@@ -433,7 +456,66 @@
 
                 </div>
 
-                <!-- ================= VISTA: MONITOREO DE ENTREGAS Y DISPONIBILIDAD ================= -->
+                <!-- ================= VISTA 3: VIAJES PROGRAMADOS ================= -->
+                <div id="adminViewProgramados" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-calendar-check text-amber-400"></i> Viajes Programados para Siguientes Días</h3>
+                                <p class="text-xs text-slate-400 mt-1">Listado de facturas y viajes asignados con fecha futura. Estarán aquí hasta el día que les corresponda (se moverán automáticamente a "Operación del Día") o hasta que el conductor los entregue.</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl text-amber-400">Día Prog.</th>
+                                        <th class="py-3 px-4">Conductor Asignado</th>
+                                        <th class="py-3 px-4">Factura / CCF</th>
+                                        <th class="py-3 px-4">Cliente</th>
+                                        <th class="py-3 px-4">Monto</th>
+                                        <th class="py-3 px-4">Destino Waze</th>
+                                        <th class="py-3 px-4 rounded-r-xl">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminTableBodyProgramados" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA NUEVA: TRASLADOS INTERNOS ================= -->
+                <div id="adminViewTraslados" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
+                                    <i class="fa-solid fa-truck-arrow-right"></i> Historial de Traslados y Viajes Internos
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Listado exclusivo de los movimientos de inventario y logística interna registrados en el sistema.</p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl">Fecha / Hora</th>
+                                        <th class="py-3 px-4">Nº de Traslado</th>
+                                        <th class="py-3 px-4">Conductor / Camión</th>
+                                        <th class="py-3 px-4">Ruta (Origen a Destino)</th>
+                                        <th class="py-3 px-4">Tipo de Viaje</th>
+                                        <th class="py-3 px-4">Cantidad</th>
+                                        <th class="py-3 px-4 rounded-r-xl">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trasladosTableBody" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA 4: MONITOREO DE ENTREGAS Y DISPONIBILIDAD ================= -->
                 <div id="adminViewMonitoreo" class="hidden space-y-6">
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
@@ -448,7 +530,7 @@
                     </div>
                 </div>
 
-                <!-- ================= VISTA: GESTIÓN DE CONDUCTORES Y UNIDADES ================= -->
+                <!-- ================= VISTA 5: GESTIÓN DE CONDUCTORES Y UNIDADES ================= -->
                 <div id="adminViewConductores" class="hidden space-y-6">
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-6">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -504,7 +586,7 @@
                     </div>
                 </div>
 
-                <!-- ================= VISTA: HISTÓRICO Y ARCHIVO GENERAL ================= -->
+                <!-- ================= VISTA 6: HISTÓRICO Y ARCHIVO GENERAL ================= -->
                 <div id="adminViewHistorico" class="hidden space-y-6">
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-4">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
@@ -892,12 +974,25 @@
             if (tableTitle) tableTitle.innerText = fechaActualStr;
         }
 
+        // ==========================================
+        // FUNCION PARA FORMATEAR FECHAS EN TABLAS
+        // ==========================================
+        function formatearFechaDisplay(fechaStr) {
+            if (!fechaStr) return '';
+            let f = fechaStr.toString();
+            if (f.includes('T')) f = f.split('T')[0];
+            
+            const partes = f.split('-');
+            if (partes.length === 3 && partes[0].length === 4) {
+                return `${partes[2]}/${partes[1]}/${partes[0]}`; 
+            }
+            return f;
+        }
+
         const sucursalesOficiales = [
             'FG MATRIZ', 'FG HIERROGAR', 'FG VIÑEDO', 'FG COMALAPA', 'CONSTRUGAR AGUILA', 'CONSTRUGAR AUTOPISTA'
         ];
 
-        // Por defecto, carga vacíos. Se sobreescriben al conectarse a Google Sheets.
-        // Si sheets está vacío, se carga con la base por defecto de respaldo.
         let camionesDisponibles = [];
         let driversData = {};
 
@@ -927,11 +1022,9 @@
             actualizarReloj();
             setInterval(actualizarReloj, 1000);
             
-            // Forzar carga de datos base antes del login
             cargarDatosDesdeGoogleSheets(true);
 
             setInterval(() => {
-                // Solo si ya hay sesión iniciada actualiza el dashboard
                 if(currentRole && document.getElementById('loginScreen').classList.contains('hidden')) {
                     cargarDatosDesdeGoogleSheets(true);
                 }
@@ -961,15 +1054,11 @@
             }
 
             toast.classList.remove('translate-y-24', 'opacity-0');
-
             setTimeout(() => {
                 toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3000);
+            }, 3500);
         }
 
-        // ===============================================
-        // LEER DATOS DESDE GOOGLE SHEETS
-        // ===============================================
         async function cargarDatosDesdeGoogleSheets(silent = false) {
             if (!scriptEndpoint) return;
             if (!silent && document.getElementById('loginScreen').classList.contains('hidden')) {
@@ -981,8 +1070,6 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    
-                    // 1. CARGAR CONDUCTORES GLOBALES DESDE SHEETS
                     if (data.conductores && data.conductores.length > 0) {
                         let nuevosDrivers = {};
                         let nuevosCamiones = [];
@@ -1000,20 +1087,23 @@
                         driversData = nuevosDrivers;
                         camionesDisponibles = nuevosCamiones;
                     } else {
-                        // Si la hoja de conductores en Sheets está vacía o es la primera vez
                         if(Object.keys(driversData).length === 0) {
                             driversData = driversRespaldo;
                             camionesDisponibles = camionesRespaldo;
                         }
                     }
 
-                    // 2. CARGAR REGISTROS
                     if (Array.isArray(data.registros)) {
                         registrosGlobales = data.registros.map((item, index) => {
                             const estadoLimpio = (item.estado || '').toString().trim();
                             const esEntregado = estadoLimpio.toLowerCase() === 'entregado';
                             const coords = obtenerCoordenadas(item.destino);
                             const fechaRecuperada = item.fecha || item.fechaHora || fechaActualStr;
+
+                            let fProg = item.fechaProgramada || '';
+                            if (typeof fProg === 'string' && fProg.includes('T')) {
+                                fProg = fProg.split('T')[0];
+                            }
 
                             return {
                                 id: index + 1,
@@ -1035,17 +1125,16 @@
                                 tipoViaje: item.tipoViaje || 'N/A',
                                 cantidadMercaderia: item.cantidadMercaderia || '',
                                 horarioEntrega: item.horarioEntrega || 'Cualquier hora',
-                                fechaProgramada: item.fechaProgramada || '',
+                                fechaProgramada: fProg,
                                 horaEntrega: item.horaEntrega || ''
                             };
                         });
                     }
 
-                    // Actualizar UI solo si ya pasó el login
                     if (document.getElementById('loginScreen').classList.contains('hidden')) {
                         if (currentRole === 'admin') {
                             actualizarTodoAdmin();
-                            poblarSelectsAsignacionConductores(); // Refrescar listas
+                            poblarSelectsAsignacionConductores();
                             renderConductoresGestionTable();
                         } else if (currentRole === 'driver' && currentDriverKey) {
                             initDriverDashboard();
@@ -1142,14 +1231,9 @@
         }
 
         function initAdminDashboard() {
-            renderAdminKPIs();
-            renderDriversKPIs();
-            renderSucursalesKPIs();
-            renderAdminTableDiario();
-            renderConductoresGestionTable();
+            actualizarTodoAdmin();
             poblarSelectsAsignacionConductores();
-            renderHistoricoTable();
-            renderMonitoreoConductores();
+            renderConductoresGestionTable();
         }
 
         function initDriverDashboard() {
@@ -1160,8 +1244,6 @@
             document.getElementById('driverHeaderUnit').innerText = `${driver.unit} • En Ruta`;
 
             let misViajesAll = registrosGlobales.filter(r => r.driverKey === currentDriverKey);
-            
-            // Separar viajes de HOY y viajes FUTUROS (programados)
             const hoyISO = new Date().toISOString().split('T')[0];
             let misViajesHoy = [];
             let misViajesFuturos = [];
@@ -1174,7 +1256,6 @@
                 }
             });
 
-            // KPIs basados solo en la operación de HOY
             let totalTrips = misViajesHoy.length;
             let totalTransport = misViajesHoy.reduce((sum, r) => sum + r.transporte, 0);
             let totalAmount = misViajesHoy.reduce((sum, r) => sum + r.monto, 0);
@@ -1216,7 +1297,6 @@
                 document.getElementById('driverInfoTransport').innerText = '$0.00';
             }
 
-            // Renderizar tabla de HOY
             const tbodyHoy = document.getElementById('driverTripsTableBody');
             if (tbodyHoy) {
                 tbodyHoy.innerHTML = '';
@@ -1240,26 +1320,30 @@
                 });
             }
 
-            // Renderizar tabla de FUTUROS
             const tbodyFuturos = document.getElementById('driverFutureTripsTableBody');
             if (tbodyFuturos) {
                 tbodyFuturos.innerHTML = '';
                 if(misViajesFuturos.length === 0) {
                     tbodyFuturos.innerHTML = `<tr><td colspan="5" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
                 } else {
-                    misViajesFuturos.forEach(r => {
-                        let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
-                        
-                        tbodyFuturos.innerHTML += `
-                            <tr class="hover:bg-slate-900/40 border-l-4 border-amber-500/50">
-                                <td class="py-2.5 px-3 font-bold text-amber-400">${r.fechaProgramada}</td>
-                                <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
-                                <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
-                                <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje}</td>
-                                <td class="py-2.5 px-3">${estadoFactText}</td>
-                            </tr>
-                        `;
-                    });
+                    let futurosPendientes = misViajesFuturos.filter(v => v.estado !== 'Entregado');
+                    if (futurosPendientes.length === 0) {
+                         tbodyFuturos.innerHTML = `<tr><td colspan="5" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
+                    } else {
+                        futurosPendientes.forEach(r => {
+                            let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
+                            
+                            tbodyFuturos.innerHTML += `
+                                <tr class="hover:bg-slate-900/40 border-l-4 border-amber-500/50">
+                                    <td class="py-2.5 px-3 font-bold text-amber-400">${formatearFechaDisplay(r.fechaProgramada)}</td>
+                                    <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
+                                    <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
+                                    <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje}</td>
+                                    <td class="py-2.5 px-3">${estadoFactText}</td>
+                                </tr>
+                            `;
+                        });
+                    }
                 }
             }
         }
@@ -1267,44 +1351,63 @@
         function switchAdminTab(tab) {
             const btnDiario = document.getElementById('adminTabDiarioBtn');
             const btnAsignacion = document.getElementById('adminTabAsignacionBtn');
+            const btnProgramados = document.getElementById('adminTabProgramadosBtn');
+            const btnTraslados = document.getElementById('adminTabTrasladosBtn');
             const btnMonitoreo = document.getElementById('adminTabMonitoreoBtn');
             const btnCond = document.getElementById('adminTabConductoresBtn');
             const btnHistorico = document.getElementById('adminTabHistoricoBtn');
             
             const viewDiario = document.getElementById('adminViewDiario');
             const viewAsignacion = document.getElementById('adminViewAsignacion');
+            const viewProgramados = document.getElementById('adminViewProgramados');
+            const viewTraslados = document.getElementById('adminViewTraslados');
             const viewMonitoreo = document.getElementById('adminViewMonitoreo');
             const viewCond = document.getElementById('adminViewConductores');
             const viewHistorico = document.getElementById('adminViewHistorico');
 
-            btnDiario.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
-            btnAsignacion.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
-            btnMonitoreo.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
-            btnCond.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
-            btnHistorico.className = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            const resetClass = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
+            btnDiario.className = resetClass;
+            btnAsignacion.className = resetClass;
+            btnProgramados.className = resetClass;
+            btnTraslados.className = resetClass;
+            btnMonitoreo.className = resetClass;
+            btnCond.className = resetClass;
+            btnHistorico.className = resetClass;
 
             viewDiario.classList.add('hidden');
             viewAsignacion.classList.add('hidden');
+            viewProgramados.classList.add('hidden');
+            viewTraslados.classList.add('hidden');
             viewMonitoreo.classList.add('hidden');
             viewCond.classList.add('hidden');
             viewHistorico.classList.add('hidden');
 
+            const activeClass = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+
             if (tab === 'diario') {
-                btnDiario.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                btnDiario.className = activeClass;
                 viewDiario.classList.remove('hidden');
             } else if (tab === 'asignacion') {
-                btnAsignacion.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                btnAsignacion.className = activeClass;
                 viewAsignacion.classList.remove('hidden');
+            } else if (tab === 'programados') {
+                btnProgramados.className = activeClass;
+                viewProgramados.classList.remove('hidden');
+                renderAdminTableProgramados();
+            } else if (tab === 'traslados') {
+                btnTraslados.className = activeClass;
+                viewTraslados.classList.remove('hidden');
+                renderTrasladosTable();
             } else if (tab === 'monitoreo') {
-                btnMonitoreo.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                btnMonitoreo.className = activeClass;
                 viewMonitoreo.classList.remove('hidden');
                 renderMonitoreoConductores();
             } else if (tab === 'conductores') {
-                btnCond.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                btnCond.className = activeClass;
                 viewCond.classList.remove('hidden');
                 renderConductoresGestionTable();
             } else {
-                btnHistorico.className = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
+                btnHistorico.className = activeClass;
                 viewHistorico.classList.remove('hidden');
                 renderHistoricoTable();
             }
@@ -1354,7 +1457,6 @@
                 camionesDisponibles.push({ id: key, name: unit });
             }
 
-            // GUARDAR EN GOOGLE SHEETS
             if(scriptEndpoint) {
                 fetch(scriptEndpoint, {
                     method: 'POST',
@@ -1365,16 +1467,14 @@
             }
 
             document.getElementById('formNuevoConductor').reset();
-            renderConductoresGestionTable();
+            actualizarTodoAdmin();
             poblarSelectsAsignacionConductores();
-            renderAdminKPIs();
-            renderDriversKPIs();
-            renderMonitoreoConductores();
             showToast('Conductor Registrado', `${name} y unidad ${unit} guardados globalmente.`);
         }
 
         function renderConductoresGestionTable() {
             const tbody = document.getElementById('tablaConductoresGestion');
+            if(!tbody) return;
             tbody.innerHTML = '';
             for (const [key, d] of Object.entries(driversData)) {
                 tbody.innerHTML += `
@@ -1420,7 +1520,6 @@
                 d.pass = newPass;
             }
 
-            // GUARDAR CAMBIOS EN GOOGLE SHEETS
             if(scriptEndpoint) {
                 fetch(scriptEndpoint, {
                     method: 'POST',
@@ -1431,10 +1530,8 @@
             }
 
             cerrarModalEditar();
-            renderConductoresGestionTable();
+            actualizarTodoAdmin();
             poblarSelectsAsignacionConductores();
-            renderDriversKPIs();
-            renderMonitoreoConductores();
             showToast('Actualizado', `Datos de ${d.name} actualizados en la base global.`);
         }
 
@@ -1443,7 +1540,6 @@
             if (!d) return;
             if (confirm(`¿Estás seguro de que deseas eliminar al conductor "${d.name}" en TODAS las máquinas?`)) {
                 
-                // ELIMINAR DE GOOGLE SHEETS
                 if(scriptEndpoint) {
                     fetch(scriptEndpoint, {
                         method: 'POST',
@@ -1454,11 +1550,8 @@
                 }
 
                 delete driversData[key];
-                renderConductoresGestionTable();
+                actualizarTodoAdmin();
                 poblarSelectsAsignacionConductores();
-                renderAdminKPIs();
-                renderDriversKPIs();
-                renderMonitoreoConductores();
                 showToast('Eliminado', `Conductor ${d.name} eliminado de la gestión global.`);
             }
         }
@@ -1494,8 +1587,16 @@
         // --- FUNCION FORMULARIO 1: CLIENTES ---
         function asignarFacturaManual(e) {
             e.preventDefault();
+            const factura = document.getElementById('manInputFactura').value.trim();
+
+            const duplicada = registrosGlobales.find(r => r.factura.toLowerCase() === factura.toLowerCase());
+            if (duplicada) {
+                alert(`¡ATENCIÓN! La factura "${factura}" ya ha sido registrada en el sistema anteriormente.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}`);
+                showToast('Factura Duplicada', 'Verifica el número de comprobante.', 'error');
+                return;
+            }
+
             const origen = document.getElementById('manInputOrigen').value;
-            const factura = document.getElementById('manInputFactura').value;
             const cliente = document.getElementById('manInputCliente').value;
             const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace('$', '').replace(',', '')) || 0;
             const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace('$', '').replace(',', '')) || 0;
@@ -1524,6 +1625,7 @@
         // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS ---
         function asignarLogisticaManual(e) {
             e.preventDefault();
+            const numeroTraslado = document.getElementById('logInputTransferNumber').value.trim();
             const origen = document.getElementById('logInputOrigen').value;
             const sucursalDestino = document.getElementById('logInputDestino').value;
             const tipoViaje = document.getElementById('logInputTipoViaje').value;
@@ -1531,7 +1633,8 @@
             const driverKey = document.getElementById('logSelectConductor').value;
             const camion = document.getElementById('logSelectCamion').value;
 
-            const factura = "N/A (Traslado Interno)";
+            const factura = `Traslado #${numeroTraslado}`; 
+            
             const cliente = "Uso Interno / Movimiento Logístico";
             const montoVal = 0;
             const transporteVal = 0;
@@ -1591,7 +1694,7 @@
 
             enviarDatosAGoogleSheets(nuevoReg);
             actualizarTodoAdmin();
-            showToast('Asignación Exitosa', `Destino "${destino}" asignado a ${d.name}`);
+            showToast('Asignación Exitosa', `Destino asignado correctamente.`);
             
             enviarWhatsApp(d.phone, factura, origen, destino, descripcion, camion, linkUbicacion);
         }
@@ -1601,12 +1704,15 @@
             renderDriversKPIs();
             renderSucursalesKPIs();
             renderAdminTableDiario();
+            renderAdminTableProgramados();
+            renderTrasladosTable();
             renderHistoricoTable();
             renderMonitoreoConductores();
         }
 
         function renderAdminKPIs() {
             const hoyISO = new Date().toISOString().split('T')[0];
+            
             let viajesOperacionHoy = registrosGlobales.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
 
             let totalConductores = Object.keys(driversData).length;
@@ -1619,13 +1725,21 @@
             let totalViajes = viajesOperacionHoy.length;
             let totalMonto = viajesOperacionHoy.reduce((acc, r) => acc + r.monto, 0);
 
+            let viajesFuturosPendientes = registrosGlobales.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO && r.estado !== 'Entregado').length;
+
             document.getElementById('kpiActiveDrivers').innerText = `${disponibles} / ${totalConductores}`;
             document.getElementById('kpiTotalTrips').innerText = totalViajes;
             document.getElementById('kpiInvoices').innerText = `$${totalMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            
+            const kpiScheduled = document.getElementById('kpiScheduledInvoices');
+            if (kpiScheduled) {
+                kpiScheduled.innerText = viajesFuturosPendientes;
+            }
         }
 
         function renderDriversKPIs() {
             const grid = document.getElementById('driversKpiGrid');
+            if(!grid) return;
             grid.innerHTML = '';
 
             const hoyISO = new Date().toISOString().split('T')[0];
@@ -1663,6 +1777,7 @@
 
         function renderSucursalesKPIs() {
             const grid = document.getElementById('sucursalesKpiGrid');
+            if(!grid) return;
             grid.innerHTML = '';
             const hoyISO = new Date().toISOString().split('T')[0];
 
@@ -1699,6 +1814,7 @@
 
         function renderAdminTableDiario() {
             const tbody = document.getElementById('adminTableBodyDiario');
+            if(!tbody) return;
             tbody.innerHTML = '';
             
             const hoyISO = new Date().toISOString().split('T')[0];
@@ -1725,6 +1841,69 @@
                         <td class="py-3 px-4 text-right">
                             <button onclick="enviarWhatsApp('${driversData[r.driverKey]?.phone || '50370001111'}', '${r.factura}', '${r.origen}', '${r.destino}', '${r.descripcion}', '${r.camion}')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg text-[10px]"><i class="fab fa-whatsapp"></i></button>
                         </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderAdminTableProgramados() {
+            const tbody = document.getElementById('adminTableBodyProgramados');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const hoyISO = new Date().toISOString().split('T')[0];
+            
+            let viajesFuturos = registrosGlobales.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO && r.estado !== 'Entregado');
+            
+            viajesFuturos.sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada));
+
+            if(viajesFuturos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay viajes programados pendientes para días futuros.</td></tr>`;
+                return;
+            }
+
+            viajesFuturos.forEach(r => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-colors border-l-4 border-amber-500/50">
+                        <td class="py-3 px-4 font-bold text-amber-400">${formatearFechaDisplay(r.fechaProgramada)}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-200">${r.conductor} <span class="text-[10px] text-accentBlue">(${r.camion})</span></td>
+                        <td class="py-3 px-4 font-mono text-emerald-400">${r.factura}</td>
+                        <td class="py-3 px-4">${r.cliente}</td>
+                        <td class="py-3 px-4 font-bold text-emerald-400">$${r.monto.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${r.destino}</td>
+                        <td class="py-3 px-4"><span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i>Programado</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderTrasladosTable() {
+            const tbody = document.getElementById('trasladosTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            // Filtramos todos los registros que se identifican como movimientos logísticos internos
+            let traslados = registrosGlobales.filter(r => r.cliente === "Uso Interno / Movimiento Logístico");
+            
+            if (traslados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay traslados internos registrados.</td></tr>`;
+                return;
+            }
+
+            traslados.forEach(r => {
+                let badgeEstado = r.estado === 'Entregado' 
+                    ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i> Entregado</span>`
+                    : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i> Pendiente</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="py-3 px-4 font-mono text-xs text-accentBlue font-bold">${r.fecha || 'Sin fecha'}</td>
+                        <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
+                        <td class="py-3 px-4 text-slate-200">${r.conductor} <span class="text-[10px] text-accentBlue">(${r.camion})</span></td>
+                        <td class="py-3 px-4 text-slate-300 font-medium">${r.origen} <i class="fa-solid fa-arrow-right text-slate-600 mx-1"></i> ${r.destino}</td>
+                        <td class="py-3 px-4 text-slate-300">${r.tipoViaje}</td>
+                        <td class="py-3 px-4 text-slate-300">${r.cantidadMercaderia}</td>
+                        <td class="py-3 px-4">${badgeEstado}</td>
                     </tr>
                 `;
             });
@@ -1806,6 +1985,7 @@
 
         function renderHistoricoTable() {
             const tbody = document.getElementById('historicoTableBody');
+            if(!tbody) return;
             const searchType = document.getElementById('filterType').value;
             const selectedDate = document.getElementById('historicoDateInput').value;
             const search = document.getElementById('historicoSearchInput').value.toLowerCase().trim();
@@ -1893,16 +2073,21 @@
 
         function confirmarEntregaConductor() {
             const hoyISO = new Date().toISOString().split('T')[0];
+            
             let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente' && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
             
             if (!viajeActivo) {
-                showToast('Aviso', 'No hay ningún viaje pendiente por marcar como entregado el día de hoy.', 'info');
+                viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
+            }
+
+            if (!viajeActivo) {
+                showToast('Aviso', 'No hay ningún viaje pendiente.', 'info');
                 return;
             }
 
             if (confirm(`¿Marcar como Entregado el envío con Factura ${viajeActivo.factura}?`)) {
                 viajeActivo.estado = 'Entregado';
-                const horaEntregaExacta = new Date().toLocaleString('es-ES'); // Captura fecha y hora exacta
+                const horaEntregaExacta = new Date().toLocaleString('es-ES'); 
                 viajeActivo.horaEntrega = horaEntregaExacta;
                 
                 showToast('Entrega Confirmada', `La factura ${viajeActivo.factura} ha sido marcada como entregada a las ${horaEntregaExacta}.`);
