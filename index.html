@@ -1557,7 +1557,6 @@
             window.open(urlConductor, '_blank');
         }
 
-        // Función auxiliar para resolver errores con comillas dentro del HTML
         function enviarWhatsAppAction(facturaId) {
             const r = registrosGlobales.find(x => String(x.factura) === String(facturaId));
             if(!r) return;
@@ -1565,39 +1564,39 @@
             enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, '');
         }
 
+        // ==========================================
+        // OPTIMIZADO: Función de conexión con Sheets
+        // ==========================================
         function enviarDatosAGoogleSheets(registro) {
-            if (!scriptEndpoint) return;
-
-            fetch(scriptEndpoint, {
+            if (!scriptEndpoint) return Promise.resolve();
+            return fetch(scriptEndpoint, {
                 method: 'POST',
                 mode: 'no-cors',
-                // Enviado como texto simple para prevenir caídas de CORS
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(registro)
-            }).then(() => {
-                showToast('Google Sheets', 'Datos sincronizados con la hoja de cálculo');
-            }).catch(err => {
-                console.error('Error al sincronizar con Google Sheets:', err);
             });
         }
 
-        // --- FUNCION FORMULARIO 1: CLIENTES ---
-        function asignarFacturaManual(e) {
+        // --- FUNCION FORMULARIO 1: CLIENTES (OPTIMIZADA Y CON CARGA) ---
+        async function asignarFacturaManual(e) {
             e.preventDefault();
             const factura = document.getElementById('manInputFactura').value.trim();
 
-            // CORRECCIÓN PRINCIPAL AQUÍ (Convertir a String de forma segura)
             const duplicada = registrosGlobales.find(r => String(r.factura).toLowerCase() === String(factura).toLowerCase());
-            
             if (duplicada) {
                 alert(`¡ATENCIÓN! La factura "${factura}" ya ha sido registrada en el sistema anteriormente.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}`);
                 showToast('Factura Duplicada', 'Verifica el número de comprobante.', 'error');
                 return;
             }
 
+            // Cambiar estado visual a cargando
+            const btn = e.target.querySelector('button[type="submit"]');
+            const btnOriginalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío...';
+            btn.disabled = true;
+
             const origen = document.getElementById('manInputOrigen').value;
             const cliente = document.getElementById('manInputCliente').value;
-            // Corrección en Replace para remover todas las comas en montos grandes
             const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
             const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
             
@@ -1616,15 +1615,28 @@
 
             const coords = obtenerCoordenadas(destino);
             
-            registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
+            const guardadoExitoso = await registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
             
-            document.getElementById('adminManualForm').reset();
-            poblarSelectsAsignacionConductores();
+            if (guardadoExitoso) {
+                document.getElementById('adminManualForm').reset();
+                poblarSelectsAsignacionConductores();
+            }
+
+            // Restaurar estado del botón
+            btn.innerHTML = btnOriginalHTML;
+            btn.disabled = false;
         }
 
-        // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS ---
-        function asignarLogisticaManual(e) {
+        // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS (OPTIMIZADA Y CON CARGA) ---
+        async function asignarLogisticaManual(e) {
             e.preventDefault();
+
+            // Cambiar estado visual a cargando
+            const btn = e.target.querySelector('button[type="submit"]');
+            const btnOriginalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando traslado...';
+            btn.disabled = true;
+
             const numeroTraslado = document.getElementById('logInputTransferNumber').value.trim();
             const origen = document.getElementById('logInputOrigen').value;
             const sucursalDestino = document.getElementById('logInputDestino').value;
@@ -1647,16 +1659,25 @@
             const destino = sucursalDestino; 
             const coords = obtenerCoordenadas(destino);
 
-            registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
+            const guardadoExitoso = await registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
 
-            document.getElementById('adminLogisticsForm').reset();
-            poblarSelectsAsignacionConductores();
+            if (guardadoExitoso) {
+                document.getElementById('adminLogisticsForm').reset();
+                poblarSelectsAsignacionConductores();
+            }
+
+            // Restaurar estado del botón
+            btn.innerHTML = btnOriginalHTML;
+            btn.disabled = false;
         }
 
-        // --- REGISTRAR EN SHEETS Y FRONTEND ---
-        function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion) {
+        // --- REGISTRAR EN SHEETS Y FRONTEND (OPTIMIZADA CON WAIT Y WHATSAPP) ---
+        async function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion) {
             const d = driversData[driverKey];
-            if(!d) return;
+            if(!d) {
+                showToast('Error', 'Conductor no seleccionado o inválido.', 'error');
+                return false;
+            }
 
             d.destination = destino;
             d.lat = lat;
@@ -1685,18 +1706,47 @@
                 fechaProgramada: fechaProgramada
             };
 
-            registrosGlobales.unshift(nuevoReg);
-
-            const adminIframe = document.getElementById('adminWazeIframe');
-            if (adminIframe) {
-                adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
+            // Preparar el enlace de WhatsApp
+            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
+            if (linkUbicacion && linkUbicacion.trim() !== '') {
+                msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
             }
+            msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+            const waUrl = `https://api.whatsapp.com/send?phone=${d.phone}&text=${encodeURIComponent(msg)}`;
 
-            enviarDatosAGoogleSheets(nuevoReg);
-            actualizarTodoAdmin();
-            showToast('Asignación Exitosa', `Destino asignado correctamente.`);
-            
-            enviarWhatsApp(d.phone, factura, origen, destino, descripcion, camion, linkUbicacion);
+            // Se abre la pestaña *antes* del await para evitar que el navegador lo bloquee como "ventana emergente"
+            let waWindow = window.open('', '_blank');
+
+            try {
+                // ESPERA HASTA QUE GOOGLE SHEETS TERMINE DE RECIBIR LA ORDEN
+                await enviarDatosAGoogleSheets(nuevoReg);
+
+                registrosGlobales.unshift(nuevoReg);
+
+                const adminIframe = document.getElementById('adminWazeIframe');
+                if (adminIframe) {
+                    adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
+                }
+
+                actualizarTodoAdmin();
+
+                // 1. Mostrar mensaje visual del guardado exitoso
+                showToast('Asignación Exitosa', `Guardado con éxito en Base de Datos. Abriendo WhatsApp...`, 'success');
+                
+                // 2. Ejecutar WhatsApp redirigiendo la pestaña que abrimos al inicio
+                if (waWindow) {
+                    waWindow.location.href = waUrl;
+                } else {
+                    window.location.href = waUrl; // fallback por si acaso
+                }
+                
+                return true;
+            } catch (error) {
+                if (waWindow) waWindow.close(); // Si falla, cerramos la pestaña blanca
+                console.error(error);
+                showToast('Error de Conexión', 'Hubo un problema comunicando con el servidor', 'error');
+                return false;
+            }
         }
 
         function actualizarTodoAdmin() {
