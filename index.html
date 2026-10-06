@@ -918,7 +918,7 @@
 
         function obtenerCoordenadas(destinoStr) {
             if (!destinoStr) return { lat: 13.6929, lng: -89.2182 };
-            const clave = Object.keys(coordenadasDestinos).find(k => k.toLowerCase() === destinoStr.toLowerCase());
+            const clave = Object.keys(coordenadasDestinos).find(k => String(k).toLowerCase() === String(destinoStr).toLowerCase());
             if (clave) {
                 return coordenadasDestinos[clave];
             }
@@ -1071,7 +1071,7 @@
 
                     if (Array.isArray(data.registros)) {
                         registrosGlobales = data.registros.map((item, index) => {
-                            const estadoLimpio = (item.estado || '').toString().trim();
+                            const estadoLimpio = String(item.estado || '').trim();
                             const esEntregado = estadoLimpio.toLowerCase() === 'entregado';
                             const coords = obtenerCoordenadas(item.destino);
                             const fechaRecuperada = item.fecha || item.fechaHora || fechaActualStr;
@@ -1159,11 +1159,11 @@
                     return;
                 }
             } else {
-                const driverUserInput = document.getElementById('loginDriverUser').value.trim().toLowerCase();
+                const driverUserInput = String(document.getElementById('loginDriverUser').value).trim().toLowerCase();
                 
                 let matchedKey = null;
                 for (const [key, d] of Object.entries(driversData)) {
-                    if (key === driverUserInput || d.name.toLowerCase() === driverUserInput) {
+                    if (key === driverUserInput || String(d.name).toLowerCase() === driverUserInput) {
                         matchedKey = key;
                         break;
                     }
@@ -1449,7 +1449,7 @@
                 fetch(scriptEndpoint, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({ action: 'saveDriver', driver: nuevoDriver })
                 });
             }
@@ -1512,7 +1512,7 @@
                 fetch(scriptEndpoint, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({ action: 'saveDriver', driver: d })
                 });
             }
@@ -1532,7 +1532,7 @@
                     fetch(scriptEndpoint, {
                         method: 'POST',
                         mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'text/plain' },
                         body: JSON.stringify({ action: 'deleteDriver', driverKey: key })
                     });
                 }
@@ -1557,13 +1557,22 @@
             window.open(urlConductor, '_blank');
         }
 
+        // Función auxiliar para resolver errores con comillas dentro del HTML
+        function enviarWhatsAppAction(facturaId) {
+            const r = registrosGlobales.find(x => String(x.factura) === String(facturaId));
+            if(!r) return;
+            const driverPhone = driversData[r.driverKey]?.phone || '50370001111';
+            enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, '');
+        }
+
         function enviarDatosAGoogleSheets(registro) {
             if (!scriptEndpoint) return;
 
             fetch(scriptEndpoint, {
                 method: 'POST',
                 mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                // Enviado como texto simple para prevenir caídas de CORS
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(registro)
             }).then(() => {
                 showToast('Google Sheets', 'Datos sincronizados con la hoja de cálculo');
@@ -1577,7 +1586,9 @@
             e.preventDefault();
             const factura = document.getElementById('manInputFactura').value.trim();
 
-            const duplicada = registrosGlobales.find(r => r.factura.toLowerCase() === factura.toLowerCase());
+            // CORRECCIÓN PRINCIPAL AQUÍ (Convertir a String de forma segura)
+            const duplicada = registrosGlobales.find(r => String(r.factura).toLowerCase() === String(factura).toLowerCase());
+            
             if (duplicada) {
                 alert(`¡ATENCIÓN! La factura "${factura}" ya ha sido registrada en el sistema anteriormente.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}`);
                 showToast('Factura Duplicada', 'Verifica el número de comprobante.', 'error');
@@ -1586,8 +1597,9 @@
 
             const origen = document.getElementById('manInputOrigen').value;
             const cliente = document.getElementById('manInputCliente').value;
-            const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace('$', '').replace(',', '')) || 0;
-            const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace('$', '').replace(',', '')) || 0;
+            // Corrección en Replace para remover todas las comas en montos grandes
+            const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
+            const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
             
             const estadoFactura = document.getElementById('manInputEstadoFactura').value;
             const horarioEntrega = document.getElementById('manInputHorario').value;
@@ -1827,7 +1839,7 @@
                         <td class="py-3 px-4 text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${r.destino}</td>
                         <td class="py-3 px-4">${badgeEstado}</td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="enviarWhatsApp('${driversData[r.driverKey]?.phone || '50370001111'}', '${r.factura}', '${r.origen}', '${r.destino}', '${r.descripcion}', '${r.camion}')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg text-[10px]"><i class="fab fa-whatsapp"></i></button>
+                            <button onclick="enviarWhatsAppAction('${r.factura}')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg text-[10px]"><i class="fab fa-whatsapp"></i></button>
                         </td>
                     </tr>
                 `;
@@ -1870,7 +1882,6 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             
-            // Filtramos todos los registros que se identifican como movimientos logísticos internos
             let traslados = registrosGlobales.filter(r => r.cliente === "Uso Interno / Movimiento Logístico");
             
             if (traslados.length === 0) {
@@ -1976,12 +1987,12 @@
             if(!tbody) return;
             const searchType = document.getElementById('filterType').value;
             const selectedDate = document.getElementById('historicoDateInput').value;
-            const search = document.getElementById('historicoSearchInput').value.toLowerCase().trim();
+            const search = String(document.getElementById('historicoSearchInput').value).toLowerCase().trim();
             tbody.innerHTML = '';
 
             let filtrados = registrosGlobales.filter(r => {
                 if (searchType === 'fecha' && selectedDate) {
-                    let fechaRegistro = (r.fecha || '').toLowerCase();
+                    let fechaRegistro = String(r.fecha || '').toLowerCase();
                     const [year, month, day] = selectedDate.split('-'); 
                     const fechaFormatoBuscado = `${day}-${month}-${year}`;
                     
@@ -1991,11 +2002,11 @@
                 }
 
                 if (search) {
-                    const matchFactura = (r.factura || '').toLowerCase().includes(search);
-                    const matchSucursal = (r.origen || '').toLowerCase().includes(search);
-                    const matchCliente = (r.cliente || '').toLowerCase().includes(search);
-                    const matchConductor = (r.conductor || '').toLowerCase().includes(search);
-                    const matchDestino = (r.destino || '').toLowerCase().includes(search);
+                    const matchFactura = String(r.factura || '').toLowerCase().includes(search);
+                    const matchSucursal = String(r.origen || '').toLowerCase().includes(search);
+                    const matchCliente = String(r.cliente || '').toLowerCase().includes(search);
+                    const matchConductor = String(r.conductor || '').toLowerCase().includes(search);
+                    const matchDestino = String(r.destino || '').toLowerCase().includes(search);
 
                     if (!matchFactura && !matchSucursal && !matchCliente && !matchConductor && !matchDestino) {
                         return false;
@@ -2021,7 +2032,7 @@
             filtrados.forEach(r => {
                 let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold">${r.estadoFactura}</span>`;
                 
-                let horaExactaBadge = r.horaEntrega && r.horaEntrega.trim() !== '' 
+                let horaExactaBadge = r.horaEntrega && String(r.horaEntrega).trim() !== '' 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold block whitespace-nowrap"><i class="fa-solid fa-check-double mr-1"></i>${r.horaEntrega}</span>`
                     : `<span class="text-slate-500 text-[10px] italic">No entregado</span>`;
 
