@@ -134,6 +134,10 @@
                     <button onclick="switchAdminTab('diario')" id="adminTabDiarioBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2">
                         <i class="fa-solid fa-calendar-day"></i> Operación del Día (KPIs)
                     </button>
+                    <button onclick="switchAdminTab('pendientes')" id="adminTabPendientesBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-amber-400"></i> Facturas Pendientes / Reasignar
+                        <span id="badgeContadorPendientes" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950">0</span>
+                    </button>
                     <button onclick="switchAdminTab('asignacion')" id="adminTabAsignacionBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
                         <i class="fa-solid fa-plus-circle"></i> Asignación de Envíos
                     </button>
@@ -226,10 +230,14 @@
                     </div>
 
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                             <div>
                                 <h3 class="font-bold text-base">Registros de Hoy (<span id="tableTitleDate"></span>)</h3>
                                 <p class="text-xs text-slate-400">Envíos procesados y despachados en la fecha actual.</p>
+                            </div>
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="diarioSearchInput" oninput="debouncedRenderDiario()" placeholder="Buscar en viajes de hoy..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -253,6 +261,72 @@
                     </div>
                 </div>
 
+                <!-- ================= VISTA: FACTURAS PENDIENTES DE ENTREGA / REASIGNAR ================= -->
+                <div id="adminViewPendientes" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-amber-500/40 rounded-2xl p-6 space-y-5 shadow-xl">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-lg flex items-center gap-2 text-amber-400">
+                                    <i class="fa-solid fa-boxes-packing"></i> Facturas Pendientes de Entrega y Reasignación
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Listado exclusivo de todos los envíos que aún no han sido entregados. Puede reasignar el conductor, camión o flete con un solo clic.</p>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-2">
+                                <select id="filtroTipoPendientes" onchange="renderPendientesTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-medium">
+                                    <option value="todos">Todas las Pendientes</option>
+                                    <option value="hoy">Pendientes de Hoy</option>
+                                    <option value="futuros">Programadas para Siguientes Días</option>
+                                </select>
+                                
+                                <div class="relative">
+                                    <input type="text" id="pendientesSearchInput" oninput="debouncedRenderPendientes()" placeholder="Buscar factura, cliente, chofer..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-64 focus:outline-none focus:border-amber-400">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TARJETAS DE RESUMEN RÁPIDO DE PENDIENTES -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="bg-slate-900/80 border border-amber-500/30 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-amber-400 block">Total Facturas Pendientes</span>
+                                <h4 id="kpiPendientesTotal" class="text-2xl font-bold text-slate-100 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Pendientes para Hoy</span>
+                                <h4 id="kpiPendientesHoy" class="text-2xl font-bold text-emerald-400 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Monto Total Mercancía</span>
+                                <h4 id="kpiPendientesMonto" class="text-2xl font-bold text-accentBlue mt-1">$0.00</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Total Fletes Pendientes</span>
+                                <h4 id="kpiPendientesFlete" class="text-2xl font-bold text-cyan-400 mt-1">$0.00</h4>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE FACTURAS PENDIENTES -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/80 text-slate-300 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl text-accentBlue">Nº Factura / CCF</th>
+                                        <th class="py-3 px-4">Fecha / Prog.</th>
+                                        <th class="py-3 px-4">Cliente & Teléfono</th>
+                                        <th class="py-3 px-4 text-amber-400">Conductor & Unidad Actual</th>
+                                        <th class="py-3 px-4">Destino / GPS</th>
+                                        <th class="py-3 px-4">Monto & Flete</th>
+                                        <th class="py-3 px-4">Estado Factura</th>
+                                        <th class="py-3 px-4 rounded-r-xl text-center">Acción de Reasignar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendientesTableBody" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ================= VISTA 2: ASIGNACIÓN DE ENVÍOS ================= -->
                 <div id="adminViewAsignacion" class="hidden space-y-6">
                     
@@ -267,7 +341,7 @@
                         </div>
 
                         <form id="adminManualForm" onsubmit="asignarFacturaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Origen (Salida)</label>
                                     <select id="manInputOrigen" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
@@ -278,6 +352,7 @@
                                         <option value="FG COMALAPA">FG COMALAPA</option>
                                         <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
                                         <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
+                                        <option value="Local L6">Local L6</option>
                                     </select>
                                 </div>
                                 <div>
@@ -289,33 +364,38 @@
                                     <input type="text" id="manInputCliente" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía ($)</label>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center gap-1">
+                                        <i class="fa-solid fa-phone"></i> Teléfono del Cliente
+                                    </label>
+                                    <input type="text" id="manInputTelefonoCliente" placeholder="Ej. 7890-1234" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía Total ($)</label>
                                     <input type="text" id="manInputMonto" required placeholder="Ej. $1,150.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                             </div>
                             
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                            <!-- CONFIGURACIÓN DE VIAJES Y ESTADO -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-800/40 p-4 rounded-xl border border-slate-700/80">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1.5 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-truck-ramp-box"></i> ¿Cuántos Viajes para esta Factura?
+                                    </label>
+                                    <select id="manInputCantidadViajes" onchange="cambiarCantidadViajesFactura()" class="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-bold">
+                                        <option value="1">1 Viaje (Carga normal en 1 camión)</option>
+                                        <option value="2">2 Viajes (Factura grande - 2 camiones/fletes)</option>
+                                        <option value="3">3 Viajes (Factura grande - 3 camiones/fletes)</option>
+                                        <option value="4">4 Viajes (Factura grande - 4 camiones/fletes)</option>
+                                        <option value="5">5 Viajes (Factura grande - 5 camiones/fletes)</option>
+                                    </select>
+                                    <p class="text-[10px] text-slate-400 mt-1">Si la carga no cabe en un viaje, configure los fletes independientes.</p>
+                                </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 text-rose-400">Estado de Factura</label>
                                     <select id="manInputEstadoFactura" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                         <option value="Factura cancelada">Factura cancelada</option>
                                         <option value="Factura no cancelada (Cobrar al cliente)">Factura no cancelada (Cobrar al cliente)</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cobro Transporte ($)</label>
-                                    <input type="text" id="manInputTransporte" required placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción Adicional de Entrega</label>
-                                    <input type="text" id="manInputDescription" required placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
-                                </div>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-slate-800/30 p-4 rounded-xl border border-slate-700">
-                                <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 text-amber-400"><i class="fa-solid fa-calendar-days"></i> Programar para</label>
-                                    <input type="date" id="manInputFechaProgramada" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Horario Preferido</label>
@@ -327,30 +407,68 @@
                                         <option value="Noche">Noche</option>
                                     </select>
                                 </div>
+                            </div>
+                            
+                            <!-- DESTINO Y PROGRAMACIÓN -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-800/30 p-4 rounded-xl border border-slate-700">
                                 <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino Waze / Zona</label>
-                                    <input type="text" id="manInputDestino" list="listaDestinosWaze" required placeholder="Ej. Santa Tecla, Parque Central" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 text-amber-400"><i class="fa-solid fa-calendar-days"></i> Programar para</label>
+                                    <input type="date" id="manInputFechaProgramada" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"><i class="fa-solid fa-location-crosshairs text-emerald-400"></i> Pegar Ubicación (Link)</label>
-                                    <input type="url" id="manInputLinkUbicacion" placeholder="Enlace de Maps o Waze" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+                                        <span><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino / Zona</span>
+                                        <span class="text-[10px] text-slate-500 font-normal">(Opcional si pega link)</span>
+                                    </label>
+                                    <input type="text" id="manInputDestino" list="listaDestinosWaze" placeholder="Ej. Santa Tecla, Centro..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center justify-between">
+                                        <span><i class="fa-solid fa-map-location-dot"></i> Pegar Ubicación (Link)</span>
+                                        <span class="text-[10px] text-slate-400 font-normal">Detecta Maps o Waze</span>
+                                    </label>
+                                    <input type="text" id="manInputLinkUbicacion" placeholder="Pegue enlace de Google Maps o Waze aquí" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
-                                    <select id="manSelectConductor" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                            <!-- MODO 1: VIAJE ÚNICO (NORMAL) -->
+                            <div id="contenedorViajeSimple" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800/20 p-4 rounded-xl border border-slate-700/60">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cobro Transporte ($)</label>
+                                        <input type="text" id="manInputTransporte" placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos / Carga</label>
+                                        <input type="text" id="manInputDescription" placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
-                                    <select id="manSelectCamion" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
+                                        <select id="manSelectConductor" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
+                                        <select id="manSelectCamion" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <!-- MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS VIAJES/FLETES) -->
+                            <div id="contenedorViajesMultiples" class="hidden space-y-4">
+                                <div class="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl flex items-center justify-between">
+                                    <span class="text-xs text-amber-300 font-medium">
+                                        <i class="fa-solid fa-circle-info mr-1"></i> Asigne el conductor, camión y cobro de flete individual para cada viaje de esta factura.
+                                    </span>
+                                </div>
+                                <div id="cardsViajesMultiples" class="space-y-3"></div>
                             </div>
                             
                             <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
-                                <i class="fa-solid fa-keyboard"></i>
-                                <span>Guardar Envío de Cliente y Notificar a Whatsapp</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Guardar Envío de Cliente y Procesar Asignación</span>
                             </button>
                         </form>
                     </div>
@@ -385,6 +503,7 @@
                                         <option value="FG COMALAPA">FG COMALAPA</option>
                                         <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
                                         <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
+                                        <option value="Local L6">Local L6</option>
                                     </select>
                                 </div>
                                 <div>
@@ -426,6 +545,7 @@
                         <option value="FG COMALAPA">
                         <option value="CONSTRUGAR AGUILA">
                         <option value="CONSTRUGAR AUTOPISTA">
+                        <option value="Local L6">
                     </datalist>
 
                     <datalist id="listaDestinosWaze">
@@ -462,7 +582,8 @@
                                         <th class="py-3 px-4">Cliente</th>
                                         <th class="py-3 px-4">Monto</th>
                                         <th class="py-3 px-4">Destino Waze</th>
-                                        <th class="py-3 px-4 rounded-r-xl">Estado</th>
+                                        <th class="py-3 px-4">Estado</th>
+                                        <th class="py-3 px-4 rounded-r-xl text-right">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody id="adminTableBodyProgramados" class="divide-y divide-slate-800/60"></tbody>
@@ -592,7 +713,7 @@
                                 <input type="date" id="historicoDateInput" onchange="renderHistoricoTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
 
                                 <div class="relative">
-                                    <input type="text" id="historicoSearchInput" oninput="renderHistoricoTable()" placeholder="Buscar nº factura/CCF, cliente..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-64 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="historicoSearchInput" oninput="debouncedRenderHistorico()" placeholder="Buscar nº factura/CCF, cliente..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-64 focus:outline-none focus:border-accentBlue">
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
                                 </div>
 
@@ -759,6 +880,10 @@
                                         <span id="driverInfoClient" class="font-bold text-slate-200">N/A</span>
                                     </div>
                                     <div class="flex justify-between border-b border-slate-800 pb-2">
+                                        <span class="text-slate-400">Teléfono Cliente:</span>
+                                        <span id="driverInfoPhone" class="font-bold text-slate-200">N/A</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-slate-800 pb-2">
                                         <span class="text-slate-400">Monto:</span>
                                         <span id="driverInfoAmount" class="font-bold text-emerald-400">$0.00</span>
                                     </div>
@@ -768,10 +893,22 @@
                                     </div>
                                 </div>
 
-                                <button onclick="abrirWazeDriver()" class="w-full py-3 bg-[#33ccff]/20 hover:bg-[#33ccff]/30 text-[#33ccff] border border-[#33ccff]/40 font-semibold rounded-xl text-xs shadow transition-all flex items-center justify-center space-x-2">
-                                    <i class="fa-brands fa-waze text-base"></i>
-                                    <span>Abrir Waze Live Map (PC o Móvil)</span>
-                                </button>
+                                <div class="space-y-2">
+                                    <button id="driverBtnNavegacionPrincipal" onclick="abrirNavegacionDriver('auto')" class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-diamond-turn-right text-base"></i>
+                                        <span id="driverBtnNavegacionTexto">Iniciar Ruta de Navegación GPS</span>
+                                    </button>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button onclick="abrirNavegacionDriver('maps')" class="py-2 px-2.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/40 font-semibold rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition-all">
+                                            <i class="fa-solid fa-map-location-dot"></i>
+                                            <span>Google Maps</span>
+                                        </button>
+                                        <button onclick="abrirNavegacionDriver('waze')" class="py-2 px-2.5 bg-[#33ccff]/20 hover:bg-[#33ccff]/30 text-[#33ccff] border border-[#33ccff]/40 font-semibold rounded-xl text-[11px] flex items-center justify-center space-x-1.5 transition-all">
+                                            <i class="fa-brands fa-waze"></i>
+                                            <span>Waze</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <button id="btnCompletarViaje" onclick="confirmarEntregaConductor()" class="w-full mt-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
@@ -861,6 +998,81 @@
             </div>
         </div>
 
+        <!-- ================= MODAL DE REASIGNACIÓN DE CONDUCTOR / CAMIÓN ================= -->
+        <div id="modalReasignarEnvio" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-darkCard border border-amber-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h3 class="font-bold text-sm text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> Reasignar Conductor y Camión
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Transfiera el viaje a otro chofer o cambie la unidad asignada.</p>
+                    </div>
+                    <button onclick="cerrarModalReasignar()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                
+                <!-- DETALLES DE LA FACTURA SELECCIONADA -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                    <input type="hidden" id="reassign-factura-id">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Factura / CCF:</span>
+                        <span id="reassign-display-factura" class="font-mono font-bold text-emerald-400 text-sm"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Cliente:</span>
+                        <span id="reassign-display-cliente" class="font-medium text-slate-200"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Destino:</span>
+                        <span id="reassign-display-destino" class="font-medium text-slate-300"></span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-800/80 pt-2">
+                        <span class="text-slate-400">Asignación Actual:</span>
+                        <span id="reassign-display-actual" class="font-semibold text-rose-400"></span>
+                    </div>
+                </div>
+
+                <!-- FORMULARIO DE REASIGNACIÓN -->
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-check text-emerald-400"></i> Nuevo Conductor
+                        </label>
+                        <select id="reassignSelectConductor" onchange="onReassignConductorChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-amber-400 font-medium"></select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-truck text-accentBlue"></i> Camión / Unidad
+                        </label>
+                        <select id="reassignSelectCamion" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-amber-400 font-medium"></select>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-dollar-sign text-emerald-400"></i> Cobro Flete / Transporte ($)
+                        </label>
+                        <input type="text" id="reassignInputTransporte" placeholder="Ej. $15.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-amber-400">
+                    </div>
+
+                    <div class="pt-1">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-300 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                            <input type="checkbox" id="reassignCheckWhatsApp" checked class="w-4 h-4 accent-emerald-500 rounded">
+                            <span class="text-[11px]"><i class="fab fa-whatsapp text-green-400 mr-1"></i> Abrir WhatsApp para notificar de inmediato al nuevo conductor</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2 border-t border-slate-800">
+                    <button onclick="cerrarModalReasignar()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium text-xs text-slate-300">Cancelar</button>
+                    <button id="btnConfirmarReasignar" onclick="guardarReasignacionConductor()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Confirmar Reasignación</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ================= CONFIG MODAL ================= -->
         <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-darkCard border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
@@ -925,6 +1137,144 @@
             return { lat: 13.6929, lng: -89.2182 };
         }
 
+        // ==========================================
+        // DETECCIÓN Y NAVEGACIÓN INTELIGENTE (MAPS VS WAZE)
+        // ==========================================
+        function detectarTipoUbicacion(urlOTexto) {
+            if (!urlOTexto) return { tipo: 'texto', url: '', nombre: 'Dirección' };
+            const str = String(urlOTexto).trim();
+            
+            // Detectar enlaces de Google Maps
+            if (/maps\.app\.goo\.gl|goo\.gl\/maps|google\.[a-z.]+\/maps|maps\.google\./i.test(str)) {
+                const fullUrl = str.startsWith('http://') || str.startsWith('https://') ? str : `https://${str}`;
+                return { tipo: 'maps', url: fullUrl, nombre: 'Google Maps' };
+            }
+            
+            // Detectar enlaces de Waze
+            if (/waze\.com/i.test(str)) {
+                const fullUrl = str.startsWith('http://') || str.startsWith('https://') ? str : `https://${str}`;
+                return { tipo: 'waze', url: fullUrl, nombre: 'Waze' };
+            }
+            
+            // Otras URLs
+            if (/^https?:\/\//i.test(str)) {
+                return { tipo: 'link', url: str, nombre: 'Enlace Web' };
+            }
+            
+            return { tipo: 'texto', url: '', nombre: 'Dirección / Zona' };
+        }
+
+        function obtenerUrlNavegacion(viaje, appPreferida = 'auto') {
+            if (!viaje) return null;
+            
+            const linkCand = viaje.linkUbicacion || '';
+            const destCand = viaje.destino || '';
+            
+            const infoLink = detectarTipoUbicacion(linkCand);
+            const infoDest = detectarTipoUbicacion(destCand);
+            
+            // 1. Si existe un enlace de Google Maps
+            if (infoLink.tipo === 'maps' || infoDest.tipo === 'maps') {
+                const urlMaps = infoLink.tipo === 'maps' ? infoLink.url : infoDest.url;
+                if (appPreferida === 'waze') {
+                    const coords = obtenerCoordenadas(destCand);
+                    return {
+                        app: 'waze',
+                        url: `https://www.waze.com/ul?ll=${coords.lat},${coords.lng}&navigate=yes`
+                    };
+                }
+                return {
+                    app: 'maps',
+                    url: urlMaps
+                };
+            }
+            
+            // 2. Si existe un enlace de Waze
+            if (infoLink.tipo === 'waze' || infoDest.tipo === 'waze') {
+                const urlWaze = infoLink.tipo === 'waze' ? infoLink.url : infoDest.url;
+                if (appPreferida === 'maps') {
+                    const coords = obtenerCoordenadas(destCand);
+                    return {
+                        app: 'maps',
+                        url: `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`
+                    };
+                }
+                return {
+                    app: 'waze',
+                    url: urlWaze
+                };
+            }
+            
+            // 3. Si es nombre de texto o zona (sin enlace URL)
+            const coords = obtenerCoordenadas(destCand);
+            if (appPreferida === 'maps') {
+                return {
+                    app: 'maps',
+                    url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destCand || 'San Salvador')}`
+                };
+            } else {
+                return {
+                    app: 'waze',
+                    url: `https://www.waze.com/ul?q=${encodeURIComponent(destCand || 'San Salvador')}&navigate=yes&ll=${coords.lat},${coords.lng}`
+                };
+            }
+        }
+
+        function renderDestinoHTML(r) {
+            const rawLink = r.linkUbicacion || '';
+            const rawDest = r.destino || 'Sin Asignar';
+            const infoLink = detectarTipoUbicacion(rawLink);
+            const infoDest = detectarTipoUbicacion(rawDest);
+
+            let badgeEnlace = '';
+            if (infoLink.tipo === 'maps' || infoDest.tipo === 'maps') {
+                const u = infoLink.tipo === 'maps' ? infoLink.url : infoDest.url;
+                badgeEnlace = `<div class="mt-1"><a href="${u}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-colors shadow-sm"><i class="fa-solid fa-map-location-dot"></i> Google Maps</a></div>`;
+            } else if (infoLink.tipo === 'waze' || infoDest.tipo === 'waze') {
+                const u = infoLink.tipo === 'waze' ? infoLink.url : infoDest.url;
+                badgeEnlace = `<div class="mt-1"><a href="${u}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[#33ccff]/20 text-[#33ccff] border border-[#33ccff]/30 hover:bg-[#33ccff]/30 transition-colors shadow-sm"><i class="fa-brands fa-waze"></i> Waze</a></div>`;
+            } else if (rawDest && rawDest !== 'Sin Asignar') {
+                const coords = obtenerCoordenadas(rawDest);
+                const wUrl = `https://www.waze.com/ul?q=${encodeURIComponent(rawDest)}&navigate=yes&ll=${coords.lat},${coords.lng}`;
+                badgeEnlace = `<div class="mt-1"><a href="${wUrl}" target="_blank" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium text-slate-400 hover:text-[#33ccff]"><i class="fa-brands fa-waze"></i> Ver Waze</a></div>`;
+            }
+
+            let displayTexto = rawDest;
+            if (infoDest.tipo === 'maps') displayTexto = 'Ubicación Google Maps';
+            else if (infoDest.tipo === 'waze') displayTexto = 'Ubicación Waze';
+            else if (displayTexto.length > 32) displayTexto = displayTexto.substring(0, 32) + '...';
+
+            return `
+                <div>
+                    <span class="text-slate-200 font-medium"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i>${displayTexto}</span>
+                    ${badgeEnlace}
+                </div>
+            `;
+        }
+
+        function abrirNavegacionDriver(preferencia = 'auto') {
+            const hoyISO = new Date().toISOString().split('T')[0];
+            let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente' && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+            if (!viajeActivo) {
+                viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
+            }
+            if (!viajeActivo) {
+                showToast('Aviso', 'No tiene ningún viaje activo con entrega pendiente.', 'info');
+                return;
+            }
+
+            const nav = obtenerUrlNavegacion(viajeActivo, preferencia);
+            if (nav && nav.url) {
+                window.open(nav.url, '_blank');
+            } else {
+                showToast('Aviso', 'No hay enlace ni destino asignado para este viaje.', 'info');
+            }
+        }
+
+        function abrirWazeDriver() {
+            abrirNavegacionDriver('auto');
+        }
+
         function obtenerFechaHoraActual() {
             const ahora = new Date();
             const opcionesFecha = { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' };
@@ -965,8 +1315,43 @@
             return f;
         }
 
+        function limpiarTelefonoWhatsApp(tel) {
+            if (!tel) return '';
+            let limpio = String(tel).trim().replace(/[^\d]/g, '');
+            if (limpio.startsWith('00503')) {
+                limpio = limpio.substring(2);
+            }
+            if (limpio.startsWith('503503')) {
+                limpio = limpio.substring(3);
+            }
+            // Si tiene 8 dígitos (El Salvador sin código de área)
+            if (limpio.length === 8) {
+                limpio = '503' + limpio;
+            } else if (limpio.length === 9 && limpio.startsWith('0')) {
+                limpio = '503' + limpio.substring(1);
+            }
+            return limpio;
+        }
+
+        function buscarTelefonoConductor(driverKey, conductorNombre) {
+            let d = driversData[driverKey];
+            if (!d && conductorNombre) {
+                const nom = String(conductorNombre).toLowerCase().trim();
+                d = Object.values(driversData).find(x => x.name && x.name.toLowerCase().trim() === nom);
+            }
+            if (!d && driverKey) {
+                const keyBusqueda = String(driverKey).toLowerCase().trim();
+                d = Object.values(driversData).find(x => x.key && (x.key.includes(keyBusqueda) || keyBusqueda.includes(x.key)));
+            }
+            if (!d && conductorNombre) {
+                const partes = String(conductorNombre).toLowerCase().trim().split(/\s+/).filter(p => p.length > 2);
+                d = Object.values(driversData).find(x => x.name && partes.some(p => x.name.toLowerCase().includes(p)));
+            }
+            return d ? limpiarTelefonoWhatsApp(d.phone) : '';
+        }
+
         const sucursalesOficiales = [
-            'FG MATRIZ', 'FG HIERROGAR', 'FG VIÑEDO', 'FG COMALAPA', 'CONSTRUGAR AGUILA', 'CONSTRUGAR AUTOPISTA'
+            'FG MATRIZ', 'FG HIERROGAR', 'FG VIÑEDO', 'FG COMALAPA', 'CONSTRUGAR AGUILA', 'CONSTRUGAR AUTOPISTA', 'Local L6'
         ];
 
         let camionesDisponibles = [];
@@ -1052,7 +1437,7 @@
                         
                         data.conductores.forEach(c => {
                             nuevosDrivers[c.key] = {
-                                key: c.key, name: c.name, unit: c.unit, phone: c.phone, pass: c.pass, active: true,
+                                key: c.key, name: c.name, unit: c.unit, phone: limpiarTelefonoWhatsApp(c.phone), pass: c.pass, active: true,
                                 lat: 13.6929, lng: -89.2182, origen: 'FG MATRIZ', destination: 'Sin Asignar',
                                 invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0
                             };
@@ -1090,6 +1475,7 @@
                                 camion: item.camion || '',
                                 factura: item.factura || '',
                                 cliente: item.cliente || '',
+                                telefonoCliente: item.telefonoCliente || '',
                                 monto: parseFloat(item.monto) || 0,
                                 transporte: parseFloat(item.transporte) || 0,
                                 descripcion: item.descripcion || '',
@@ -1102,7 +1488,8 @@
                                 cantidadMercaderia: item.cantidadMercaderia || '',
                                 horarioEntrega: item.horarioEntrega || 'Cualquier hora',
                                 fechaProgramada: fProg,
-                                horaEntrega: item.horaEntrega || ''
+                                horaEntrega: item.horaEntrega || '',
+                                linkUbicacion: item.linkUbicacion || (item.destino && /^https?:\/\//i.test(item.destino) ? item.destino : '')
                             };
                         });
                     }
@@ -1253,6 +1640,15 @@
                 
                 document.getElementById('driverInfoInvoice').innerText = viajeActivo.factura;
                 document.getElementById('driverInfoClient').innerText = viajeActivo.cliente;
+                const phoneElem = document.getElementById('driverInfoPhone');
+                if (phoneElem) {
+                    if (viajeActivo.telefonoCliente && String(viajeActivo.telefonoCliente).trim() !== '') {
+                        const cleanTel = limpiarTelefonoWhatsApp(viajeActivo.telefonoCliente);
+                        phoneElem.innerHTML = `<a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1"><i class="fab fa-whatsapp"></i> ${viajeActivo.telefonoCliente}</a>`;
+                    } else {
+                        phoneElem.innerHTML = `<span class="text-slate-500 italic text-xs">No registrado</span>`;
+                    }
+                }
                 document.getElementById('driverInfoAmount').innerText = `$${viajeActivo.monto.toFixed(2)}`;
                 document.getElementById('driverInfoTransport').innerText = `$${viajeActivo.transporte.toFixed(2)}`;
 
@@ -1269,13 +1665,15 @@
                 document.getElementById('driverInfoHorario').innerText = 'N/A';
                 document.getElementById('driverInfoInvoice').innerText = 'N/A';
                 document.getElementById('driverInfoClient').innerText = 'N/A';
+                const phoneElem = document.getElementById('driverInfoPhone');
+                if (phoneElem) phoneElem.innerText = 'N/A';
                 document.getElementById('driverInfoAmount').innerText = '$0.00';
                 document.getElementById('driverInfoTransport').innerText = '$0.00';
             }
 
             const tbodyHoy = document.getElementById('driverTripsTableBody');
             if (tbodyHoy) {
-                tbodyHoy.innerHTML = '';
+                let htmlHoy = '';
                 misViajesHoy.forEach(r => {
                     const badge = r.estado === 'Entregado'
                         ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`
@@ -1283,7 +1681,7 @@
                     
                     let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
 
-                    tbodyHoy.innerHTML += `
+                    htmlHoy += `
                         <tr class="hover:bg-slate-900/40">
                             <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
                             <td class="py-2.5 px-3">${estadoFactText}</td>
@@ -1294,11 +1692,11 @@
                         </tr>
                     `;
                 });
+                tbodyHoy.innerHTML = htmlHoy;
             }
 
             const tbodyFuturos = document.getElementById('driverFutureTripsTableBody');
             if (tbodyFuturos) {
-                tbodyFuturos.innerHTML = '';
                 if(misViajesFuturos.length === 0) {
                     tbodyFuturos.innerHTML = `<tr><td colspan="5" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
                 } else {
@@ -1306,10 +1704,11 @@
                     if (futurosPendientes.length === 0) {
                          tbodyFuturos.innerHTML = `<tr><td colspan="5" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
                     } else {
+                        let htmlFuturos = '';
                         futurosPendientes.forEach(r => {
                             let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
                             
-                            tbodyFuturos.innerHTML += `
+                            htmlFuturos += `
                                 <tr class="hover:bg-slate-900/40 border-l-4 border-amber-500/50">
                                     <td class="py-2.5 px-3 font-bold text-amber-400">${formatearFechaDisplay(r.fechaProgramada)}</td>
                                     <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
@@ -1319,6 +1718,7 @@
                                 </tr>
                             `;
                         });
+                        tbodyFuturos.innerHTML = htmlFuturos;
                     }
                 }
             }
@@ -1326,6 +1726,7 @@
 
         function switchAdminTab(tab) {
             const btnDiario = document.getElementById('adminTabDiarioBtn');
+            const btnPendientes = document.getElementById('adminTabPendientesBtn');
             const btnAsignacion = document.getElementById('adminTabAsignacionBtn');
             const btnProgramados = document.getElementById('adminTabProgramadosBtn');
             const btnTraslados = document.getElementById('adminTabTrasladosBtn');
@@ -1334,6 +1735,7 @@
             const btnHistorico = document.getElementById('adminTabHistoricoBtn');
             
             const viewDiario = document.getElementById('adminViewDiario');
+            const viewPendientes = document.getElementById('adminViewPendientes');
             const viewAsignacion = document.getElementById('adminViewAsignacion');
             const viewProgramados = document.getElementById('adminViewProgramados');
             const viewTraslados = document.getElementById('adminViewTraslados');
@@ -1342,49 +1744,55 @@
             const viewHistorico = document.getElementById('adminViewHistorico');
 
             const resetClass = "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2";
-            btnDiario.className = resetClass;
-            btnAsignacion.className = resetClass;
-            btnProgramados.className = resetClass;
-            btnTraslados.className = resetClass;
-            btnMonitoreo.className = resetClass;
-            btnCond.className = resetClass;
-            btnHistorico.className = resetClass;
+            if (btnDiario) btnDiario.className = resetClass;
+            if (btnPendientes) btnPendientes.className = resetClass;
+            if (btnAsignacion) btnAsignacion.className = resetClass;
+            if (btnProgramados) btnProgramados.className = resetClass;
+            if (btnTraslados) btnTraslados.className = resetClass;
+            if (btnMonitoreo) btnMonitoreo.className = resetClass;
+            if (btnCond) btnCond.className = resetClass;
+            if (btnHistorico) btnHistorico.className = resetClass;
 
-            viewDiario.classList.add('hidden');
-            viewAsignacion.classList.add('hidden');
-            viewProgramados.classList.add('hidden');
-            viewTraslados.classList.add('hidden');
-            viewMonitoreo.classList.add('hidden');
-            viewCond.classList.add('hidden');
-            viewHistorico.classList.add('hidden');
+            if (viewDiario) viewDiario.classList.add('hidden');
+            if (viewPendientes) viewPendientes.classList.add('hidden');
+            if (viewAsignacion) viewAsignacion.classList.add('hidden');
+            if (viewProgramados) viewProgramados.classList.add('hidden');
+            if (viewTraslados) viewTraslados.classList.add('hidden');
+            if (viewMonitoreo) viewMonitoreo.classList.add('hidden');
+            if (viewCond) viewCond.classList.add('hidden');
+            if (viewHistorico) viewHistorico.classList.add('hidden');
 
             const activeClass = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
 
             if (tab === 'diario') {
-                btnDiario.className = activeClass;
-                viewDiario.classList.remove('hidden');
+                if (btnDiario) btnDiario.className = activeClass;
+                if (viewDiario) viewDiario.classList.remove('hidden');
+            } else if (tab === 'pendientes') {
+                if (btnPendientes) btnPendientes.className = "px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-lg transition-all flex items-center gap-2";
+                if (viewPendientes) viewPendientes.classList.remove('hidden');
+                renderPendientesTable();
             } else if (tab === 'asignacion') {
-                btnAsignacion.className = activeClass;
-                viewAsignacion.classList.remove('hidden');
+                if (btnAsignacion) btnAsignacion.className = activeClass;
+                if (viewAsignacion) viewAsignacion.classList.remove('hidden');
             } else if (tab === 'programados') {
-                btnProgramados.className = activeClass;
-                viewProgramados.classList.remove('hidden');
+                if (btnProgramados) btnProgramados.className = activeClass;
+                if (viewProgramados) viewProgramados.classList.remove('hidden');
                 renderAdminTableProgramados();
             } else if (tab === 'traslados') {
-                btnTraslados.className = activeClass;
-                viewTraslados.classList.remove('hidden');
+                if (btnTraslados) btnTraslados.className = activeClass;
+                if (viewTraslados) viewTraslados.classList.remove('hidden');
                 renderTrasladosTable();
             } else if (tab === 'monitoreo') {
-                btnMonitoreo.className = activeClass;
-                viewMonitoreo.classList.remove('hidden');
+                if (btnMonitoreo) btnMonitoreo.className = activeClass;
+                if (viewMonitoreo) viewMonitoreo.classList.remove('hidden');
                 renderMonitoreoConductores();
             } else if (tab === 'conductores') {
-                btnCond.className = activeClass;
-                viewCond.classList.remove('hidden');
+                if (btnCond) btnCond.className = activeClass;
+                if (viewCond) viewCond.classList.remove('hidden');
                 renderConductoresGestionTable();
             } else {
-                btnHistorico.className = activeClass;
-                viewHistorico.classList.remove('hidden');
+                if (btnHistorico) btnHistorico.className = activeClass;
+                if (viewHistorico) viewHistorico.classList.remove('hidden');
                 renderHistoricoTable();
             }
         }
@@ -1396,41 +1804,127 @@
             const logSelectCam = document.getElementById('logSelectCamion');
 
             // GUARDAR SELECCIÓN ACTUAL
-            const valManCond = selectManCond.value;
-            const valManCam = selectManCam.value;
-            const valLogCond = logSelectCond.value;
-            const valLogCam = logSelectCam.value;
+            const valManCond = selectManCond ? selectManCond.value : '';
+            const valManCam = selectManCam ? selectManCam.value : '';
+            const valLogCond = logSelectCond ? logSelectCond.value : '';
+            const valLogCam = logSelectCam ? logSelectCam.value : '';
 
-            selectManCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
-            selectManCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
-            logSelectCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
-            logSelectCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
+            if (selectManCond) selectManCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
+            if (selectManCam) selectManCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
+            if (logSelectCond) logSelectCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
+            if (logSelectCam) logSelectCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
 
             for (const [key, d] of Object.entries(driversData)) {
                 let opt = `<option value="${key}">${d.name}</option>`;
-                selectManCond.innerHTML += opt;
-                logSelectCond.innerHTML += opt;
+                if (selectManCond) selectManCond.innerHTML += opt;
+                if (logSelectCond) logSelectCond.innerHTML += opt;
             }
 
             camionesDisponibles.forEach(c => {
                 let optCam = `<option value="${c.name}">${c.name}</option>`;
-                selectManCam.innerHTML += optCam;
-                logSelectCam.innerHTML += optCam;
+                if (selectManCam) selectManCam.innerHTML += optCam;
+                if (logSelectCam) logSelectCam.innerHTML += optCam;
             });
 
             // RESTAURAR SELECCIÓN PREVIA SI EXISTÍA
-            if (valManCond) selectManCond.value = valManCond;
-            if (valManCam) selectManCam.value = valManCam;
-            if (valLogCond) logSelectCond.value = valLogCond;
-            if (valLogCam) logSelectCam.value = valLogCam;
+            if (valManCond && selectManCond) selectManCond.value = valManCond;
+            if (valManCam && selectManCam) selectManCam.value = valManCam;
+            if (valLogCond && logSelectCond) logSelectCond.value = valLogCond;
+            if (valLogCam && logSelectCam) logSelectCam.value = valLogCam;
+
+            // También poblar selects de los viajes múltiples si están activos
+            poblarSelectsMultiViajes();
+        }
+
+        function cambiarCantidadViajesFactura() {
+            const cantInput = document.getElementById('manInputCantidadViajes');
+            const cant = parseInt(cantInput ? cantInput.value : 1) || 1;
+            const containerSimple = document.getElementById('contenedorViajeSimple');
+            const containerMulti = document.getElementById('contenedorViajesMultiples');
+            const cardsContainer = document.getElementById('cardsViajesMultiples');
+
+            if (!containerSimple || !containerMulti || !cardsContainer) return;
+
+            if (cant === 1) {
+                containerSimple.classList.remove('hidden');
+                containerMulti.classList.add('hidden');
+            } else {
+                containerSimple.classList.add('hidden');
+                containerMulti.classList.remove('hidden');
+
+                let html = '';
+                for (let i = 1; i <= cant; i++) {
+                    html += `
+                        <div class="p-4 bg-slate-800/60 rounded-xl border border-amber-500/30 space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+                                <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-truck-ramp-box"></i> Viaje ${i} de ${cant}
+                                </span>
+                                <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">Se guardará como: (Viaje ${i}/${cant})</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Conductor Asignado</label>
+                                    <select id="multiConductor_${i}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Camión / Unidad</label>
+                                    <select id="multiCamion_${i}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cobro Flete / Transporte ($)</label>
+                                    <input type="text" id="multiTransporte_${i}" required placeholder="Ej. $10.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalle Carga Viaje ${i}</label>
+                                    <input type="text" id="multiDesc_${i}" required placeholder="Ej. Carga parte ${i}: 100 bolsas cemento..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                cardsContainer.innerHTML = html;
+                poblarSelectsMultiViajes();
+            }
+        }
+
+        function poblarSelectsMultiViajes() {
+            const cantInput = document.getElementById('manInputCantidadViajes');
+            const cant = parseInt(cantInput ? cantInput.value : 1) || 1;
+            if (cant <= 1) return;
+
+            for (let i = 1; i <= cant; i++) {
+                const selCond = document.getElementById(`multiConductor_${i}`);
+                const selCam = document.getElementById(`multiCamion_${i}`);
+                if (!selCond || !selCam) continue;
+
+                const valCond = selCond.value;
+                const valCam = selCam.value;
+
+                let optCond = '<option value="" disabled selected>Seleccione conductor...</option>';
+                for (const [key, d] of Object.entries(driversData)) {
+                    optCond += `<option value="${key}">${d.name}</option>`;
+                }
+                selCond.innerHTML = optCond;
+
+                let optCam = '<option value="" disabled selected>Seleccione camión...</option>';
+                camionesDisponibles.forEach(c => {
+                    optCam += `<option value="${c.name}">${c.name}</option>`;
+                });
+                selCam.innerHTML = optCam;
+
+                if (valCond) selCond.value = valCond;
+                if (valCam) selCam.value = valCam;
+            }
         }
 
         function agregarNuevoConductor(e) {
             e.preventDefault();
-            const name = document.getElementById('newDriverName').value;
-            const unit = document.getElementById('newDriverUnit').value;
-            const phone = document.getElementById('newDriverPhone').value;
-            const pass = document.getElementById('newDriverPass').value;
+            const name = document.getElementById('newDriverName').value.trim();
+            const unit = document.getElementById('newDriverUnit').value.trim();
+            const phoneRaw = document.getElementById('newDriverPhone').value.trim();
+            const phone = limpiarTelefonoWhatsApp(phoneRaw);
+            const pass = document.getElementById('newDriverPass').value.trim();
             const key = name.toLowerCase().replace(/\s+/g, '_');
 
             const nuevoDriver = {
@@ -1463,9 +1957,9 @@
         function renderConductoresGestionTable() {
             const tbody = document.getElementById('tablaConductoresGestion');
             if(!tbody) return;
-            tbody.innerHTML = '';
+            let html = '';
             for (const [key, d] of Object.entries(driversData)) {
-                tbody.innerHTML += `
+                html += `
                     <tr class="hover:bg-slate-900/40 transition-colors">
                         <td class="py-3 px-4 font-bold text-slate-200">${d.name}</td>
                         <td class="py-3 px-4 text-accentBlue font-medium">${d.unit}</td>
@@ -1478,6 +1972,7 @@
                     </tr>
                 `;
             }
+            tbody.innerHTML = html;
         }
 
         function abrirModalEditarConductor(key) {
@@ -1500,11 +1995,11 @@
             const d = driversData[key];
             if (!d) return;
 
-            d.name = document.getElementById('edit-nombreEmpleado').value;
-            d.unit = document.getElementById('edit-nombreCamion').value;
-            d.phone = document.getElementById('edit-telefonoWhatsApp').value;
-            const newPass = document.getElementById('edit-contrasenaAcceso').value;
-            if (newPass.trim() !== '') {
+            d.name = document.getElementById('edit-nombreEmpleado').value.trim();
+            d.unit = document.getElementById('edit-nombreCamion').value.trim();
+            d.phone = limpiarTelefonoWhatsApp(document.getElementById('edit-telefonoWhatsApp').value);
+            const newPass = document.getElementById('edit-contrasenaAcceso').value.trim();
+            if (newPass !== '') {
                 d.pass = newPass;
             }
 
@@ -1544,8 +2039,22 @@
             }
         }
 
-        function enviarWhatsApp(phone, factura, origen, destino, descripcion, camion, linkUbicacion = '') {
-            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
+        function enviarWhatsApp(phone, factura, origen, destino, descripcion, camion, linkUbicacion = '', cliente = '', telefonoCliente = '') {
+            const telLimpio = limpiarTelefonoWhatsApp(phone);
+            if (!telLimpio || telLimpio.length < 8) {
+                showToast('Teléfono Inválido', 'El conductor no tiene un número de WhatsApp válido asignado.', 'error');
+                alert(`No se pudo abrir WhatsApp: El número de teléfono registrado ("${phone || 'Vacío'}") no es válido.\n\nPuede actualizar el número en la pestaña "Gestión Personal" con 8 dígitos salvadoreños (ej. 78901234) o formato internacional (+503 7890 1234).`);
+                return;
+            }
+
+            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
+            if (cliente && cliente !== 'N/A') {
+                msg += `\n• *Cliente:* ${cliente}`;
+            }
+            if (telefonoCliente && telefonoCliente.trim() !== '') {
+                msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+            }
+            msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
             
             if (linkUbicacion && linkUbicacion.trim() !== '') {
                 msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
@@ -1553,15 +2062,176 @@
 
             msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
             
-            const urlConductor = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+            const urlConductor = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
             window.open(urlConductor, '_blank');
         }
 
         function enviarWhatsAppAction(facturaId) {
-            const r = registrosGlobales.find(x => String(x.factura) === String(facturaId));
+            const decFactura = typeof facturaId === 'string' ? decodeURIComponent(facturaId) : facturaId;
+            const r = registrosGlobales.find(x => String(x.factura) === String(decFactura));
             if(!r) return;
-            const driverPhone = driversData[r.driverKey]?.phone || '50370001111';
-            enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, '');
+            const driverPhone = buscarTelefonoConductor(r.driverKey, r.conductor);
+            enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, '', r.cliente, r.telefonoCliente);
+        }
+
+        // ==========================================
+        // LÓGICA DE REASIGNACIÓN DE CONDUCTOR Y CAMIÓN
+        // ==========================================
+        function abrirModalReasignar(encodedFactura) {
+            const facturaId = typeof encodedFactura === 'string' ? decodeURIComponent(encodedFactura) : encodedFactura;
+            const viaje = registrosGlobales.find(r => String(r.factura) === String(facturaId));
+            if (!viaje) {
+                showToast('Error', 'No se encontró el envío seleccionado.', 'error');
+                return;
+            }
+
+            document.getElementById('reassign-factura-id').value = viaje.factura;
+            document.getElementById('reassign-display-factura').innerText = viaje.factura;
+            document.getElementById('reassign-display-cliente').innerText = viaje.cliente || 'N/A';
+            document.getElementById('reassign-display-destino').innerText = viaje.destino || 'Sin Asignar';
+            document.getElementById('reassign-display-actual').innerText = `${viaje.conductor} (${viaje.camion || 'Sin Unidad'})`;
+
+            // Poblar selector de nuevo conductor
+            const selCond = document.getElementById('reassignSelectConductor');
+            selCond.innerHTML = '<option value="" disabled>Seleccione conductor...</option>';
+            
+            const hoyISO = new Date().toISOString().split('T')[0];
+            
+            for (const [key, d] of Object.entries(driversData)) {
+                let viajesDriverHoy = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+                let pendientes = viajesDriverHoy.filter(r => r.estado === 'Pendiente').length;
+                let estadoTxt = pendientes === 0 ? '🟢 Disponible' : `🟡 En Ruta (${pendientes} pend.)`;
+                let opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = `${d.name} — [${estadoTxt}]`;
+                if (key === viaje.driverKey) {
+                    opt.selected = true;
+                }
+                selCond.appendChild(opt);
+            }
+
+            // Poblar selector de camiones
+            const selCam = document.getElementById('reassignSelectCamion');
+            selCam.innerHTML = '<option value="" disabled>Seleccione camión...</option>';
+            camionesDisponibles.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c.name;
+                opt.textContent = c.name;
+                if (c.name === viaje.camion) {
+                    opt.selected = true;
+                }
+                selCam.appendChild(opt);
+            });
+
+            // Precargar flete actual
+            document.getElementById('reassignInputTransporte').value = viaje.transporte ? `$${viaje.transporte.toFixed(2)}` : '$0.00';
+            document.getElementById('reassignCheckWhatsApp').checked = true;
+
+            // Mostrar modal
+            document.getElementById('modalReasignarEnvio').classList.remove('hidden');
+        }
+
+        function onReassignConductorChange() {
+            const selCondKey = document.getElementById('reassignSelectConductor').value;
+            if (driversData[selCondKey] && driversData[selCondKey].unit) {
+                document.getElementById('reassignSelectCamion').value = driversData[selCondKey].unit;
+            }
+        }
+
+        function cerrarModalReasignar() {
+            const modal = document.getElementById('modalReasignarEnvio');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function guardarReasignacionConductor() {
+            const facturaId = document.getElementById('reassign-factura-id').value;
+            const nuevoDriverKey = document.getElementById('reassignSelectConductor').value;
+            const nuevoCamion = document.getElementById('reassignSelectCamion').value;
+            const nuevoTransporteVal = parseFloat(document.getElementById('reassignInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
+            const notificarWA = document.getElementById('reassignCheckWhatsApp').checked;
+
+            if (!facturaId) return;
+
+            if (!nuevoDriverKey || !nuevoCamion) {
+                showToast('Campos Incompletos', 'Seleccione el nuevo conductor y el camión.', 'error');
+                return;
+            }
+
+            const nuevoDriver = driversData[nuevoDriverKey];
+            if (!nuevoDriver) {
+                showToast('Error', 'Conductor inválido.', 'error');
+                return;
+            }
+
+            const viaje = registrosGlobales.find(r => String(r.factura) === String(facturaId));
+            if (!viaje) {
+                showToast('Error', 'No se encontró el envío en el sistema.', 'error');
+                return;
+            }
+
+            const anteriorConductor = viaje.conductor;
+
+            const btn = document.getElementById('btnConfirmarReasignar');
+            const originalBtnHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Reasignando...';
+            btn.disabled = true;
+
+            try {
+                // 1. Actualizar objeto en memoria
+                viaje.driverKey = nuevoDriverKey;
+                viaje.conductor = nuevoDriver.name;
+                viaje.camion = nuevoCamion;
+                viaje.transporte = nuevoTransporteVal;
+
+                // 2. Si el nuevo conductor está libre y este viaje es de hoy y está pendiente, actualizar coordenadas de destino
+                const hoyISO = new Date().toISOString().split('T')[0];
+                if ((!viaje.fechaProgramada || viaje.fechaProgramada <= hoyISO) && viaje.estado === 'Pendiente') {
+                    nuevoDriver.destination = viaje.destino;
+                    nuevoDriver.lat = viaje.lat;
+                    nuevoDriver.lng = viaje.lng;
+                }
+
+                // 3. Enviar actualización a Google Sheets
+                await enviarDatosAGoogleSheets({
+                    action: 'reassignDriver',
+                    factura: viaje.factura,
+                    driverKey: nuevoDriverKey,
+                    conductor: nuevoDriver.name,
+                    camion: nuevoCamion,
+                    transporte: nuevoTransporteVal
+                });
+
+                // 4. Actualizar vistas de interfaz
+                actualizarTodoAdmin();
+                if (currentRole === 'driver') {
+                    initDriverDashboard();
+                }
+
+                cerrarModalReasignar();
+                showToast('Reasignación Exitosa', `Factura ${viaje.factura} transferida de ${anteriorConductor} a ${nuevoDriver.name}.`, 'success');
+
+                // 5. Notificar al nuevo conductor por WhatsApp si está marcado
+                if (notificarWA) {
+                    const telConductor = buscarTelefonoConductor(nuevoDriverKey, nuevoDriver.name);
+                    let msgReasignado = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*REASIGNACIÓN DE ENVÍO*\nHola ${nuevoDriver.name}, se le ha reasignado el siguiente envío (previo: ${anteriorConductor}):\n• *Factura/CCF:* ${viaje.factura}`;
+                    if (viaje.cliente && viaje.cliente !== 'N/A') msgReasignado += `\n• *Cliente:* ${viaje.cliente}`;
+                    if (viaje.telefonoCliente && viaje.telefonoCliente.trim() !== '') msgReasignado += `\n• *Teléfono Cliente:* ${viaje.telefonoCliente}`;
+                    msgReasignado += `\n• *Origen:* ${viaje.origen || 'FG MATRIZ'}\n• *Destino:* ${viaje.destino}\n• *Unidad:* ${nuevoCamion}\n• *Detalles:* ${viaje.descripcion}`;
+                    msgReasignado += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+
+                    const telLimpio = limpiarTelefonoWhatsApp(telConductor);
+                    if (telLimpio) {
+                        window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msgReasignado)}`, '_blank');
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast('Error', 'No se pudo completar la reasignación en el servidor.', 'error');
+            } finally {
+                btn.innerHTML = originalBtnHTML;
+                btn.disabled = false;
+            }
         }
 
         // ==========================================
@@ -1577,54 +2247,157 @@
             });
         }
 
-        // --- FUNCION FORMULARIO 1: CLIENTES (OPTIMIZADA Y CON CARGA) ---
+        // --- FUNCION FORMULARIO 1: CLIENTES (CON SOPORTE MULTI-VIAJES Y TELÉFONO CLIENTE) ---
         async function asignarFacturaManual(e) {
             e.preventDefault();
             const factura = document.getElementById('manInputFactura').value.trim();
+            const cantInput = document.getElementById('manInputCantidadViajes');
+            const cantidadViajes = parseInt(cantInput ? cantInput.value : 1) || 1;
 
-            const duplicada = registrosGlobales.find(r => String(r.factura).toLowerCase() === String(factura).toLowerCase());
-            if (duplicada) {
-                alert(`¡ATENCIÓN! La factura "${factura}" ya ha sido registrada en el sistema anteriormente.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}`);
-                showToast('Factura Duplicada', 'Verifica el número de comprobante.', 'error');
+            if (!factura) {
+                showToast('Campo Requerido', 'Ingrese el número de factura o CCF.', 'error');
                 return;
             }
 
-            // Cambiar estado visual a cargando
+            // Comprobación de factura previa
+            const duplicada = registrosGlobales.find(r => {
+                const f = String(r.factura || '').toLowerCase().trim();
+                const fBase = f.split(' (viaje')[0].trim();
+                return f === factura.toLowerCase() || fBase === factura.toLowerCase();
+            });
+
+            if (duplicada) {
+                const deseaContinuar = confirm(`¡ATENCIÓN! La factura "${factura}" ya cuenta con viajes previos registrados en el sistema.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}\n\n¿Desea registrar de todas formas este nuevo viaje para la factura "${factura}"?`);
+                if (!deseaContinuar) {
+                    showToast('Asignación Cancelada', 'Verifique el número de comprobante.', 'info');
+                    return;
+                }
+            }
+
             const btn = e.target.querySelector('button[type="submit"]');
             const btnOriginalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
             btn.disabled = true;
 
             const origen = document.getElementById('manInputOrigen').value;
             const cliente = document.getElementById('manInputCliente').value;
+            const telefonoCliente = document.getElementById('manInputTelefonoCliente') ? document.getElementById('manInputTelefonoCliente').value.trim() : '';
             const montoVal = parseFloat(document.getElementById('manInputMonto').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
-            const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
             
             const estadoFactura = document.getElementById('manInputEstadoFactura').value;
             const horarioEntrega = document.getElementById('manInputHorario').value;
             const fechaProgramada = document.getElementById('manInputFechaProgramada').value;
-            const linkUbicacion = document.getElementById('manInputLinkUbicacion').value;
-            const descripcionFinal = document.getElementById('manInputDescription').value;
-
-            const driverKey = document.getElementById('manSelectConductor').value;
-            const camion = document.getElementById('manSelectCamion').value;
-            const destino = document.getElementById('manInputDestino').value;
-            
-            const tipoViaje = "Entrega Comercial";
-            const cantidadMercaderia = "Ver Factura";
-
-            const coords = obtenerCoordenadas(destino);
-            
-            const guardadoExitoso = await registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
-            
-            if (guardadoExitoso) {
-                document.getElementById('adminManualForm').reset();
-                poblarSelectsAsignacionConductores();
+            const linkUbicacion = (document.getElementById('manInputLinkUbicacion')?.value || '').trim();
+            let destino = (document.getElementById('manInputDestino')?.value || '').trim();
+            if (!destino) {
+                if (linkUbicacion) {
+                    const infoL = detectarTipoUbicacion(linkUbicacion);
+                    destino = infoL.tipo === 'maps' ? 'Ubicación Google Maps' : (infoL.tipo === 'waze' ? 'Ubicación Waze' : 'Ubicación GPS');
+                } else {
+                    destino = 'Destino por coordinar';
+                }
             }
+            const coords = obtenerCoordenadas(destino);
 
-            // Restaurar estado del botón
-            btn.innerHTML = btnOriginalHTML;
-            btn.disabled = false;
+            try {
+                if (cantidadViajes === 1) {
+                    // MODO 1: VIAJE ÚNICO NORMAL
+                    const driverKey = document.getElementById('manSelectConductor').value;
+                    const camion = document.getElementById('manSelectCamion').value;
+                    const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
+                    const descripcionFinal = document.getElementById('manInputDescription').value;
+
+                    if (!driverKey || !camion) {
+                        alert('Por favor seleccione el conductor y camión asignados.');
+                        btn.innerHTML = btnOriginalHTML;
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    const guardadoExitoso = await registrarNuevoEnvio(
+                        origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
+                        descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
+                        "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
+                        telefonoCliente, true
+                    );
+
+                    if (guardadoExitoso) {
+                        document.getElementById('adminManualForm').reset();
+                        if (cantInput) cantInput.value = "1";
+                        cambiarCantidadViajesFactura();
+                        poblarSelectsAsignacionConductores();
+                    }
+                } else {
+                    // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
+                    let viajesParaRegistrar = [];
+                    for (let i = 1; i <= cantidadViajes; i++) {
+                        const selCond = document.getElementById(`multiConductor_${i}`);
+                        const selCam = document.getElementById(`multiCamion_${i}`);
+                        const inpTrans = document.getElementById(`multiTransporte_${i}`);
+                        const inpDesc = document.getElementById(`multiDesc_${i}`);
+
+                        const driverKey = selCond ? selCond.value : '';
+                        const camion = selCam ? selCam.value : '';
+                        const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
+                        const descPart = inpDesc ? inpDesc.value.trim() : '';
+
+                        if (!driverKey || !camion) {
+                            alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
+                            btn.innerHTML = btnOriginalHTML;
+                            btn.disabled = false;
+                            return;
+                        }
+
+                        viajesParaRegistrar.push({
+                            index: i,
+                            driverKey: driverKey,
+                            camion: camion,
+                            transporte: transporteVal,
+                            descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
+                        });
+                    }
+
+                    let exitosos = 0;
+                    for (let j = 0; j < viajesParaRegistrar.length; j++) {
+                        const vp = viajesParaRegistrar[j];
+                        const subFactura = `${factura} (Viaje ${vp.index}/${cantidadViajes})`;
+                        // Monto mercadería se registra en el primer viaje para no duplicar ventas en reportes
+                        const montoViaje = vp.index === 1 ? montoVal : 0;
+                        const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
+
+                        const ok = await registrarNuevoEnvio(
+                            origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
+                            descFinal, destino, coords.lat, coords.lng, estadoFactura,
+                            `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
+                            horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
+                            false
+                        );
+                        if (ok) exitosos++;
+                    }
+
+                    if (exitosos === cantidadViajes) {
+                        showToast('Factura Dividida Registrada', `Se guardaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
+                        
+                        let resumenViajes = viajesParaRegistrar.map(v => `• Viaje ${v.index}: ${driversData[v.driverKey]?.name} - Flete: $${v.transporte.toFixed(2)}`).join('\n');
+                        if (confirm(`¡Los ${cantidadViajes} viajes fueron guardados correctamente en la base de datos!\n\n${resumenViajes}\n\n¿Desea abrir WhatsApp para notificar al Conductor del Viaje 1 (${driversData[viajesParaRegistrar[0].driverKey]?.name})?`)) {
+                            const v1 = viajesParaRegistrar[0];
+                            const phone1 = driversData[v1.driverKey]?.phone;
+                            enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
+                        }
+
+                        document.getElementById('adminManualForm').reset();
+                        if (cantInput) cantInput.value = "1";
+                        cambiarCantidadViajesFactura();
+                        poblarSelectsAsignacionConductores();
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Error', 'Ocurrió un error al procesar el envío.', 'error');
+            } finally {
+                btn.innerHTML = btnOriginalHTML;
+                btn.disabled = false;
+            }
         }
 
         // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS (OPTIMIZADA Y CON CARGA) ---
@@ -1671,15 +2444,25 @@
             btn.disabled = false;
         }
 
-        // --- REGISTRAR EN SHEETS Y FRONTEND (OPTIMIZADA CON WAIT Y WHATSAPP) ---
-        async function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion) {
+        // --- REGISTRAR EN SHEETS Y FRONTEND (OPTIMIZADA CON WAIT, WHATSAPP Y TELÉFONO CLIENTE) ---
+        async function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente = '', abrirWhatsAppDirecto = true) {
             const d = driversData[driverKey];
             if(!d) {
                 showToast('Error', 'Conductor no seleccionado o inválido.', 'error');
                 return false;
             }
 
-            d.destination = destino;
+            let destinoFinal = (destino && destino.trim()) ? destino.trim() : '';
+            if (!destinoFinal) {
+                if (linkUbicacion && linkUbicacion.trim()) {
+                    const infoL = detectarTipoUbicacion(linkUbicacion.trim());
+                    destinoFinal = infoL.tipo === 'maps' ? 'Ubicación Google Maps' : (infoL.tipo === 'waze' ? 'Ubicación Waze' : 'Ubicación GPS');
+                } else {
+                    destinoFinal = 'Destino por coordinar';
+                }
+            }
+
+            d.destination = destinoFinal;
             d.lat = lat;
             d.lng = lng;
 
@@ -1692,10 +2475,11 @@
                 camion: camion,
                 factura: factura,
                 cliente: cliente,
+                telefonoCliente: telefonoCliente || '',
                 monto: monto,
                 transporte: transporte,
                 descripcion: descripcion,
-                destino: destino,
+                destino: destinoFinal,
                 lat: lat,
                 lng: lng,
                 estado: 'Pendiente',
@@ -1703,19 +2487,28 @@
                 tipoViaje: tipoViaje,
                 cantidadMercaderia: cantidadMercaderia,
                 horarioEntrega: horarioEntrega,
-                fechaProgramada: fechaProgramada
+                fechaProgramada: fechaProgramada,
+                linkUbicacion: linkUbicacion || ''
             };
 
+            const telLimpio = limpiarTelefonoWhatsApp(d.phone);
+
             // Preparar el enlace de WhatsApp
-            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
+            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
+            if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
+            if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+            msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
             if (linkUbicacion && linkUbicacion.trim() !== '') {
                 msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
             }
             msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
-            const waUrl = `https://api.whatsapp.com/send?phone=${d.phone}&text=${encodeURIComponent(msg)}`;
+            const waUrl = telLimpio ? `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}` : '';
 
             // Se abre la pestaña *antes* del await para evitar que el navegador lo bloquee como "ventana emergente"
-            let waWindow = window.open('', '_blank');
+            let waWindow = null;
+            if (abrirWhatsAppDirecto && waUrl) {
+                waWindow = window.open('', '_blank');
+            }
 
             try {
                 // ESPERA HASTA QUE GOOGLE SHEETS TERMINE DE RECIBIR LA ORDEN
@@ -1731,18 +2524,20 @@
                 actualizarTodoAdmin();
 
                 // 1. Mostrar mensaje visual del guardado exitoso
-                showToast('Asignación Exitosa', `Guardado con éxito en Base de Datos. Abriendo WhatsApp...`, 'success');
+                showToast('Asignación Exitosa', `Guardado con éxito en Base de Datos.`, 'success');
                 
                 // 2. Ejecutar WhatsApp redirigiendo la pestaña que abrimos al inicio
-                if (waWindow) {
-                    waWindow.location.href = waUrl;
-                } else {
-                    window.location.href = waUrl; // fallback por si acaso
+                if (abrirWhatsAppDirecto && waUrl) {
+                    if (waWindow) {
+                        waWindow.location.href = waUrl;
+                    } else {
+                        window.open(waUrl, '_blank');
+                    }
                 }
                 
                 return true;
             } catch (error) {
-                if (waWindow) waWindow.close(); // Si falla, cerramos la pestaña blanca
+                if (waWindow) waWindow.close();
                 console.error(error);
                 showToast('Error de Conexión', 'Hubo un problema comunicando con el servidor', 'error');
                 return false;
@@ -1758,6 +2553,7 @@
             renderTrasladosTable();
             renderHistoricoTable();
             renderMonitoreoConductores();
+            renderPendientesTable();
         }
 
         function renderAdminKPIs() {
@@ -1785,14 +2581,144 @@
             if (kpiScheduled) {
                 kpiScheduled.innerText = viajesFuturosPendientes;
             }
+
+            const badgeMenu = document.getElementById('badgeContadorPendientes');
+            if (badgeMenu) {
+                const totalPend = registrosGlobales.filter(r => r.estado === 'Pendiente').length;
+                badgeMenu.innerText = totalPend;
+            }
+        }
+
+        let diarioSearchDebounceTimer = null;
+        function debouncedRenderDiario() {
+            clearTimeout(diarioSearchDebounceTimer);
+            diarioSearchDebounceTimer = setTimeout(renderAdminTableDiario, 120);
+        }
+
+        let historicoSearchDebounceTimer = null;
+        function debouncedRenderHistorico() {
+            clearTimeout(historicoSearchDebounceTimer);
+            historicoSearchDebounceTimer = setTimeout(renderHistoricoTable, 120);
+        }
+
+        let pendientesSearchDebounceTimer = null;
+        function debouncedRenderPendientes() {
+            clearTimeout(pendientesSearchDebounceTimer);
+            pendientesSearchDebounceTimer = setTimeout(renderPendientesTable, 120);
+        }
+
+        function renderPendientesTable() {
+            const tbody = document.getElementById('pendientesTableBody');
+            if (!tbody) return;
+
+            const hoyISO = new Date().toISOString().split('T')[0];
+            const filtroTipo = document.getElementById('filtroTipoPendientes') ? document.getElementById('filtroTipoPendientes').value : 'todos';
+            const searchVal = document.getElementById('pendientesSearchInput') ? String(document.getElementById('pendientesSearchInput').value).toLowerCase().trim() : '';
+            const terms = searchVal ? searchVal.split(/\s+/).filter(Boolean) : [];
+
+            let todasPendientes = registrosGlobales.filter(r => r.estado === 'Pendiente');
+
+            const badgeMenu = document.getElementById('badgeContadorPendientes');
+            if (badgeMenu) {
+                badgeMenu.innerText = todasPendientes.length;
+            }
+
+            const pendientesHoy = todasPendientes.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
+            const montoTotal = todasPendientes.reduce((sum, r) => sum + r.monto, 0);
+            const fleteTotal = todasPendientes.reduce((sum, r) => sum + r.transporte, 0);
+
+            const kpiTot = document.getElementById('kpiPendientesTotal');
+            const kpiHoy = document.getElementById('kpiPendientesHoy');
+            const kpiMonto = document.getElementById('kpiPendientesMonto');
+            const kpiFlete = document.getElementById('kpiPendientesFlete');
+
+            if (kpiTot) kpiTot.innerText = todasPendientes.length;
+            if (kpiHoy) kpiHoy.innerText = pendientesHoy.length;
+            if (kpiMonto) kpiMonto.innerText = `$${montoTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            if (kpiFlete) kpiFlete.innerText = `$${fleteTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            let filtrados = todasPendientes;
+            if (filtroTipo === 'hoy') {
+                filtrados = filtrados.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
+            } else if (filtroTipo === 'futuros') {
+                filtrados = filtrados.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO);
+            }
+
+            if (terms.length > 0) {
+                filtrados = filtrados.filter(r => {
+                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.cliente || ''} ${r.telefonoCliente || ''} ${r.conductor || ''} ${r.camion || ''} ${r.destino || ''} ${r.linkUbicacion || ''} ${r.descripcion || ''}`.toLowerCase();
+                    return terms.every(t => rowText.includes(t));
+                });
+            }
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 italic">No hay facturas pendientes que coincidan con el filtro actual. ¡Todo al día!</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < filtrados.length; i++) {
+                const r = filtrados[i];
+                let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold">${r.estadoFactura}</span>`;
+                
+                let telClienteHTML = '';
+                if (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') {
+                    const cleanTel = limpiarTelefonoWhatsApp(r.telefonoCliente);
+                    telClienteHTML = `<div class="mt-0.5"><a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1 text-[10px]"><i class="fab fa-whatsapp"></i> ${r.telefonoCliente}</a></div>`;
+                }
+
+                let fechaDisplay = '';
+                if (r.fechaProgramada && r.fechaProgramada > hoyISO) {
+                    fechaDisplay = `<span class="text-amber-400 font-bold block"><i class="fa-solid fa-calendar-days mr-1"></i>${formatearFechaDisplay(r.fechaProgramada)}</span><span class="text-[10px] text-slate-500 font-medium">Programado</span>`;
+                } else {
+                    fechaDisplay = `<span class="text-slate-200 font-semibold block">${r.fecha || 'Hoy'}</span><span class="text-[10px] text-emerald-400 font-medium">Operación de Hoy</span>`;
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-900/60 transition-colors border-l-4 border-amber-500/80">
+                        <td class="py-3 px-4 font-mono font-bold text-accentBlue text-sm">
+                            ${r.factura}
+                            <div class="text-[10px] text-slate-400 font-normal mt-0.5"><i class="fa-solid fa-store text-slate-500 mr-1"></i>${r.origen || 'FG MATRIZ'}</div>
+                        </td>
+                        <td class="py-3 px-4">${fechaDisplay}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-semibold text-slate-200">${r.cliente}</div>
+                            ${telClienteHTML}
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700/80">
+                                <span class="font-bold text-slate-100 block">${r.conductor}</span>
+                                <span class="text-accentBlue font-medium text-[11px] block"><i class="fa-solid fa-truck text-[10px] mr-1"></i>${r.camion}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">${renderDestinoHTML(r)}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-bold text-emerald-400">$${r.monto.toFixed(2)}</div>
+                            <div class="text-[10px] text-cyan-400 font-medium">Flete: $${r.transporte.toFixed(2)}</div>
+                        </td>
+                        <td class="py-3 px-4 text-[11px]">${estadoFactText}</td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="abrirModalReasignar('${encodeURIComponent(r.factura)}')" title="Reasignar a otro conductor o cambiar camión" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5">
+                                    <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+                                    <span>Reasignar</span>
+                                </button>
+                                <button onclick="enviarWhatsAppAction('${encodeURIComponent(r.factura)}')" title="Notificar al chofer por WhatsApp" class="p-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs transition-colors">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
         }
 
         function renderDriversKPIs() {
             const grid = document.getElementById('driversKpiGrid');
             if(!grid) return;
-            grid.innerHTML = '';
-
             const hoyISO = new Date().toISOString().split('T')[0];
+            let html = '';
 
             for (const [key, d] of Object.entries(driversData)) {
                 let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
@@ -1800,7 +2726,7 @@
                 let transporteTotal = viajesDriver.reduce((acc, r) => acc + r.transporte, 0);
                 let facturadoTotal = viajesDriver.reduce((acc, r) => acc + r.monto, 0);
 
-                grid.innerHTML += `
+                html += `
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-xs text-slate-100">${d.name}</span>
@@ -1823,13 +2749,14 @@
                     </div>
                 `;
             }
+            grid.innerHTML = html;
         }
 
         function renderSucursalesKPIs() {
             const grid = document.getElementById('sucursalesKpiGrid');
             if(!grid) return;
-            grid.innerHTML = '';
             const hoyISO = new Date().toISOString().split('T')[0];
+            let html = '';
 
             sucursalesOficiales.forEach(suc => {
                 let itemsSuc = registrosGlobales.filter(r => r.origen === suc && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
@@ -1837,7 +2764,7 @@
                 let transporteTotal = itemsSuc.reduce((acc, r) => acc + r.transporte, 0);
                 let facturadoTotal = itemsSuc.reduce((acc, r) => acc + r.monto, 0);
 
-                grid.innerHTML += `
+                html += `
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
                         <div class="flex items-center justify-between">
                             <span class="font-bold text-xs text-accentBlue">${suc}</span>
@@ -1860,91 +2787,136 @@
                     </div>
                 `;
             });
+            grid.innerHTML = html;
         }
 
         function renderAdminTableDiario() {
             const tbody = document.getElementById('adminTableBodyDiario');
             if(!tbody) return;
-            tbody.innerHTML = '';
             
             const hoyISO = new Date().toISOString().split('T')[0];
             let viajesOperacionHoy = registrosGlobales.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
 
-            viajesOperacionHoy.forEach(r => {
+            const searchInput = document.getElementById('diarioSearchInput');
+            const searchVal = searchInput ? String(searchInput.value).toLowerCase().trim() : '';
+            if (searchVal) {
+                const terms = searchVal.split(/\s+/).filter(Boolean);
+                viajesOperacionHoy = viajesOperacionHoy.filter(r => {
+                    const rowText = `${r.conductor || ''} ${r.camion || ''} ${r.origen || ''} ${r.factura || ''} ${r.cliente || ''} ${r.telefonoCliente || ''} ${r.destino || ''} ${r.descripcion || ''}`.toLowerCase();
+                    return terms.every(t => rowText.includes(t));
+                });
+            }
+
+            if (viajesOperacionHoy.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500 italic">No se encontraron viajes para los filtros especificados.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < viajesOperacionHoy.length; i++) {
+                const r = viajesOperacionHoy[i];
                 const badgeEstado = r.estado === 'Entregado' 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i>Entregado</span>`
                     : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i>Pendiente</span>`;
 
-                tbody.innerHTML += `
+                let telClienteHTML = '';
+                if (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') {
+                    const cleanTel = limpiarTelefonoWhatsApp(r.telefonoCliente);
+                    telClienteHTML = `<div class="mt-0.5"><a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1 text-[10px]"><i class="fab fa-whatsapp"></i> ${r.telefonoCliente}</a></div>`;
+                }
+
+                html += `
                     <tr class="hover:bg-slate-900/40 transition-colors">
                         <td class="py-3 px-4 font-semibold text-slate-200">${r.conductor}</td>
                         <td class="py-3 px-4 font-bold text-accentBlue">${r.camion}</td>
                         <td class="py-3 px-4 text-slate-300">${r.origen}</td>
-                        <td class="py-3 px-4 font-mono text-emerald-400">${r.factura}</td>
+                        <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
                         <td class="py-3 px-4">
-                            <div>${r.cliente}</div>
+                            <div class="font-medium text-slate-200">${r.cliente}</div>
+                            ${telClienteHTML}
                             <div class="text-[10px] text-slate-400">$${r.monto.toFixed(2)}</div>
                         </td>
                         <td class="py-3 px-4 font-bold text-cyan-400">$${r.transporte.toFixed(2)}</td>
-                        <td class="py-3 px-4 text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${r.destino}</td>
+                        <td class="py-3 px-4">${renderDestinoHTML(r)}</td>
                         <td class="py-3 px-4">${badgeEstado}</td>
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="enviarWhatsAppAction('${r.factura}')" class="px-2.5 py-1 bg-green-600 text-white rounded-lg text-[10px]"><i class="fab fa-whatsapp"></i></button>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                            <button onclick="abrirModalReasignar('${encodeURIComponent(r.factura)}')" title="Reasignar Conductor / Camión" class="px-2.5 py-1 bg-amber-600/30 hover:bg-amber-600/60 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-semibold transition-colors inline-flex items-center gap-1">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                <span class="hidden sm:inline">Reasignar</span>
+                            </button>
+                            <button onclick="enviarWhatsAppAction('${encodeURIComponent(r.factura)}')" title="Notificar por WhatsApp" class="px-2.5 py-1 bg-green-600 hover:bg-green-500 text-white rounded-lg text-[10px] transition-colors"><i class="fab fa-whatsapp"></i></button>
                         </td>
                     </tr>
                 `;
-            });
+            }
+            tbody.innerHTML = html;
         }
 
         function renderAdminTableProgramados() {
             const tbody = document.getElementById('adminTableBodyProgramados');
             if(!tbody) return;
-            tbody.innerHTML = '';
             
             const hoyISO = new Date().toISOString().split('T')[0];
-            
             let viajesFuturos = registrosGlobales.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO && r.estado !== 'Entregado');
-            
             viajesFuturos.sort((a, b) => new Date(a.fechaProgramada) - new Date(b.fechaProgramada));
 
             if(viajesFuturos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay viajes programados pendientes para días futuros.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500 italic">No hay viajes programados pendientes para días futuros.</td></tr>`;
                 return;
             }
 
-            viajesFuturos.forEach(r => {
-                tbody.innerHTML += `
+            let html = '';
+            for (let i = 0; i < viajesFuturos.length; i++) {
+                const r = viajesFuturos[i];
+                let telClienteHTML = '';
+                if (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') {
+                    const cleanTel = limpiarTelefonoWhatsApp(r.telefonoCliente);
+                    telClienteHTML = `<div class="mt-0.5"><a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1 text-[10px]"><i class="fab fa-whatsapp"></i> ${r.telefonoCliente}</a></div>`;
+                }
+
+                html += `
                     <tr class="hover:bg-slate-900/40 transition-colors border-l-4 border-amber-500/50">
                         <td class="py-3 px-4 font-bold text-amber-400">${formatearFechaDisplay(r.fechaProgramada)}</td>
                         <td class="py-3 px-4 font-semibold text-slate-200">${r.conductor} <span class="text-[10px] text-accentBlue">(${r.camion})</span></td>
-                        <td class="py-3 px-4 font-mono text-emerald-400">${r.factura}</td>
-                        <td class="py-3 px-4">${r.cliente}</td>
+                        <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium text-slate-200">${r.cliente}</div>
+                            ${telClienteHTML}
+                        </td>
                         <td class="py-3 px-4 font-bold text-emerald-400">$${r.monto.toFixed(2)}</td>
-                        <td class="py-3 px-4 text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> ${r.destino}</td>
+                        <td class="py-3 px-4">${renderDestinoHTML(r)}</td>
                         <td class="py-3 px-4"><span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i>Programado</span></td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                            <button onclick="abrirModalReasignar('${encodeURIComponent(r.factura)}')" title="Reasignar Conductor / Camión" class="px-2.5 py-1 bg-amber-600/30 hover:bg-amber-600/60 text-amber-300 border border-amber-500/40 rounded-lg text-[10px] font-semibold transition-colors inline-flex items-center gap-1">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                <span class="hidden sm:inline">Reasignar</span>
+                            </button>
+                            <button onclick="enviarWhatsAppAction('${encodeURIComponent(r.factura)}')" title="Notificar por WhatsApp" class="px-2.5 py-1 bg-green-600 hover:bg-green-500 text-white rounded-lg text-[10px] transition-colors"><i class="fab fa-whatsapp"></i></button>
+                        </td>
                     </tr>
                 `;
-            });
+            }
+            tbody.innerHTML = html;
         }
 
         function renderTrasladosTable() {
             const tbody = document.getElementById('trasladosTableBody');
             if(!tbody) return;
-            tbody.innerHTML = '';
             
             let traslados = registrosGlobales.filter(r => r.cliente === "Uso Interno / Movimiento Logístico");
-            
             if (traslados.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay traslados internos registrados.</td></tr>`;
                 return;
             }
 
-            traslados.forEach(r => {
+            let html = '';
+            for (let i = 0; i < traslados.length; i++) {
+                const r = traslados[i];
                 let badgeEstado = r.estado === 'Entregado' 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i> Entregado</span>`
                     : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i> Pendiente</span>`;
 
-                tbody.innerHTML += `
+                html += `
                     <tr class="hover:bg-slate-900/40 transition-colors">
                         <td class="py-3 px-4 font-mono text-xs text-accentBlue font-bold">${r.fecha || 'Sin fecha'}</td>
                         <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
@@ -1955,14 +2927,15 @@
                         <td class="py-3 px-4">${badgeEstado}</td>
                     </tr>
                 `;
-            });
+            }
+            tbody.innerHTML = html;
         }
 
         function renderMonitoreoConductores() {
             const grid = document.getElementById('monitoreoConductoresGrid');
             if(!grid) return;
-            grid.innerHTML = '';
             const hoyISO = new Date().toISOString().split('T')[0];
+            let gridHtml = '';
 
             for (const [key, d] of Object.entries(driversData)) {
                 let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
@@ -1978,7 +2951,8 @@
                 if (viajesDriver.length === 0) {
                     listaViajesHTML = `<p class="text-[11px] text-slate-500 italic py-2">Sin viajes asignados hoy.</p>`;
                 } else {
-                    viajesDriver.forEach(v => {
+                    for (let vIdx = 0; vIdx < viajesDriver.length; vIdx++) {
+                        const v = viajesDriver[vIdx];
                         let isDone = v.estado === 'Entregado';
                         listaViajesHTML += `
                             <div class="p-2.5 rounded-xl ${isDone ? 'bg-slate-900/40 border border-slate-800/80' : 'bg-slate-800/80 border border-slate-700'} space-y-1">
@@ -1995,12 +2969,19 @@
                                 <div class="text-[10px] text-slate-400 truncate">
                                     <i class="fa-solid fa-location-dot text-rose-400 mr-1"></i>${v.destino}
                                 </div>
+                                ${!isDone ? `
+                                    <div class="pt-1.5 flex justify-end border-t border-slate-700/60">
+                                        <button onclick="abrirModalReasignar('${encodeURIComponent(v.factura)}')" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40 rounded text-[10px] font-semibold flex items-center gap-1 transition-colors">
+                                            <i class="fa-solid fa-arrows-rotate text-[9px]"></i> Reasignar
+                                        </button>
+                                    </div>
+                                ` : ''}
                             </div>
                         `;
-                    });
+                    }
                 }
 
-                grid.innerHTML += `
+                gridHtml += `
                     <div class="bg-slate-900 border ${estaDisponible ? 'border-emerald-500/40' : 'border-amber-500/40'} rounded-2xl p-5 space-y-4 shadow-lg">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                             <div>
@@ -2030,6 +3011,7 @@
                     </div>
                 `;
             }
+            grid.innerHTML = gridHtml;
         }
 
         function renderHistoricoTable() {
@@ -2038,7 +3020,8 @@
             const searchType = document.getElementById('filterType').value;
             const selectedDate = document.getElementById('historicoDateInput').value;
             const search = String(document.getElementById('historicoSearchInput').value).toLowerCase().trim();
-            tbody.innerHTML = '';
+
+            const terms = search ? search.split(/\s+/).filter(Boolean) : [];
 
             let filtrados = registrosGlobales.filter(r => {
                 if (searchType === 'fecha' && selectedDate) {
@@ -2051,15 +3034,10 @@
                     }
                 }
 
-                if (search) {
-                    const matchFactura = String(r.factura || '').toLowerCase().includes(search);
-                    const matchSucursal = String(r.origen || '').toLowerCase().includes(search);
-                    const matchCliente = String(r.cliente || '').toLowerCase().includes(search);
-                    const matchConductor = String(r.conductor || '').toLowerCase().includes(search);
-                    const matchDestino = String(r.destino || '').toLowerCase().includes(search);
-
-                    if (!matchFactura && !matchSucursal && !matchCliente && !matchConductor && !matchDestino) {
-                        return false;
+                if (terms.length > 0) {
+                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.cliente || ''} ${r.telefonoCliente || ''} ${r.conductor || ''} ${r.camion || ''} ${r.destino || ''} ${r.descripcion || ''}`.toLowerCase();
+                    for (let t = 0; t < terms.length; t++) {
+                        if (!rowText.includes(terms[t])) return false;
                     }
                 }
 
@@ -2079,27 +3057,39 @@
                 return;
             }
 
-            filtrados.forEach(r => {
+            let html = '';
+            for (let i = 0; i < filtrados.length; i++) {
+                const r = filtrados[i];
                 let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold">${r.estadoFactura}</span>`;
                 
                 let horaExactaBadge = r.horaEntrega && String(r.horaEntrega).trim() !== '' 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold block whitespace-nowrap"><i class="fa-solid fa-check-double mr-1"></i>${r.horaEntrega}</span>`
                     : `<span class="text-slate-500 text-[10px] italic">No entregado</span>`;
 
-                tbody.innerHTML += `
+                let telClienteHTML = '';
+                if (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') {
+                    const cleanTel = limpiarTelefonoWhatsApp(r.telefonoCliente);
+                    telClienteHTML = `<div class="mt-0.5"><a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1 text-[10px]"><i class="fab fa-whatsapp"></i> ${r.telefonoCliente}</a></div>`;
+                }
+
+                html += `
                     <tr class="hover:bg-slate-900/40 transition-colors">
                         <td class="py-3 px-4 font-mono text-xs text-accentBlue font-bold">${r.fecha || 'Sin fecha'}</td>
                         <td class="py-3 px-4 text-slate-200">${r.conductor} <span class="text-[10px] text-accentBlue">(${r.camion})</span></td>
                         <td class="py-3 px-4 text-slate-300 font-medium">${r.origen}</td>
                         <td class="py-3 px-4 font-mono text-emerald-400 font-bold">${r.factura}</td>
-                        <td class="py-3 px-4 text-slate-300">${r.cliente}</td>
+                        <td class="py-3 px-4 text-slate-300">
+                            <div class="font-medium text-slate-200">${r.cliente}</div>
+                            ${telClienteHTML}
+                        </td>
                         <td class="py-3 px-4 text-[10px]">${estadoFactText}</td>
                         <td class="py-3 px-4 text-emerald-400 font-bold">$${r.monto.toFixed(2)}</td>
-                        <td class="py-3 px-4 text-slate-300">${r.destino}</td>
+                        <td class="py-3 px-4">${renderDestinoHTML(r)}</td>
                         <td class="py-3 px-4">${horaExactaBadge}</td>
                     </tr>
                 `;
-            });
+            }
+            tbody.innerHTML = html;
         }
 
         function limpiarFiltrosHistorico() {
@@ -2107,17 +3097,6 @@
             document.getElementById('historicoDateInput').value = '';
             document.getElementById('historicoSearchInput').value = '';
             renderHistoricoTable();
-        }
-
-        function abrirWazeDriver() {
-            let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
-            if (!viajeActivo || !viajeActivo.destino || viajeActivo.destino === 'Sin Asignar') {
-                showToast('Aviso', 'No tiene ningún viaje activo con destino asignado.', 'info');
-                return;
-            }
-            const coords = obtenerCoordenadas(viajeActivo.destino);
-            const wazeUrl = `https://www.waze.com/ul?q=${encodeURIComponent(viajeActivo.destino)}&navigate=yes&ll=${coords.lat},${coords.lng}`;
-            window.open(wazeUrl, '_blank');
         }
 
         function confirmarEntregaConductor() {
