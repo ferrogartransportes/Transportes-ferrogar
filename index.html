@@ -2454,11 +2454,6 @@
 
         function enviarWhatsApp(phone, factura, origen, destino, descripcion, camion, linkUbicacion = '', cliente = '', telefonoCliente = '') {
             const telLimpio = limpiarTelefonoWhatsApp(phone);
-            if (!telLimpio || telLimpio.length < 8) {
-                showToast('Teléfono Inválido', 'El conductor no tiene un número de WhatsApp válido asignado.', 'error');
-                alert(`No se pudo abrir WhatsApp: El número de teléfono registrado ("${phone || 'Vacío'}") no es válido.\n\nPuede actualizar el número en la pestaña "Gestión Personal" con 8 dígitos salvadoreños (ej. 78901234) o formato internacional (+503 7890 1234).`);
-                return;
-            }
 
             let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
             if (cliente && cliente !== 'N/A') {
@@ -2475,7 +2470,13 @@
 
             msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
             
-            const urlConductor = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+            let urlConductor = '';
+            if (telLimpio && telLimpio.length >= 8) {
+                urlConductor = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+            } else {
+                showToast('Aviso WhatsApp', 'Conductor sin teléfono directo registrado. Abriendo WhatsApp para seleccionar chat...', 'info');
+                urlConductor = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+            }
             abrirVentanaWhatsApp(urlConductor);
         }
 
@@ -2663,8 +2664,8 @@
             });
         }
 
-        // --- FUNCION FORMULARIO 1: CLIENTES (CON SOPORTE MULTI-VIAJES Y TELÉFONO CLIENTE) ---
-        async function asignarFacturaManual(e) {
+        // --- FUNCION FORMULARIO 1: CLIENTES (OPTIMIZADA SIN CONGELAMIENTO, NOTIFICACIÓN DIRECTA A WHATSAPP Y ENLACE RÁPIDO) ---
+        function asignarFacturaManual(e) {
             e.preventDefault();
             const factura = document.getElementById('manInputFactura').value.trim();
             const cantInput = document.getElementById('manInputCantidadViajes');
@@ -2675,19 +2676,14 @@
                 return;
             }
 
-            // Comprobación de factura previa
+            // Advertencia visual no bloqueante si ya existía la factura
             const duplicada = registrosGlobales.find(r => {
                 const f = String(r.factura || '').toLowerCase().trim();
                 const fBase = f.split(' (viaje')[0].trim();
                 return f === factura.toLowerCase() || fBase === factura.toLowerCase();
             });
-
             if (duplicada) {
-                const deseaContinuar = confirm(`¡ATENCIÓN! La factura "${factura}" ya cuenta con viajes previos registrados en el sistema.\n\n• Destino: ${duplicada.destino}\n• Fecha: ${duplicada.fecha || formatearFechaDisplay(duplicada.fechaProgramada)}\n• Estado: ${duplicada.estado}\n\n¿Desea registrar de todas formas este nuevo viaje para la factura "${factura}"?`);
-                if (!deseaContinuar) {
-                    showToast('Asignación Cancelada', 'Verifique el número de comprobante.', 'info');
-                    return;
-                }
+                showToast('Factura Existente', `Factura ${factura} ya tenía viajes previos. Registrando nuevo viaje...`, 'info');
             }
 
             const origen = document.getElementById('manInputOrigen').value;
@@ -2710,166 +2706,96 @@
             }
             const coords = obtenerCoordenadas(destino);
 
-            const btn = e.target.querySelector('button[type="submit"]');
-            const btnOriginalHTML = btn ? btn.innerHTML : '';
+            if (cantidadViajes === 1) {
+                // MODO 1: VIAJE ÚNICO NORMAL (DIRECTO Y FLUIDO)
+                const driverKey = document.getElementById('manSelectConductor').value;
+                const camion = document.getElementById('manSelectCamion').value;
+                const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
+                const descripcionFinal = document.getElementById('manInputDescription').value;
 
-            try {
-                if (cantidadViajes === 1) {
-                    // MODO 1: VIAJE ÚNICO NORMAL
-                    const driverKey = document.getElementById('manSelectConductor').value;
-                    const camion = document.getElementById('manSelectCamion').value;
-                    const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
-                    const descripcionFinal = document.getElementById('manInputDescription').value;
+                if (!driverKey || !camion) {
+                    showToast('Datos Incompletos', 'Por favor seleccione conductor y camión asignados.', 'error');
+                    alert('Por favor seleccione conductor y camión asignados.');
+                    return;
+                }
+
+                const guardadoExitoso = registrarNuevoEnvio(
+                    origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
+                    descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
+                    "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
+                    telefonoCliente, true
+                );
+
+                if (guardadoExitoso) {
+                    document.getElementById('adminManualForm').reset();
+                    if (cantInput) cantInput.value = "1";
+                    cambiarCantidadViajesFactura();
+                    poblarSelectsAsignacionConductores();
+                }
+            } else {
+                // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
+                let viajesParaRegistrar = [];
+                for (let i = 1; i <= cantidadViajes; i++) {
+                    const selCond = document.getElementById(`multiConductor_${i}`);
+                    const selCam = document.getElementById(`multiCamion_${i}`);
+                    const inpTrans = document.getElementById(`multiTransporte_${i}`);
+                    const inpDesc = document.getElementById(`multiDesc_${i}`);
+
+                    const driverKey = selCond ? selCond.value : '';
+                    const camion = selCam ? selCam.value : '';
+                    const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
+                    const descPart = inpDesc ? inpDesc.value.trim() : '';
 
                     if (!driverKey || !camion) {
-                        alert('Por favor seleccione el conductor y camión asignados.');
+                        alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
                         return;
                     }
 
-                    // 1. Obtener conductor y resolver teléfono para WhatsApp
-                    let d = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
-                    if (!d) {
-                        const nom = String(driverKey).toLowerCase().trim();
-                        d = Object.values(driversData).find(x => x.name && x.name.toLowerCase().trim() === nom) ||
-                            (typeof driversRespaldo !== 'undefined' ? Object.values(driversRespaldo).find(x => x.name && x.name.toLowerCase().trim() === nom) : null);
-                    }
-                    const conductorNombre = d ? d.name : driverKey;
-                    let telLimpio = limpiarTelefonoWhatsApp(d ? d.phone : '');
-                    if (!telLimpio || telLimpio.length < 8) {
-                        telLimpio = buscarTelefonoConductor(driverKey, conductorNombre);
-                    }
-
-                    // 2. Construir mensaje y URL de WhatsApp
-                    let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
-                    if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
-                    if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
-                    msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcionFinal}`;
-                    if (linkUbicacion && linkUbicacion.trim() !== '') {
-                        msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
-                    }
-                    msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
-
-                    let waUrl = '';
-                    if (telLimpio && telLimpio.length >= 8) {
-                        waUrl = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
-                    } else {
-                        // Si no tiene teléfono configurado, abrir WhatsApp de todas formas con el mensaje para elegir el contacto
-                        waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-                    }
-
-                    // 3. ABRIR EN OTRA PESTAÑA INMEDIATAMENTE durante el evento de clic nativo (botón aún activo)
-                    abrirVentanaWhatsApp(waUrl);
-
-                    // 4. Cambiar estado visual del botón a cargando
-                    if (btn) {
-                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
-                        btn.disabled = true;
-                    }
-
-                    const guardadoExitoso = await registrarNuevoEnvio(
-                        origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
-                        descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
-                        "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
-                        telefonoCliente, false // Ya se abrió en pestaña nueva arriba
-                    );
-
-                    if (guardadoExitoso) {
-                        document.getElementById('adminManualForm').reset();
-                        if (cantInput) cantInput.value = "1";
-                        cambiarCantidadViajesFactura();
-                        poblarSelectsAsignacionConductores();
-                        showToast('Asignación Exitosa', `Guardado en base de datos y WhatsApp abierto para ${conductorNombre}.`, 'success', waUrl, 'Reabrir WhatsApp');
-                    }
-                } else {
-                    if (btn) {
-                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
-                        btn.disabled = true;
-                    }
-                    // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
-                    let viajesParaRegistrar = [];
-                    for (let i = 1; i <= cantidadViajes; i++) {
-                        const selCond = document.getElementById(`multiConductor_${i}`);
-                        const selCam = document.getElementById(`multiCamion_${i}`);
-                        const inpTrans = document.getElementById(`multiTransporte_${i}`);
-                        const inpDesc = document.getElementById(`multiDesc_${i}`);
-
-                        const driverKey = selCond ? selCond.value : '';
-                        const camion = selCam ? selCam.value : '';
-                        const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
-                        const descPart = inpDesc ? inpDesc.value.trim() : '';
-
-                        if (!driverKey || !camion) {
-                            alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
-                            btn.innerHTML = btnOriginalHTML;
-                            btn.disabled = false;
-                            return;
-                        }
-
-                        viajesParaRegistrar.push({
-                            index: i,
-                            driverKey: driverKey,
-                            camion: camion,
-                            transporte: transporteVal,
-                            descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
-                        });
-                    }
-
-                    let exitosos = 0;
-                    for (let j = 0; j < viajesParaRegistrar.length; j++) {
-                        const vp = viajesParaRegistrar[j];
-                        const subFactura = `${factura} (Viaje ${vp.index}/${cantidadViajes})`;
-                        // Monto mercadería se registra en el primer viaje para no duplicar ventas en reportes
-                        const montoViaje = vp.index === 1 ? montoVal : 0;
-                        const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
-
-                        const ok = await registrarNuevoEnvio(
-                            origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
-                            descFinal, destino, coords.lat, coords.lng, estadoFactura,
-                            `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
-                            horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
-                            false
-                        );
-                        if (ok) exitosos++;
-                    }
-
-                    if (exitosos === cantidadViajes) {
-                        showToast('Factura Dividida Registrada', `Se guardaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
-                        
-                        let resumenViajes = viajesParaRegistrar.map(v => {
-                            const cName = (driversData[v.driverKey]?.name) || (driversRespaldo[v.driverKey]?.name) || v.driverKey;
-                            return `• Viaje ${v.index}: ${cName} - Flete: $${v.transporte.toFixed(2)}`;
-                        }).join('\n');
-                        const v1 = viajesParaRegistrar[0];
-                        const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
-                        if (confirm(`¡Los ${cantidadViajes} viajes fueron guardados correctamente en la base de datos!\n\n${resumenViajes}\n\n¿Desea abrir WhatsApp para notificar al Conductor del Viaje 1 (${c1Name})?`)) {
-                            const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
-                            enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
-                        }
-
-                        document.getElementById('adminManualForm').reset();
-                        if (cantInput) cantInput.value = "1";
-                        cambiarCantidadViajesFactura();
-                        poblarSelectsAsignacionConductores();
-                    }
+                    viajesParaRegistrar.push({
+                        index: i,
+                        driverKey: driverKey,
+                        camion: camion,
+                        transporte: transporteVal,
+                        descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
+                    });
                 }
-            } catch (err) {
-                console.error(err);
-                showToast('Error', 'Ocurrió un error al procesar el envío.', 'error');
-            } finally {
-                btn.innerHTML = btnOriginalHTML;
-                btn.disabled = false;
+
+                let exitosos = 0;
+                for (let j = 0; j < viajesParaRegistrar.length; j++) {
+                    const vp = viajesParaRegistrar[j];
+                    const subFactura = `${factura} (Viaje ${vp.index}/${cantidadViajes})`;
+                    const montoViaje = vp.index === 1 ? montoVal : 0;
+                    const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
+
+                    const ok = registrarNuevoEnvio(
+                        origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
+                        descFinal, destino, coords.lat, coords.lng, estadoFactura,
+                        `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
+                        horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
+                        false
+                    );
+                    if (ok) exitosos++;
+                }
+
+                if (exitosos === cantidadViajes) {
+                    showToast('Factura Dividida Registrada', `Se guardaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
+                    
+                    const v1 = viajesParaRegistrar[0];
+                    const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
+                    const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
+                    enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
+
+                    document.getElementById('adminManualForm').reset();
+                    if (cantInput) cantInput.value = "1";
+                    cambiarCantidadViajesFactura();
+                    poblarSelectsAsignacionConductores();
+                }
             }
         }
 
-        // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS (OPTIMIZADA Y CON CARGA) ---
-        async function asignarLogisticaManual(e) {
+        // --- FUNCION FORMULARIO 2: LOGÍSTICA/TRASLADOS (FLUIDA Y RÁPIDA) ---
+        function asignarLogisticaManual(e) {
             e.preventDefault();
-
-            // Cambiar estado visual a cargando
-            const btn = e.target.querySelector('button[type="submit"]');
-            const btnOriginalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando traslado...';
-            btn.disabled = true;
 
             const numeroTraslado = document.getElementById('logInputTransferNumber').value.trim();
             const origen = document.getElementById('logInputOrigen').value;
@@ -2879,8 +2805,12 @@
             const driverKey = document.getElementById('logSelectConductor').value;
             const camion = document.getElementById('logSelectCamion').value;
 
+            if (!driverKey || !camion) {
+                showToast('Datos Incompletos', 'Por favor seleccione conductor y camión.', 'error');
+                return;
+            }
+
             const factura = `Traslado #${numeroTraslado}`; 
-            
             const cliente = "Uso Interno / Movimiento Logístico";
             const montoVal = 0;
             const transporteVal = 0;
@@ -2893,20 +2823,21 @@
             const destino = sucursalDestino; 
             const coords = obtenerCoordenadas(destino);
 
-            const guardadoExitoso = await registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, montoVal, transporteVal, descripcionFinal, destino, coords.lat, coords.lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion);
+            const guardadoExitoso = registrarNuevoEnvio(
+                origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
+                descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
+                tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion,
+                '', true
+            );
 
             if (guardadoExitoso) {
                 document.getElementById('adminLogisticsForm').reset();
                 poblarSelectsAsignacionConductores();
             }
-
-            // Restaurar estado del botón
-            btn.innerHTML = btnOriginalHTML;
-            btn.disabled = false;
         }
 
-        // --- REGISTRAR EN SHEETS Y FRONTEND (OPTIMIZADA CON WAIT, WHATSAPP Y TELÉFONO CLIENTE) ---
-        async function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente = '', abrirWhatsAppDirecto = true) {
+        // --- REGISTRAR EN SHEETS Y FRONTEND (ULTRA OPTIMIZADA, CERO CONGELAMIENTO Y NOTIFICACIÓN A WHATSAPP) ---
+        function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente = '', abrirWhatsAppDirecto = true) {
             let d = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
             if(!d) {
                 const nom = String(driverKey).toLowerCase().trim();
@@ -2964,54 +2895,50 @@
             }
 
             // Preparar el enlace de WhatsApp
+            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
+            if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
+            if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+            msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destinoFinal}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
+            if (linkUbicacion && linkUbicacion.trim() !== '') {
+                msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
+            }
+            msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+
             let waUrl = '';
             if (telLimpio && telLimpio.length >= 8) {
-                let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
-                if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
-                if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
-                msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destinoFinal}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
-                if (linkUbicacion && linkUbicacion.trim() !== '') {
-                    msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
-                }
-                msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
                 waUrl = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+            } else {
+                waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
             }
 
-            // ABRIR WHATSAPP INMEDIATAMENTE durante el evento de clic del usuario (User Gesture activo)
-            // antes del await de Google Sheets, garantizando que el navegador NO lo bloquee como popup emergente
+            // 1. ABRIR WHATSAPP INMEDIATAMENTE EN OTRA PESTAÑA (User Gesture activo sin retrasos)
             if (abrirWhatsAppDirecto && waUrl) {
                 abrirVentanaWhatsApp(waUrl);
             }
 
-            try {
-                // ESPERA HASTA QUE GOOGLE SHEETS TERMINE DE RECIBIR LA ORDEN
-                await enviarDatosAGoogleSheets(nuevoReg);
+            // 2. ACTUALIZAR EN MEMORIA Y EN LA INTERFAZ AL INSTANTE (CERO CONGELAMIENTO)
+            registrosGlobales.unshift(nuevoReg);
 
-                registrosGlobales.unshift(nuevoReg);
-
-                const adminIframe = document.getElementById('adminWazeIframe');
-                if (adminIframe) {
-                    adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
-                }
-
-                actualizarTodoAdmin();
-
-                // Mostrar mensaje visual con botón directo de WhatsApp de respaldo
-                if (waUrl) {
-                    showToast('Asignación Exitosa', `Guardado en base de datos y WhatsApp enviado a ${d.name}.`, 'success', waUrl, 'Reabrir WhatsApp');
-                } else {
-                    showToast('Asignación Guardada', `Guardado en base de datos. (Conductor ${d.name} sin teléfono).`, 'info');
-                    if (abrirWhatsAppDirecto) {
-                        alert(`⚠️ El envío "${factura}" se guardó en Google Sheets, pero WhatsApp no se pudo abrir porque el conductor "${d.name}" no tiene un número telefónico válido registrado.\n\nPuede ingresar su número en la pestaña "Conductores" o "Gestión Personal".`);
-                    }
-                }
-                
-                return true;
-            } catch (error) {
-                console.error(error);
-                showToast('Error de Conexión', 'Hubo un problema comunicando con el servidor', 'error', waUrl);
-                return false;
+            const adminIframe = document.getElementById('adminWazeIframe');
+            if (adminIframe) {
+                adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
             }
+
+            actualizarTodoAdmin();
+
+            // 3. MOSTRAR MENSAJE DE ÉXITO CON BOTÓN DE RESPALDO A WHATSAPP
+            showToast('Asignación Exitosa', `Guardado y WhatsApp enviado a ${d.name}.`, 'success', waUrl, 'Reabrir WhatsApp');
+
+            // 4. GUARDAR EN GOOGLE SHEETS EN SEGUNDO PLANO (NON-BLOCKING)
+            enviarDatosAGoogleSheets(nuevoReg)
+                .then(() => {
+                    console.log(`Envío ${factura} sincronizado con Google Sheets.`);
+                })
+                .catch(error => {
+                    console.error('Error al sincronizar con Google Sheets:', error);
+                });
+
+            return true;
         }
 
         function actualizarTodoAdmin() {
