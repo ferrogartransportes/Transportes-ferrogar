@@ -141,6 +141,10 @@
                     <button onclick="switchAdminTab('asignacion')" id="adminTabAsignacionBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
                         <i class="fa-solid fa-plus-circle"></i> Asignación de Envíos
                     </button>
+                    <button onclick="switchAdminTab('clientes')" id="adminTabClientesBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-address-book text-emerald-400"></i> Clientes
+                        <span id="badgeContadorClientes" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">0</span>
+                    </button>
                     <button onclick="switchAdminTab('programados')" id="adminTabProgramadosBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex items-center gap-2">
                         <i class="fa-solid fa-calendar-check"></i> Viajes Programados
                     </button>
@@ -370,8 +374,12 @@
                                     <input type="text" id="manInputFactura" required placeholder="Ej. CCF-00428" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cliente</label>
-                                    <input type="text" id="manInputCliente" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+                                        <span>Cliente</span>
+                                        <span class="text-[10px] text-emerald-400 font-normal">Autocompleta datos</span>
+                                    </label>
+                                    <input type="text" id="manInputCliente" list="listaClientesAutocompletar" oninput="autoCompletarDatosClienteSeleccionado()" onchange="autoCompletarDatosClienteSeleccionado()" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <datalist id="listaClientesAutocompletar"></datalist>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center gap-1">
@@ -608,9 +616,15 @@
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                             <div>
                                 <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
-                                    <i class="fa-solid fa-truck-arrow-right"></i> Historial de Traslados y Viajes Internos
+                                    <i class="fa-solid fa-truck-arrow-right"></i> Traslados y Viajes Internos (Hoy)
                                 </h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Listado exclusivo de los movimientos de inventario y logística interna registrados en el sistema.</p>
+                                <p class="text-xs text-slate-400 mt-0.5">Movimientos de inventario y logística interna registrados para la fecha de hoy.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select id="filtroTipoTraslados" onchange="renderTrasladosTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue font-medium">
+                                    <option value="hoy" selected>Traslados de Hoy</option>
+                                    <option value="todos">Todos los Traslados (Histórico)</option>
+                                </select>
                             </div>
                         </div>
 
@@ -788,6 +802,68 @@
                                     </tr>
                                 </thead>
                                 <tbody id="historicoTableBody" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA: BASE DE DATOS DE CLIENTES ================= -->
+                <div id="adminViewClientes" class="hidden space-y-6">
+                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-5 shadow-xl">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base flex items-center gap-2 text-emerald-400">
+                                    <i class="fa-solid fa-address-book"></i> Directorio y Base de Datos de Clientes
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">Base de datos centralizada de clientes recopilada desde la asignación de facturas (Cliente, Teléfono y Dirección).</p>
+                            </div>
+                            
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="relative w-full sm:w-64">
+                                    <input type="text" id="clientesSearchInput" oninput="debouncedRenderClientes()" placeholder="Buscar cliente, teléfono o dirección..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                                </div>
+                                <button onclick="limpiarFiltroClientes()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs transition-all flex items-center gap-1">
+                                    <i class="fa-solid fa-filter-circle-xmark"></i> Limpiar
+                                </button>
+                                <button onclick="sincronizarClientesCompleto()" title="Sincronizar clientes con la hoja CLIENTES de Google Sheets" class="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs transition-all flex items-center gap-1 font-medium">
+                                    <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Sincronizar Sheets</span>
+                                </button>
+                                <button onclick="abrirModalNuevoCliente()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                                    <i class="fa-solid fa-user-plus"></i> <span>Nuevo Cliente</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPI RESUMEN DE CLIENTES -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Total Clientes Registrados</span>
+                                <h4 id="kpiClientesTotal" class="text-2xl font-bold text-slate-100 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Con Teléfono / WhatsApp</span>
+                                <h4 id="kpiClientesConTelefono" class="text-2xl font-bold text-emerald-400 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Con Dirección / Ubicación</span>
+                                <h4 id="kpiClientesConDireccion" class="text-2xl font-bold text-accentBlue mt-1">0</h4>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE CLIENTES -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/80 text-slate-300 uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4 rounded-l-xl w-12 text-center text-slate-500">#</th>
+                                        <th class="py-3 px-4 font-bold text-slate-200">Cliente (Nombre del Cliente)</th>
+                                        <th class="py-3 px-4 font-bold text-emerald-400">Teléfono del Cliente</th>
+                                        <th class="py-3 px-4 font-bold text-accentBlue">Dirección del Cliente</th>
+                                        <th class="py-3 px-4 rounded-r-xl text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientesTableBody" class="divide-y divide-slate-800/60"></tbody>
                             </table>
                         </div>
                     </div>
@@ -1201,6 +1277,49 @@
             </div>
         </div>
 
+        <!-- ================= MODAL GESTIÓN DE CLIENTE ================= -->
+        <div id="modalGestionCliente" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-darkCard border border-emerald-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <h3 id="modalClienteTitulo" class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                            <i class="fa-solid fa-address-book"></i> Registro de Cliente
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Base de datos de clientes conectada a Google Sheets (Hoja CLIENTES).</p>
+                    </div>
+                    <button onclick="cerrarModalCliente()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <input type="hidden" id="modalClienteNombreOriginal">
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user text-emerald-400"></i> Cliente (Nombre del Cliente)
+                        </label>
+                        <input type="text" id="modalClienteNombre" placeholder="Ej. Juan Pérez / Ferretería San José" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-400 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fab fa-whatsapp text-emerald-400"></i> Teléfono del Cliente (WhatsApp)
+                        </label>
+                        <input type="text" id="modalClienteTelefono" placeholder="Ej. 7890-1234 o 50378901234" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-400">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-accentBlue"></i> Dirección del Cliente (Dirección o Enlace Waze/Maps)
+                        </label>
+                        <textarea id="modalClienteDireccion" rows="2" placeholder="Ej. Final 49 Av. Sur, Colonia Flor Blanca, o pegar link de Maps/Waze" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-400"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2 border-t border-slate-800">
+                    <button onclick="cerrarModalCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium text-xs text-slate-300">Cancelar</button>
+                    <button onclick="guardarModalCliente()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Guardar Cliente</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ================= CONFIG MODAL ================= -->
         <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-darkCard border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
@@ -1457,7 +1576,11 @@
         function parsearFechaRegistro(r) {
             if (!r) return null;
 
-            // 1. Probar fechaProgramada (YYYY-MM-DD)
+            // 1. Si ya es objeto Date válido
+            if (r.fecha instanceof Date && !isNaN(r.fecha.getTime())) return r.fecha;
+            if (r.fechaHora instanceof Date && !isNaN(r.fechaHora.getTime())) return r.fechaHora;
+
+            // 2. Probar fechaProgramada (YYYY-MM-DD)
             if (r.fechaProgramada && typeof r.fechaProgramada === 'string') {
                 const sProg = r.fechaProgramada.split('T')[0].trim();
                 const partsProg = sProg.split('-');
@@ -1471,10 +1594,10 @@
                 }
             }
 
-            // 2. Extraer de fecha o fechaHora
+            // 3. Extraer de fecha o fechaHora
             const str = String(r.fecha || r.fechaHora || '').trim();
             if (str) {
-                // Formato DD-MM-YYYY o DD/MM/YYYY
+                // Formato DD-MM-YYYY o DD/MM/YYYY (ej: "08-10-2026", "08/10/2026", o "Jueves, 08-10-2026 - 02:30:00")
                 const mDMY = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
                 if (mDMY) {
                     const d = parseInt(mDMY[1], 10);
@@ -1485,7 +1608,7 @@
                     }
                 }
 
-                // Formato YYYY-MM-DD
+                // Formato YYYY-MM-DD o YYYY/MM/DD (ej: "2026-10-08", "2026-10-08T06:00:00.000Z")
                 const mYMD = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
                 if (mYMD) {
                     const y = parseInt(mYMD[1], 10);
@@ -1519,8 +1642,8 @@
             const finSemana = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + 6, 23, 59, 59, 999);
 
             const fObj = parsearFechaRegistro(r);
-            if (!fObj) {
-                return { esHoy: true, esSemana: true, esMes: true, esAnio: true, fechaObj: ahora };
+            if (!fObj || isNaN(fObj.getTime())) {
+                return { esHoy: false, esSemana: false, esMes: false, esAnio: false, fechaObj: null };
             }
 
             const regY = fObj.getFullYear();
@@ -1533,6 +1656,12 @@
             const esAnio = (regY === hoyY);
 
             return { esHoy, esSemana, esMes, esAnio, fechaObj: fObj };
+        }
+
+        function esRegistroDeHoy(r) {
+            if (!r) return false;
+            const c = clasificarPeriodoFecha(r);
+            return Boolean(c && c.esHoy);
         }
 
         function limpiarTelefonoWhatsApp(tel) {
@@ -1663,6 +1792,7 @@
             actualizarReloj();
             setInterval(actualizarReloj, 1000);
             
+            sincronizarCatalogoClientesDesdeRegistros();
             cargarDatosDesdeGoogleSheets(true);
 
             setInterval(() => {
@@ -1787,6 +1917,32 @@
                                 linkUbicacion: item.linkUbicacion || (item.destino && /^https?:\/\//i.test(item.destino) ? item.destino : '')
                             };
                         });
+                        sincronizarCatalogoClientesDesdeRegistros();
+                    }
+
+                    // Cargar catálogo de clientes provenientes de la hoja "CLIENTES" de Google Sheets
+                    if (Array.isArray(data.clientes) && data.clientes.length > 0) {
+                        data.clientes.forEach(c => {
+                            if (c.nombre) {
+                                const nom = String(c.nombre).trim();
+                                const tel = String(c.telefono || '').trim();
+                                const dir = String(c.direccion || '').trim();
+                                let idx = catalogoClientes.findIndex(x => x.nombre.toLowerCase().trim() === nom.toLowerCase());
+                                if (idx >= 0) {
+                                    if (tel) catalogoClientes[idx].telefono = tel;
+                                    if (dir && dir !== 'Sin dirección registrada') catalogoClientes[idx].direccion = dir;
+                                } else {
+                                    catalogoClientes.push({
+                                        nombre: nom,
+                                        telefono: tel,
+                                        direccion: dir || 'Sin dirección registrada'
+                                    });
+                                }
+                            }
+                        });
+                        guardarCatalogoClientesEnLocalStorage();
+                        renderClientesTable();
+                        poblarAutocompletadoClientes();
                     }
 
                     if (document.getElementById('loginScreen').classList.contains('hidden')) {
@@ -2141,6 +2297,7 @@
             const btnDiario = document.getElementById('adminTabDiarioBtn');
             const btnPendientes = document.getElementById('adminTabPendientesBtn');
             const btnAsignacion = document.getElementById('adminTabAsignacionBtn');
+            const btnClientes = document.getElementById('adminTabClientesBtn');
             const btnProgramados = document.getElementById('adminTabProgramadosBtn');
             const btnTraslados = document.getElementById('adminTabTrasladosBtn');
             const btnMonitoreo = document.getElementById('adminTabMonitoreoBtn');
@@ -2150,6 +2307,7 @@
             const viewDiario = document.getElementById('adminViewDiario');
             const viewPendientes = document.getElementById('adminViewPendientes');
             const viewAsignacion = document.getElementById('adminViewAsignacion');
+            const viewClientes = document.getElementById('adminViewClientes');
             const viewProgramados = document.getElementById('adminViewProgramados');
             const viewTraslados = document.getElementById('adminViewTraslados');
             const viewMonitoreo = document.getElementById('adminViewMonitoreo');
@@ -2160,6 +2318,7 @@
             if (btnDiario) btnDiario.className = resetClass;
             if (btnPendientes) btnPendientes.className = resetClass;
             if (btnAsignacion) btnAsignacion.className = resetClass;
+            if (btnClientes) btnClientes.className = resetClass;
             if (btnProgramados) btnProgramados.className = resetClass;
             if (btnTraslados) btnTraslados.className = resetClass;
             if (btnMonitoreo) btnMonitoreo.className = resetClass;
@@ -2169,6 +2328,7 @@
             if (viewDiario) viewDiario.classList.add('hidden');
             if (viewPendientes) viewPendientes.classList.add('hidden');
             if (viewAsignacion) viewAsignacion.classList.add('hidden');
+            if (viewClientes) viewClientes.classList.add('hidden');
             if (viewProgramados) viewProgramados.classList.add('hidden');
             if (viewTraslados) viewTraslados.classList.add('hidden');
             if (viewMonitoreo) viewMonitoreo.classList.add('hidden');
@@ -2187,6 +2347,10 @@
             } else if (tab === 'asignacion') {
                 if (btnAsignacion) btnAsignacion.className = activeClass;
                 if (viewAsignacion) viewAsignacion.classList.remove('hidden');
+            } else if (tab === 'clientes') {
+                if (btnClientes) btnClientes.className = activeClass;
+                if (viewClientes) viewClientes.classList.remove('hidden');
+                renderClientesTable();
             } else if (tab === 'programados') {
                 if (btnProgramados) btnProgramados.className = activeClass;
                 if (viewProgramados) viewProgramados.classList.remove('hidden');
@@ -2512,7 +2676,7 @@
             const hoyISO = new Date().toISOString().split('T')[0];
             
             for (const [key, d] of Object.entries(driversData)) {
-                let viajesDriverHoy = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+                let viajesDriverHoy = registrosGlobales.filter(r => r.driverKey === key && esRegistroDeHoy(r));
                 let pendientes = viajesDriverHoy.filter(r => r.estado === 'Pendiente').length;
                 let estadoTxt = pendientes === 0 ? '🟢 Disponible' : `🟡 En Ruta (${pendientes} pend.)`;
                 let opt = document.createElement('option');
@@ -2919,6 +3083,11 @@
             // 2. ACTUALIZAR EN MEMORIA Y EN LA INTERFAZ AL INSTANTE (CERO CONGELAMIENTO)
             registrosGlobales.unshift(nuevoReg);
 
+            // Guardar o actualizar en la base de datos de clientes
+            if (cliente && cliente !== 'N/A' && cliente !== 'Uso Interno / Movimiento Logístico') {
+                guardarClienteEnCatalogo(cliente, telefonoCliente, destinoFinal, linkUbicacion);
+            }
+
             const adminIframe = document.getElementById('adminWazeIframe');
             if (adminIframe) {
                 adminIframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${lat}&lon=${lng}&ct=livemap`;
@@ -2951,12 +3120,14 @@
             renderHistoricoTable();
             renderMonitoreoConductores();
             renderPendientesTable();
+            renderClientesTable();
         }
 
         function renderAdminKPIs() {
             const hoyISO = new Date().toISOString().split('T')[0];
             
-            let viajesOperacionHoy = registrosGlobales.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
+            // FILTRO ESTRICTO: Solo datos del día actual (Hoy)
+            let viajesOperacionHoy = registrosGlobales.filter(r => esRegistroDeHoy(r));
 
             let totalConductores = Object.keys(driversData).length;
             let disponibles = 0;
@@ -3120,11 +3291,11 @@
         function renderDriversKPIs() {
             const grid = document.getElementById('driversKpiGrid');
             if(!grid) return;
-            const hoyISO = new Date().toISOString().split('T')[0];
             let html = '';
 
             for (const [key, d] of Object.entries(driversData)) {
-                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+                // Solo viajes del día de hoy
+                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && esRegistroDeHoy(r));
                 let totalViajes = viajesDriver.length;
                 let transporteTotal = viajesDriver.reduce((acc, r) => acc + r.transporte, 0);
                 let facturadoTotal = viajesDriver.reduce((acc, r) => acc + r.monto, 0);
@@ -3158,11 +3329,11 @@
         function renderSucursalesKPIs() {
             const grid = document.getElementById('sucursalesKpiGrid');
             if(!grid) return;
-            const hoyISO = new Date().toISOString().split('T')[0];
             let html = '';
 
             sucursalesOficiales.forEach(suc => {
-                let itemsSuc = registrosGlobales.filter(r => r.origen === suc && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+                // Solo viajes del día de hoy
+                let itemsSuc = registrosGlobales.filter(r => r.origen === suc && esRegistroDeHoy(r));
                 let viajes = itemsSuc.length;
                 let transporteTotal = itemsSuc.reduce((acc, r) => acc + r.transporte, 0);
                 let facturadoTotal = itemsSuc.reduce((acc, r) => acc + r.monto, 0);
@@ -3197,8 +3368,8 @@
             const tbody = document.getElementById('adminTableBodyDiario');
             if(!tbody) return;
             
-            const hoyISO = new Date().toISOString().split('T')[0];
-            let viajesOperacionHoy = registrosGlobales.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
+            // Solo viajes del día de hoy
+            let viajesOperacionHoy = registrosGlobales.filter(r => esRegistroDeHoy(r));
 
             const searchInput = document.getElementById('diarioSearchInput');
             const searchVal = searchInput ? String(searchInput.value).toLowerCase().trim() : '';
@@ -3306,9 +3477,16 @@
             const tbody = document.getElementById('trasladosTableBody');
             if(!tbody) return;
             
+            const filtroTipo = document.getElementById('filtroTipoTraslados') ? document.getElementById('filtroTipoTraslados').value : 'hoy';
             let traslados = registrosGlobales.filter(r => r.cliente === "Uso Interno / Movimiento Logístico");
+            
+            // Filtro estricto: por defecto mostrar solo traslados del día (hoy)
+            if (filtroTipo === 'hoy') {
+                traslados = traslados.filter(r => esRegistroDeHoy(r));
+            }
+
             if (traslados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay traslados internos registrados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">No hay traslados internos registrados para ${filtroTipo === 'hoy' ? 'el día de hoy' : 'el historial'}.</td></tr>`;
                 return;
             }
 
@@ -3337,11 +3515,11 @@
         function renderMonitoreoConductores() {
             const grid = document.getElementById('monitoreoConductoresGrid');
             if(!grid) return;
-            const hoyISO = new Date().toISOString().split('T')[0];
             let gridHtml = '';
 
             for (const [key, d] of Object.entries(driversData)) {
-                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
+                // Solo viajes del día de hoy
+                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && esRegistroDeHoy(r));
                 let pendientes = viajesDriver.filter(r => r.estado === 'Pendiente');
                 let entregados = viajesDriver.filter(r => r.estado === 'Entregado');
 
@@ -3642,6 +3820,331 @@
                 closeConfigModal();
                 showToast('Configuración Guardada', 'URL de Google Sheets actualizada correctamente.');
                 cargarDatosDesdeGoogleSheets();
+            }
+        }
+
+        // ==========================================
+        // BASE DE DATOS Y DIRECTORIO DE CLIENTES
+        // ==========================================
+        let catalogoClientes = [];
+
+        function guardarCatalogoClientesEnLocalStorage() {
+            try {
+                localStorage.setItem('logiflow_catalogo_clientes_v1', JSON.stringify(catalogoClientes));
+            } catch(e) {
+                console.warn('Error al guardar catálogo de clientes:', e);
+            }
+        }
+
+        function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '') {
+            if (!nombre || String(nombre).trim() === '' || String(nombre).trim() === 'Uso Interno / Movimiento Logístico' || String(nombre).trim() === 'N/A') {
+                return;
+            }
+            const nomLimpio = String(nombre).trim();
+            const telLimpio = String(telefono || '').trim();
+            let dirLimpia = String(direccion || '').trim();
+            if (!dirLimpia || dirLimpia === 'Destino por coordinar') {
+                if (linkUbicacion && String(linkUbicacion).trim() !== '') {
+                    dirLimpia = String(linkUbicacion).trim();
+                } else {
+                    dirLimpia = '';
+                }
+            }
+
+            let idx = catalogoClientes.findIndex(c => c.nombre.toLowerCase().trim() === nomLimpio.toLowerCase());
+            if (idx >= 0) {
+                if (telLimpio) {
+                    catalogoClientes[idx].telefono = telLimpio;
+                }
+                if (dirLimpia && dirLimpia !== 'Sin dirección registrada') {
+                    catalogoClientes[idx].direccion = dirLimpia;
+                }
+            } else {
+                catalogoClientes.push({
+                    nombre: nomLimpio,
+                    telefono: telLimpio || '',
+                    direccion: dirLimpia || 'Sin dirección registrada'
+                });
+            }
+
+            guardarCatalogoClientesEnLocalStorage();
+            renderClientesTable();
+            poblarAutocompletadoClientes();
+
+            // Sincronizar en Google Sheets en hoja "CLIENTES" (en segundo plano, sin congelar la app)
+            if (scriptEndpoint) {
+                fetch(scriptEndpoint, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'saveClient',
+                        client: {
+                            nombre: nomLimpio,
+                            telefono: telLimpio,
+                            direccion: dirLimpia
+                        }
+                    })
+                }).catch(errCli => console.warn('Error al guardar cliente en Google Sheets:', errCli));
+            }
+        }
+
+        function sincronizarCatalogoClientesDesdeRegistros() {
+            let guardados = [];
+            try {
+                const raw = localStorage.getItem('logiflow_catalogo_clientes_v1');
+                if (raw) guardados = JSON.parse(raw);
+            } catch(e) {}
+
+            if (Array.isArray(guardados)) {
+                catalogoClientes = guardados;
+            }
+
+            if (Array.isArray(registrosGlobales)) {
+                registrosGlobales.forEach(r => {
+                    if (r.cliente && r.cliente !== 'N/A' && r.cliente !== 'Uso Interno / Movimiento Logístico') {
+                        const nom = String(r.cliente).trim();
+                        const tel = String(r.telefonoCliente || '').trim();
+                        const dir = String(r.destino || r.linkUbicacion || '').trim();
+                        
+                        let idx = catalogoClientes.findIndex(c => c.nombre.toLowerCase().trim() === nom.toLowerCase());
+                        if (idx >= 0) {
+                            if (!catalogoClientes[idx].telefono && tel) catalogoClientes[idx].telefono = tel;
+                            if ((!catalogoClientes[idx].direccion || catalogoClientes[idx].direccion === 'Sin dirección registrada') && dir && dir !== 'Destino por coordinar') {
+                                catalogoClientes[idx].direccion = dir;
+                            }
+                        } else {
+                            catalogoClientes.push({
+                                nombre: nom,
+                                telefono: tel,
+                                direccion: (dir && dir !== 'Destino por coordinar') ? dir : 'Sin dirección registrada'
+                            });
+                        }
+                    }
+                });
+            }
+
+            guardarCatalogoClientesEnLocalStorage();
+            renderClientesTable();
+            poblarAutocompletadoClientes();
+        }
+
+        let clientesSearchDebounceTimer = null;
+        function debouncedRenderClientes() {
+            clearTimeout(clientesSearchDebounceTimer);
+            clientesSearchDebounceTimer = setTimeout(renderClientesTable, 120);
+        }
+
+        function limpiarFiltroClientes() {
+            const inp = document.getElementById('clientesSearchInput');
+            if (inp) inp.value = '';
+            renderClientesTable();
+        }
+
+        function abrirModalNuevoCliente() {
+            const nomOrig = document.getElementById('modalClienteNombreOriginal');
+            if (nomOrig) nomOrig.value = '';
+            document.getElementById('modalClienteNombre').value = '';
+            document.getElementById('modalClienteTelefono').value = '';
+            document.getElementById('modalClienteDireccion').value = '';
+            document.getElementById('modalClienteTitulo').innerHTML = '<i class="fa-solid fa-user-plus text-emerald-400"></i> Registro de Nuevo Cliente';
+            document.getElementById('modalGestionCliente').classList.remove('hidden');
+            setTimeout(() => { document.getElementById('modalClienteNombre').focus(); }, 100);
+        }
+
+        function abrirModalEditarCliente(encodedNombre) {
+            const nom = decodeURIComponent(encodedNombre);
+            const cli = catalogoClientes.find(c => c.nombre.toLowerCase().trim() === nom.toLowerCase().trim());
+            if (!cli) return;
+
+            document.getElementById('modalClienteNombreOriginal').value = cli.nombre;
+            document.getElementById('modalClienteNombre').value = cli.nombre;
+            document.getElementById('modalClienteTelefono').value = cli.telefono || '';
+            document.getElementById('modalClienteDireccion').value = (cli.direccion && cli.direccion !== 'Sin dirección registrada') ? cli.direccion : '';
+            document.getElementById('modalClienteTitulo').innerHTML = '<i class="fa-solid fa-pen text-emerald-400"></i> Editar Datos de Cliente';
+            document.getElementById('modalGestionCliente').classList.remove('hidden');
+        }
+
+        function cerrarModalCliente() {
+            document.getElementById('modalGestionCliente').classList.add('hidden');
+        }
+
+        function guardarModalCliente() {
+            const nom = document.getElementById('modalClienteNombre').value.trim();
+            const tel = document.getElementById('modalClienteTelefono').value.trim();
+            const dir = document.getElementById('modalClienteDireccion').value.trim();
+            const nomOrig = document.getElementById('modalClienteNombreOriginal').value.trim();
+
+            if (!nom) {
+                showToast('Campo Requerido', 'Debe ingresar el nombre del cliente.', 'error');
+                return;
+            }
+
+            if (nomOrig && nomOrig.toLowerCase() !== nom.toLowerCase()) {
+                const idxOld = catalogoClientes.findIndex(c => c.nombre.toLowerCase().trim() === nomOrig.toLowerCase());
+                if (idxOld >= 0) {
+                    catalogoClientes.splice(idxOld, 1);
+                }
+            }
+
+            guardarClienteEnCatalogo(nom, tel, dir);
+            cerrarModalCliente();
+            showToast('Cliente Guardado', `${nom} guardado en la base de datos y Google Sheets.`, 'success');
+        }
+
+        async function sincronizarClientesCompleto() {
+            showToast('Sincronizando', 'Consultando base de datos de clientes en Google Sheets...', 'info');
+            await cargarDatosDesdeGoogleSheets();
+            if (scriptEndpoint && catalogoClientes.length > 0) {
+                catalogoClientes.forEach(c => {
+                    if (c.nombre && c.nombre !== 'N/A' && c.nombre !== 'Uso Interno / Movimiento Logístico') {
+                        fetch(scriptEndpoint, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({
+                                action: 'saveClient',
+                                client: {
+                                    nombre: c.nombre,
+                                    telefono: c.telefono || '',
+                                    direccion: c.direccion || ''
+                                }
+                            })
+                        }).catch(() => {});
+                    }
+                });
+            }
+            renderClientesTable();
+            showToast('Sincronización Completa', 'Base de datos de clientes actualizada con Google Sheets.', 'success');
+        }
+
+        function renderClientesTable() {
+            const tbody = document.getElementById('clientesTableBody');
+            if (!tbody) return;
+
+            const searchInput = document.getElementById('clientesSearchInput');
+            const searchVal = searchInput ? String(searchInput.value).toLowerCase().trim() : '';
+            const terms = searchVal ? searchVal.split(/\s+/).filter(Boolean) : [];
+
+            const totalClientes = catalogoClientes.length;
+            const conTel = catalogoClientes.filter(c => c.telefono && String(c.telefono).trim() !== '').length;
+            const conDir = catalogoClientes.filter(c => c.direccion && String(c.direccion).trim() !== '' && c.direccion !== 'Sin dirección registrada').length;
+
+            const kpiTot = document.getElementById('kpiClientesTotal');
+            const kpiTel = document.getElementById('kpiClientesConTelefono');
+            const kpiDir = document.getElementById('kpiClientesConDireccion');
+            const badgeTab = document.getElementById('badgeContadorClientes');
+
+            if (kpiTot) kpiTot.innerText = totalClientes;
+            if (kpiTel) kpiTel.innerText = conTel;
+            if (kpiDir) kpiDir.innerText = conDir;
+            if (badgeTab) badgeTab.innerText = totalClientes;
+
+            let filtrados = [...catalogoClientes];
+            if (terms.length > 0) {
+                filtrados = filtrados.filter(c => {
+                    const rowText = `${c.nombre || ''} ${c.telefono || ''} ${c.direccion || ''}`.toLowerCase();
+                    return terms.every(t => rowText.includes(t));
+                });
+            }
+
+            filtrados.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500 italic">No se encontraron clientes registrados en la base de datos.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < filtrados.length; i++) {
+                const c = filtrados[i];
+                
+                let telHTML = '<span class="text-slate-500 italic">Sin teléfono</span>';
+                if (c.telefono && String(c.telefono).trim() !== '') {
+                    const cleanTel = limpiarTelefonoWhatsApp(c.telefono);
+                    telHTML = `
+                        <a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> ${c.telefono}
+                        </a>
+                    `;
+                }
+
+                let dirHTML = '<span class="text-slate-500 italic">Sin dirección</span>';
+                if (c.direccion && String(c.direccion).trim() !== '' && c.direccion !== 'Sin dirección registrada') {
+                    const infoUbic = detectarTipoUbicacion(c.direccion);
+                    if (infoUbic.tipo === 'maps') {
+                        dirHTML = `<a href="${infoUbic.url}" target="_blank" class="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1 font-medium"><i class="fa-solid fa-map-location-dot"></i> Google Maps</a>`;
+                    } else if (infoUbic.tipo === 'waze') {
+                        dirHTML = `<a href="${infoUbic.url}" target="_blank" class="text-[#33ccff] hover:text-blue-300 inline-flex items-center gap-1 font-medium"><i class="fa-brands fa-waze"></i> Waze</a>`;
+                    } else if (infoUbic.tipo === 'link') {
+                        dirHTML = `<a href="${infoUbic.url}" target="_blank" class="text-accentBlue hover:text-blue-300 inline-flex items-center gap-1 font-medium"><i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Enlace</a>`;
+                    } else {
+                        dirHTML = `<span class="text-slate-200"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i>${c.direccion}</span>`;
+                    }
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-900/40 transition-colors">
+                        <td class="py-3 px-4 text-center text-slate-500 font-mono">${i + 1}</td>
+                        <td class="py-3 px-4 font-bold text-slate-100">${c.nombre}</td>
+                        <td class="py-3 px-4 font-medium">${telHTML}</td>
+                        <td class="py-3 px-4">${dirHTML}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+                            <button onclick="abrirModalEditarCliente('${encodeURIComponent(c.nombre)}')" title="Editar datos del cliente" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-accentBlue border border-blue-500/30 rounded-xl text-xs inline-flex items-center gap-1 transition-colors">
+                                <i class="fa-solid fa-pen"></i> <span class="hidden sm:inline">Editar</span>
+                            </button>
+                            ${c.telefono ? `
+                                <a href="https://api.whatsapp.com/send?phone=${limpiarTelefonoWhatsApp(c.telefono)}" target="_blank" title="Enviar WhatsApp al cliente" class="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs inline-flex items-center gap-1 transition-colors">
+                                    <i class="fa-brands fa-whatsapp"></i> <span class="hidden sm:inline">WhatsApp</span>
+                                </a>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function poblarAutocompletadoClientes() {
+            const datalist = document.getElementById('listaClientesAutocompletar');
+            if (!datalist) return;
+            let html = '';
+            catalogoClientes.forEach(c => {
+                if (c.nombre) {
+                    html += `<option value="${c.nombre}">${c.telefono ? 'Tel: ' + c.telefono : ''}</option>`;
+                }
+            });
+            datalist.innerHTML = html;
+        }
+
+        function autoCompletarDatosClienteSeleccionado() {
+            const inputNombre = document.getElementById('manInputCliente');
+            if (!inputNombre) return;
+            const nombre = inputNombre.value.trim();
+            if (!nombre) return;
+
+            const clienteEncontrado = catalogoClientes.find(c => c.nombre.toLowerCase().trim() === nombre.toLowerCase());
+            if (clienteEncontrado) {
+                const inputTel = document.getElementById('manInputTelefonoCliente');
+                const inputDest = document.getElementById('manInputDestino');
+                const inputLink = document.getElementById('manInputLinkUbicacion');
+
+                if (inputTel && (!inputTel.value || inputTel.value.trim() === '') && clienteEncontrado.telefono) {
+                    inputTel.value = clienteEncontrado.telefono;
+                }
+
+                if (clienteEncontrado.direccion && clienteEncontrado.direccion !== 'Sin dirección registrada') {
+                    const info = detectarTipoUbicacion(clienteEncontrado.direccion);
+                    if (info.tipo === 'maps' || info.tipo === 'waze' || info.tipo === 'link') {
+                        if (inputLink && (!inputLink.value || inputLink.value.trim() === '')) {
+                            inputLink.value = clienteEncontrado.direccion;
+                        }
+                    } else {
+                        if (inputDest && (!inputDest.value || inputDest.value.trim() === '')) {
+                            inputDest.value = clienteEncontrado.direccion;
+                        }
+                    }
+                }
             }
         }
     </script>
