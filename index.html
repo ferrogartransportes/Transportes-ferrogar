@@ -354,7 +354,7 @@
                             </div>
                         </div>
 
-                        <form id="adminManualForm" onsubmit="asignarFacturaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
+                        <form id="adminManualForm" autocomplete="off" onsubmit="asignarFacturaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Sucursal Origen (Salida)</label>
@@ -371,25 +371,25 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nº Factura / CCF</label>
-                                    <input type="text" id="manInputFactura" required placeholder="Ej. CCF-00428" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="manInputFactura" autocomplete="off" required placeholder="Ej. CCF-00428" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
                                         <span>Cliente</span>
                                         <span class="text-[10px] text-emerald-400 font-normal">Autocompleta datos</span>
                                     </label>
-                                    <input type="text" id="manInputCliente" list="listaClientesAutocompletar" oninput="autoCompletarDatosClienteSeleccionado()" onchange="autoCompletarDatosClienteSeleccionado()" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="manInputCliente" autocomplete="off" list="listaClientesAutocompletar" oninput="autoCompletarDatosClienteSeleccionado()" onchange="autoCompletarDatosClienteSeleccionado()" required placeholder="Ej. Constructora San Benito" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                     <datalist id="listaClientesAutocompletar"></datalist>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center gap-1">
                                         <i class="fa-solid fa-phone"></i> Teléfono del Cliente
                                     </label>
-                                    <input type="text" id="manInputTelefonoCliente" placeholder="Ej. 7890-1234" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
+                                    <input type="text" id="manInputTelefonoCliente" autocomplete="off" placeholder="Ej. 7890-1234" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía Total ($)</label>
-                                    <input type="text" id="manInputMonto" required placeholder="Ej. $1,150.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="manInputMonto" autocomplete="off" required placeholder="Ej. $1,150.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                             </div>
                             
@@ -431,21 +431,21 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-800/30 p-4 rounded-xl border border-slate-700">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 text-amber-400"><i class="fa-solid fa-calendar-days"></i> Programar para</label>
-                                    <input type="date" id="manInputFechaProgramada" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="date" id="manInputFechaProgramada" autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
                                         <span><i class="fa-brands fa-waze text-[#33ccff]"></i> Destino / Zona</span>
                                         <span class="text-[10px] text-slate-500 font-normal">(Opcional si pega link)</span>
                                     </label>
-                                    <input type="text" id="manInputDestino" list="listaDestinosWaze" placeholder="Ej. Santa Tecla, Centro..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="manInputDestino" autocomplete="off" list="listaDestinosWaze" placeholder="Ej. Santa Tecla, Centro..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5 flex items-center justify-between">
                                         <span><i class="fa-solid fa-map-location-dot"></i> Pegar Ubicación (Link)</span>
                                         <span class="text-[10px] text-slate-400 font-normal">Detecta Maps o Waze</span>
                                     </label>
-                                    <input type="text" id="manInputLinkUbicacion" placeholder="Pegue enlace de Google Maps o Waze aquí" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
+                                    <input type="text" id="manInputLinkUbicacion" autocomplete="off" placeholder="Pegue enlace de Google Maps o Waze aquí" class="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-400">
                                 </div>
                             </div>
 
@@ -454,11 +454,11 @@
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800/20 p-4 rounded-xl border border-slate-700/60">
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cobro Transporte ($)</label>
-                                        <input type="text" id="manInputTransporte" placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                        <input type="text" id="manInputTransporte" autocomplete="off" placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                     </div>
                                     <div class="md:col-span-3">
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos / Carga</label>
-                                        <input type="text" id="manInputDescription" placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                        <input type="text" id="manInputDescription" autocomplete="off" placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                     </div>
                                 </div>
 
@@ -484,7 +484,7 @@
                                 <div id="cardsViajesMultiples" class="space-y-3"></div>
                             </div>
                             
-                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
+                            <button type="submit" id="btnGuardarFacturaManual" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2">
                                 <i class="fa-solid fa-paper-plane"></i>
                                 <span>Guardar Envío de Cliente y Procesar Asignación</span>
                             </button>
@@ -1326,12 +1326,18 @@
                         <textarea id="modalClienteDireccion" rows="2" placeholder="Ej. Final 49 Av. Sur, Colonia Flor Blanca, o pegar link de Maps/Waze" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-400"></textarea>
                     </div>
                 </div>
-                <div class="flex justify-end space-x-3 pt-2 border-t border-slate-800">
-                    <button onclick="cerrarModalCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium text-xs text-slate-300">Cancelar</button>
-                    <button onclick="guardarModalCliente()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>Guardar Cliente</span>
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                    <button id="btnEliminarClienteModal" onclick="eliminarClienteDesdeModal()" type="button" class="hidden px-3 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Eliminar Cliente</span>
                     </button>
+                    <div class="flex justify-end space-x-3 ml-auto">
+                        <button onclick="cerrarModalCliente()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium text-xs text-slate-300">Cancelar</button>
+                        <button onclick="guardarModalCliente()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg transition-all">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Guardar Cliente</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1972,13 +1978,19 @@
 
                     // Cargar catálogo de clientes provenientes de la hoja "CLIENTES" de Google Sheets (SIN DUPLICADOS)
                     if (Array.isArray(data.clientes) && data.clientes.length > 0) {
+                        let eliminados = [];
+                        try {
+                            const raw = localStorage.getItem('logiflow_clientes_eliminados_v1');
+                            if (raw) eliminados = JSON.parse(raw);
+                        } catch(e) {}
+
                         data.clientes.forEach(c => {
                             if (c.nombre) {
                                 const nom = String(c.nombre).trim();
                                 const tel = String(c.telefono || '').trim();
                                 const dir = String(c.direccion || '').trim();
                                 const claveC = normalizarTextoClave(nom);
-                                if (!claveC) return;
+                                if (!claveC || eliminados.includes(claveC)) return;
                                 
                                 let idx = catalogoClientes.findIndex(x => normalizarTextoClave(x.nombre) === claveC);
                                 if (idx >= 0) {
@@ -2614,11 +2626,11 @@
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cobro Flete / Transporte ($)</label>
-                                    <input type="text" id="multiTransporte_${i}" value="$0.00" placeholder="Ej. $10.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="multiTransporte_${i}" value="" autocomplete="off" placeholder="Ej. $10.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalle Carga Viaje ${i}</label>
-                                    <input type="text" id="multiDesc_${i}" value="Carga parte ${i} de ${cant}" placeholder="Ej. Carga parte ${i}: 100 bolsas cemento..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="multiDesc_${i}" value="" autocomplete="off" placeholder="Ej. Carga parte ${i}: 100 bolsas cemento..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                             </div>
                         </div>
@@ -3007,8 +3019,19 @@
         }
 
         // --- FUNCION FORMULARIO 1: CLIENTES (OPTIMIZADA SIN CONGELAMIENTO, NOTIFICACIÓN DIRECTA A WHATSAPP Y ENLACE RÁPIDO) ---
+        let guardandoFacturaManual = false;
+
         async function asignarFacturaManual(e) {
             e.preventDefault();
+
+            if (guardandoFacturaManual) {
+                console.warn('Asignación en curso. Ignorando clic repetido.');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnGuardarFacturaManual') || (e.target ? e.target.querySelector('button[type="submit"]') : null);
+            const originalBtnHTML = btnSubmit ? btnSubmit.innerHTML : '';
+
             const factura = document.getElementById('manInputFactura').value.trim();
             const cantInput = document.getElementById('manInputCantidadViajes');
             const cantidadViajes = parseInt(cantInput ? cantInput.value : 1) || 1;
@@ -3048,105 +3071,122 @@
             }
             const coords = obtenerCoordenadas(destino);
 
-            if (cantidadViajes === 1) {
-                // MODO 1: VIAJE ÚNICO NORMAL (DIRECTO Y FLUIDO)
-                const driverKey = document.getElementById('manSelectConductor').value;
-                const camion = document.getElementById('manSelectCamion').value;
-                const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
-                const descripcionFinal = document.getElementById('manInputDescription').value;
+            // ACTIVAR BLOQUEO CONTRA DOBLE CLIC Y FEEDBACK VISUAL
+            guardandoFacturaManual = true;
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando Asignación...';
+                btnSubmit.classList.add('opacity-60', 'cursor-not-allowed');
+            }
 
-                if (!driverKey || !camion) {
-                    showToast('Datos Incompletos', 'Por favor seleccione conductor y camión asignados.', 'error');
-                    alert('Por favor seleccione conductor y camión asignados.');
-                    return;
-                }
-
-                const guardadoExitoso = await registrarNuevoEnvio(
-                    origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
-                    descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
-                    "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
-                    telefonoCliente, true
-                );
-
-                if (guardadoExitoso) {
-                    document.getElementById('adminManualForm').reset();
-                    if (cantInput) cantInput.value = "1";
-                    cambiarCantidadViajesFactura();
-                    poblarSelectsAsignacionConductores();
-                }
-            } else {
-                // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
-                let viajesParaRegistrar = [];
-                for (let i = 1; i <= cantidadViajes; i++) {
-                    const selCond = document.getElementById(`multiConductor_${i}`);
-                    const selCam = document.getElementById(`multiCamion_${i}`);
-                    const inpTrans = document.getElementById(`multiTransporte_${i}`);
-                    const inpDesc = document.getElementById(`multiDesc_${i}`);
-
-                    const driverKey = selCond ? selCond.value : '';
-                    const camion = selCam ? selCam.value : '';
-                    const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
-                    const descPart = inpDesc ? inpDesc.value.trim() : '';
+            try {
+                if (cantidadViajes === 1) {
+                    // MODO 1: VIAJE ÚNICO NORMAL (DIRECTO Y FLUIDO)
+                    const driverKey = document.getElementById('manSelectConductor').value;
+                    const camion = document.getElementById('manSelectCamion').value;
+                    const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
+                    const descripcionFinal = document.getElementById('manInputDescription').value;
 
                     if (!driverKey || !camion) {
-                        alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
+                        showToast('Datos Incompletos', 'Por favor seleccione conductor y camión asignados.', 'error');
+                        alert('Por favor seleccione conductor y camión asignados.');
                         return;
                     }
 
-                    viajesParaRegistrar.push({
-                        index: i,
-                        driverKey: driverKey,
-                        camion: camion,
-                        transporte: transporteVal,
-                        descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
-                    });
-                }
-
-                let exitosos = 0;
-                for (let j = 0; j < viajesParaRegistrar.length; j++) {
-                    const vp = viajesParaRegistrar[j];
-                    const subFactura = `${factura} (Viaje ${vp.index}/${cantidadViajes})`;
-                    const montoViaje = vp.index === 1 ? montoVal : 0;
-                    const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
-
-                    const ok = await registrarNuevoEnvio(
-                        origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
-                        descFinal, destino, coords.lat, coords.lng, estadoFactura,
-                        `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
-                        horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
-                        false
+                    const guardadoExitoso = await registrarNuevoEnvio(
+                        origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
+                        descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
+                        "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
+                        telefonoCliente, true
                     );
-                    if (ok) exitosos++;
 
-                    // Pausa de 350ms para evitar que peticiones concurrentes colisionen en Google Sheets
-                    if (j < viajesParaRegistrar.length - 1) {
-                        await new Promise(res => setTimeout(res, 350));
+                    if (guardadoExitoso) {
+                        document.getElementById('adminManualForm').reset();
+                        if (cantInput) cantInput.value = "1";
+                        cambiarCantidadViajesFactura();
+                        poblarSelectsAsignacionConductores();
+                    }
+                } else {
+                    // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
+                    let viajesParaRegistrar = [];
+                    for (let i = 1; i <= cantidadViajes; i++) {
+                        const selCond = document.getElementById(`multiConductor_${i}`);
+                        const selCam = document.getElementById(`multiCamion_${i}`);
+                        const inpTrans = document.getElementById(`multiTransporte_${i}`);
+                        const inpDesc = document.getElementById(`multiDesc_${i}`);
+
+                        const driverKey = selCond ? selCond.value : '';
+                        const camion = selCam ? selCam.value : '';
+                        const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
+                        const descPart = inpDesc ? inpDesc.value.trim() : '';
+
+                        if (!driverKey || !camion) {
+                            alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
+                            return;
+                        }
+
+                        viajesParaRegistrar.push({
+                            index: i,
+                            driverKey: driverKey,
+                            camion: camion,
+                            transporte: transporteVal,
+                            descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
+                        });
+                    }
+
+                    let exitosos = 0;
+                    for (let j = 0; j < viajesParaRegistrar.length; j++) {
+                        const vp = viajesParaRegistrar[j];
+                        const subFactura = `${factura} (Viaje ${vp.index}/${cantidadViajes})`;
+                        const montoViaje = vp.index === 1 ? montoVal : 0;
+                        const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
+
+                        const ok = await registrarNuevoEnvio(
+                            origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
+                            descFinal, destino, coords.lat, coords.lng, estadoFactura,
+                            `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
+                            horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
+                            false
+                        );
+                        if (ok) exitosos++;
+
+                        // Pausa de 350ms para evitar que peticiones concurrentes colisionen en Google Sheets
+                        if (j < viajesParaRegistrar.length - 1) {
+                            await new Promise(res => setTimeout(res, 350));
+                        }
+                    }
+
+                    if (exitosos === cantidadViajes) {
+                        showToast('Factura Dividida Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
+                        
+                        // Notificar a cada conductor vía WhatsApp
+                        const v1 = viajesParaRegistrar[0];
+                        const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
+                        const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
+                        enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
+
+                        // Si hay un segundo viaje (o más)
+                        if (viajesParaRegistrar.length > 1) {
+                            const v2 = viajesParaRegistrar[1];
+                            const c2Name = (driversData[v2.driverKey]?.name) || (driversRespaldo[v2.driverKey]?.name) || v2.driverKey;
+                            const phone2 = (driversData[v2.driverKey]?.phone) || buscarTelefonoConductor(v2.driverKey, c2Name);
+                            setTimeout(() => {
+                                enviarWhatsApp(phone2, `${factura} (Viaje 2/${cantidadViajes})`, origen, destino, `[Viaje 2/${cantidadViajes}] ${v2.descripcion}`, v2.camion, linkUbicacion, cliente, telefonoCliente);
+                            }, 800);
+                        }
+
+                        document.getElementById('adminManualForm').reset();
+                        if (cantInput) cantInput.value = "1";
+                        cambiarCantidadViajesFactura();
+                        poblarSelectsAsignacionConductores();
                     }
                 }
-
-                if (exitosos === cantidadViajes) {
-                    showToast('Factura Dividida Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
-                    
-                    // Notificar a cada conductor vía WhatsApp
-                    const v1 = viajesParaRegistrar[0];
-                    const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
-                    const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
-                    enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
-
-                    // Si hay un segundo viaje (o más)
-                    if (viajesParaRegistrar.length > 1) {
-                        const v2 = viajesParaRegistrar[1];
-                        const c2Name = (driversData[v2.driverKey]?.name) || (driversRespaldo[v2.driverKey]?.name) || v2.driverKey;
-                        const phone2 = (driversData[v2.driverKey]?.phone) || buscarTelefonoConductor(v2.driverKey, c2Name);
-                        setTimeout(() => {
-                            enviarWhatsApp(phone2, `${factura} (Viaje 2/${cantidadViajes})`, origen, destino, `[Viaje 2/${cantidadViajes}] ${v2.descripcion}`, v2.camion, linkUbicacion, cliente, telefonoCliente);
-                        }, 800);
-                    }
-
-                    document.getElementById('adminManualForm').reset();
-                    if (cantInput) cantInput.value = "1";
-                    cambiarCantidadViajesFactura();
-                    poblarSelectsAsignacionConductores();
+            } finally {
+                guardandoFacturaManual = false;
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = originalBtnHTML;
+                    btnSubmit.classList.remove('opacity-60', 'cursor-not-allowed');
                 }
             }
         }
@@ -3205,6 +3245,17 @@
             if(!d) {
                 showToast('Error', 'Conductor no seleccionado o inválido.', 'error');
                 return false;
+            }
+
+            // Evitar duplicado accidental de la misma factura si se llamó hace menos de 20 segundos
+            const facturaNormalizada = String(factura || '').trim().toLowerCase();
+            const yaRegistradoReciente = registrosGlobales.find(r => 
+                String(r.factura || '').trim().toLowerCase() === facturaNormalizada &&
+                (Date.now() - (r.timestampCreacion || 0)) < 20000
+            );
+            if (yaRegistradoReciente) {
+                console.warn(`Envío ${factura} ya fue registrado recientemente. Evitando duplicado.`);
+                return true;
             }
 
             let destinoFinal = (destino && destino.trim()) ? destino.trim() : '';
@@ -4099,6 +4150,16 @@
             }
 
             const claveBuscada = normalizarTextoClave(nomLimpio);
+
+            // Si el cliente estaba en la lista de eliminados, removerlo al crearlo o actualizarlo
+            try {
+                let eliminados = JSON.parse(localStorage.getItem('logiflow_clientes_eliminados_v1') || '[]');
+                if (eliminados.includes(claveBuscada)) {
+                    eliminados = eliminados.filter(k => k !== claveBuscada);
+                    localStorage.setItem('logiflow_clientes_eliminados_v1', JSON.stringify(eliminados));
+                }
+            } catch(e) {}
+
             let idx = catalogoClientes.findIndex(c => normalizarTextoClave(c.nombre) === claveBuscada);
             if (idx >= 0) {
                 if (telLimpio) {
@@ -4148,6 +4209,12 @@
                 catalogoClientes = guardados;
             }
 
+            let eliminados = [];
+            try {
+                const raw = localStorage.getItem('logiflow_clientes_eliminados_v1');
+                if (raw) eliminados = JSON.parse(raw);
+            } catch(e) {}
+
             if (Array.isArray(registrosGlobales)) {
                 registrosGlobales.forEach(r => {
                     if (r.cliente && r.cliente !== 'N/A' && r.cliente !== 'Uso Interno / Movimiento Logístico') {
@@ -4155,7 +4222,7 @@
                         const tel = String(r.telefonoCliente || '').trim();
                         const dir = String(r.destino || r.linkUbicacion || '').trim();
                         const claveBuscada = normalizarTextoClave(nom);
-                        if (!claveBuscada) return;
+                        if (!claveBuscada || eliminados.includes(claveBuscada)) return;
                         
                         let idx = catalogoClientes.findIndex(c => normalizarTextoClave(c.nombre) === claveBuscada);
                         if (idx >= 0) {
@@ -4198,6 +4265,8 @@
             document.getElementById('modalClienteTelefono').value = '';
             document.getElementById('modalClienteDireccion').value = '';
             document.getElementById('modalClienteTitulo').innerHTML = '<i class="fa-solid fa-user-plus text-emerald-400"></i> Registro de Nuevo Cliente';
+            const btnDel = document.getElementById('btnEliminarClienteModal');
+            if (btnDel) btnDel.classList.add('hidden');
             document.getElementById('modalGestionCliente').classList.remove('hidden');
             setTimeout(() => { document.getElementById('modalClienteNombre').focus(); }, 100);
         }
@@ -4212,6 +4281,8 @@
             document.getElementById('modalClienteTelefono').value = cli.telefono || '';
             document.getElementById('modalClienteDireccion').value = (cli.direccion && cli.direccion !== 'Sin dirección registrada') ? cli.direccion : '';
             document.getElementById('modalClienteTitulo').innerHTML = '<i class="fa-solid fa-pen text-emerald-400"></i> Editar Datos de Cliente';
+            const btnDel = document.getElementById('btnEliminarClienteModal');
+            if (btnDel) btnDel.classList.remove('hidden');
             document.getElementById('modalGestionCliente').classList.remove('hidden');
         }
 
@@ -4235,11 +4306,67 @@
                 if (idxOld >= 0) {
                     catalogoClientes.splice(idxOld, 1);
                 }
+                if (scriptEndpoint) {
+                    fetch(scriptEndpoint, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({
+                            action: 'deleteClient',
+                            clientName: nomOrig
+                        })
+                    }).catch(() => {});
+                }
             }
 
             guardarClienteEnCatalogo(nom, tel, dir);
             cerrarModalCliente();
             showToast('Cliente Guardado', `${nom} guardado en la base de datos y Google Sheets.`, 'success');
+        }
+
+        function eliminarClienteDesdeModal() {
+            const nomOrig = document.getElementById('modalClienteNombreOriginal').value.trim();
+            if (!nomOrig) return;
+            cerrarModalCliente();
+            eliminarCliente(encodeURIComponent(nomOrig));
+        }
+
+        function eliminarCliente(encodedNombre) {
+            const nom = decodeURIComponent(encodedNombre);
+            if (!confirm(`¿Está seguro de que desea eliminar al cliente "${nom}" del catálogo y de Google Sheets?`)) {
+                return;
+            }
+
+            const claveBuscada = normalizarTextoClave(nom);
+            catalogoClientes = catalogoClientes.filter(c => normalizarTextoClave(c.nombre) !== claveBuscada);
+            
+            // Guardar en lista de clientes eliminados para evitar reimportación desde registros históricos o Sheets
+            try {
+                let eliminados = JSON.parse(localStorage.getItem('logiflow_clientes_eliminados_v1') || '[]');
+                if (!eliminados.includes(claveBuscada)) {
+                    eliminados.push(claveBuscada);
+                    localStorage.setItem('logiflow_clientes_eliminados_v1', JSON.stringify(eliminados));
+                }
+            } catch(e) {}
+
+            guardarCatalogoClientesEnLocalStorage();
+            renderClientesTable();
+            poblarAutocompletadoClientes();
+
+            // Notificar a Google Sheets para borrar de la hoja CLIENTES
+            if (scriptEndpoint) {
+                fetch(scriptEndpoint, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'deleteClient',
+                        clientName: nom
+                    })
+                }).catch(err => console.warn('Error al eliminar cliente en Google Sheets:', err));
+            }
+
+            showToast('Cliente Eliminado', `"${nom}" fue eliminado del catálogo y Google Sheets.`, 'info');
         }
 
         async function sincronizarClientesCompleto() {
@@ -4348,6 +4475,9 @@
                                     <i class="fa-brands fa-whatsapp"></i> <span class="hidden sm:inline">WhatsApp</span>
                                 </a>
                             ` : ''}
+                            <button onclick="eliminarCliente('${encodeURIComponent(c.nombre)}')" title="Eliminar cliente del catálogo" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs inline-flex items-center gap-1 transition-colors">
+                                <i class="fa-solid fa-trash"></i> <span class="hidden sm:inline">Eliminar</span>
+                            </button>
                         </td>
                     </tr>
                 `;
