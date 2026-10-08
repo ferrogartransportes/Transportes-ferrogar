@@ -2606,7 +2606,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Conductor Asignado</label>
-                                    <select id="multiConductor_${i}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    <select id="multiConductor_${i}" onchange="autoSeleccionarCamionMulti(${i}, this.value)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Camión / Unidad</label>
@@ -2614,11 +2614,11 @@
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cobro Flete / Transporte ($)</label>
-                                    <input type="text" id="multiTransporte_${i}" required placeholder="Ej. $10.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="multiTransporte_${i}" value="$0.00" placeholder="Ej. $10.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Detalle Carga Viaje ${i}</label>
-                                    <input type="text" id="multiDesc_${i}" required placeholder="Ej. Carga parte ${i}: 100 bolsas cemento..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="multiDesc_${i}" value="Carga parte ${i} de ${cant}" placeholder="Ej. Carga parte ${i}: 100 bolsas cemento..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                 </div>
                             </div>
                         </div>
@@ -2626,6 +2626,20 @@
                 }
                 cardsContainer.innerHTML = html;
                 poblarSelectsMultiViajes();
+            }
+        }
+
+        function autoSeleccionarCamionMulti(index, driverKey) {
+            const selCam = document.getElementById(`multiCamion_${index}`);
+            if (!selCam || !driverKey) return;
+            const driver = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+            if (driver && driver.unit) {
+                for (let opt of selCam.options) {
+                    if (opt.value === driver.unit || opt.text.toLowerCase().includes(driver.unit.toLowerCase())) {
+                        selCam.value = opt.value;
+                        return;
+                    }
+                }
             }
         }
 
@@ -2993,7 +3007,7 @@
         }
 
         // --- FUNCION FORMULARIO 1: CLIENTES (OPTIMIZADA SIN CONGELAMIENTO, NOTIFICACIÓN DIRECTA A WHATSAPP Y ENLACE RÁPIDO) ---
-        function asignarFacturaManual(e) {
+        async function asignarFacturaManual(e) {
             e.preventDefault();
             const factura = document.getElementById('manInputFactura').value.trim();
             const cantInput = document.getElementById('manInputCantidadViajes');
@@ -3047,7 +3061,7 @@
                     return;
                 }
 
-                const guardadoExitoso = registrarNuevoEnvio(
+                const guardadoExitoso = await registrarNuevoEnvio(
                     origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
                     descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
                     "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
@@ -3095,7 +3109,7 @@
                     const montoViaje = vp.index === 1 ? montoVal : 0;
                     const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
 
-                    const ok = registrarNuevoEnvio(
+                    const ok = await registrarNuevoEnvio(
                         origen, vp.driverKey, vp.camion, subFactura, cliente, montoViaje, vp.transporte,
                         descFinal, destino, coords.lat, coords.lng, estadoFactura,
                         `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
@@ -3103,15 +3117,31 @@
                         false
                     );
                     if (ok) exitosos++;
+
+                    // Pausa de 350ms para evitar que peticiones concurrentes colisionen en Google Sheets
+                    if (j < viajesParaRegistrar.length - 1) {
+                        await new Promise(res => setTimeout(res, 350));
+                    }
                 }
 
                 if (exitosos === cantidadViajes) {
-                    showToast('Factura Dividida Registrada', `Se guardaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
+                    showToast('Factura Dividida Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
                     
+                    // Notificar a cada conductor vía WhatsApp
                     const v1 = viajesParaRegistrar[0];
                     const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
                     const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
                     enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
+
+                    // Si hay un segundo viaje (o más)
+                    if (viajesParaRegistrar.length > 1) {
+                        const v2 = viajesParaRegistrar[1];
+                        const c2Name = (driversData[v2.driverKey]?.name) || (driversRespaldo[v2.driverKey]?.name) || v2.driverKey;
+                        const phone2 = (driversData[v2.driverKey]?.phone) || buscarTelefonoConductor(v2.driverKey, c2Name);
+                        setTimeout(() => {
+                            enviarWhatsApp(phone2, `${factura} (Viaje 2/${cantidadViajes})`, origen, destino, `[Viaje 2/${cantidadViajes}] ${v2.descripcion}`, v2.camion, linkUbicacion, cliente, telefonoCliente);
+                        }, 800);
+                    }
 
                     document.getElementById('adminManualForm').reset();
                     if (cantInput) cantInput.value = "1";
@@ -3251,9 +3281,9 @@
             // 2. ACTUALIZAR EN MEMORIA Y EN LA INTERFAZ AL INSTANTE (CERO CONGELAMIENTO)
             registrosGlobales.unshift(nuevoReg);
 
-            // Guardar o actualizar en la base de datos de clientes
+            // Guardar o actualizar en la base de datos de clientes (en memoria/local, ya que Sheets lo guarda automáticamente junto con el viaje)
             if (cliente && cliente !== 'N/A' && cliente !== 'Uso Interno / Movimiento Logístico') {
-                guardarClienteEnCatalogo(cliente, telefonoCliente, destinoFinal, linkUbicacion);
+                guardarClienteEnCatalogo(cliente, telefonoCliente, destinoFinal, linkUbicacion, false);
             }
 
             const adminIframe = document.getElementById('adminWazeIframe');
@@ -3264,18 +3294,20 @@
             actualizarTodoAdmin();
 
             // 3. MOSTRAR MENSAJE DE ÉXITO CON BOTÓN DE RESPALDO A WHATSAPP
-            showToast('Asignación Exitosa', `Guardado y WhatsApp enviado a ${d.name}.`, 'success', waUrl, 'Reabrir WhatsApp');
+            if (abrirWhatsAppDirecto) {
+                showToast('Asignación Exitosa', `Guardado y WhatsApp enviado a ${d.name}.`, 'success', waUrl, 'Reabrir WhatsApp');
+            }
 
-            // 4. GUARDAR EN GOOGLE SHEETS EN SEGUNDO PLANO (NON-BLOCKING)
-            enviarDatosAGoogleSheets(nuevoReg)
+            // 4. GUARDAR EN GOOGLE SHEETS
+            return enviarDatosAGoogleSheets(nuevoReg)
                 .then(() => {
                     console.log(`Envío ${factura} sincronizado con Google Sheets.`);
+                    return true;
                 })
                 .catch(error => {
                     console.error('Error al sincronizar con Google Sheets:', error);
+                    return true;
                 });
-
-            return true;
         }
 
         function actualizarTodoAdmin() {
@@ -4051,7 +4083,7 @@
             guardarCatalogoClientesEnLocalStorage();
         }
 
-        function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '') {
+        function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '', sincronizarSheets = true) {
             if (!nombre || String(nombre).trim() === '' || String(nombre).trim() === 'Uso Interno / Movimiento Logístico' || String(nombre).trim() === 'N/A') {
                 return;
             }
@@ -4088,7 +4120,7 @@
             poblarAutocompletadoClientes();
 
             // Sincronizar en Google Sheets en hoja "CLIENTES" (en segundo plano, sin congelar la app)
-            if (scriptEndpoint) {
+            if (sincronizarSheets && scriptEndpoint) {
                 fetch(scriptEndpoint, {
                     method: 'POST',
                     mode: 'no-cors',
