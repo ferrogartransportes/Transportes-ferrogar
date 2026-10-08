@@ -160,7 +160,7 @@
 
                 <!-- ================= VISTA 1: OPERACIÓN DEL DÍA ================= -->
                 <div id="adminViewDiario" class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
                             <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">
                                 <i class="fa-solid fa-users-viewfinder"></i>
@@ -178,6 +178,16 @@
                             <div>
                                 <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Viajes Totales (Hoy)</p>
                                 <h3 id="kpiTotalTrips" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
+                            <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Fletes (Hoy)</p>
+                                <h3 id="kpiTotalFletesHoy" class="text-2xl font-bold mt-1 text-cyan-400">$0.00</h3>
                             </div>
                         </div>
 
@@ -697,23 +707,27 @@
                 <!-- ================= VISTA 6: HISTÓRICO Y ARCHIVO GENERAL ================= -->
                 <div id="adminViewHistorico" class="hidden space-y-6">
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-6 space-y-4">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                             <div>
                                 <h3 class="font-bold text-base flex items-center gap-2 text-accentBlue">
                                     <i class="fa-solid fa-folder-open"></i> Histórico General de Envíos y Facturación
                                 </h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Filtre por fecha (día, mes, año) o busque por factura/CCF, sucursal, cliente o conductor.</p>
+                                <p class="text-xs text-slate-400 mt-0.5">Consulte y filtre por día, semana, mes, año o fecha exacta, con búsqueda por factura, cliente o chofer.</p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                <select id="filterType" onchange="renderHistoricoTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
-                                    <option value="todos">Todos los Registros</option>
-                                    <option value="fecha">Filtrar por Fecha Exacta</option>
+                                <select id="filterType" onchange="cambiarFiltroHistoricoTipo()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue font-medium">
+                                    <option value="todos">Todo el Historial</option>
+                                    <option value="dia">Hoy (Día)</option>
+                                    <option value="semana">Esta Semana</option>
+                                    <option value="mes">Este Mes</option>
+                                    <option value="anio">Este Año</option>
+                                    <option value="fecha">Fecha Específica...</option>
                                 </select>
                                 
-                                <input type="date" id="historicoDateInput" onchange="renderHistoricoTable()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                <input type="date" id="historicoDateInput" onchange="renderHistoricoTable()" class="hidden bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
 
                                 <div class="relative">
-                                    <input type="text" id="historicoSearchInput" oninput="debouncedRenderHistorico()" placeholder="Buscar nº factura/CCF, cliente..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-64 focus:outline-none focus:border-accentBlue">
+                                    <input type="text" id="historicoSearchInput" oninput="debouncedRenderHistorico()" placeholder="Buscar factura, cliente, chofer..." class="bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 w-56 sm:w-64 focus:outline-none focus:border-accentBlue">
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
                                 </div>
 
@@ -723,18 +737,38 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- BOTONES DE ACCESO RÁPIDO POR PERÍODO -->
+                        <div class="flex flex-wrap items-center gap-2 pt-1 pb-1">
+                            <span class="text-xs text-slate-400 font-semibold mr-1 flex items-center gap-1">
+                                <i class="fa-solid fa-calendar-days text-accentBlue"></i> Período:
+                            </span>
+                            <button onclick="setHistoricoPeriodo('dia')" id="histPill_dia" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Hoy (Día)</button>
+                            <button onclick="setHistoricoPeriodo('semana')" id="histPill_semana" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Esta Semana</button>
+                            <button onclick="setHistoricoPeriodo('mes')" id="histPill_mes" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Este Mes</button>
+                            <button onclick="setHistoricoPeriodo('anio')" id="histPill_anio" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">Este Año</button>
+                            <button onclick="setHistoricoPeriodo('todos')" id="histPill_todos" class="px-3 py-1 rounded-lg text-xs font-bold bg-accentBlue text-white shadow-sm transition-colors">Todo el Historial</button>
+                        </div>
+
+                        <!-- TARJETAS KPIS CON INFORMACIÓN COMPLETA -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-                                <span class="text-[10px] uppercase font-semibold text-slate-400">Total Viajes</span>
-                                <h4 id="histKpiViajes" class="text-xl font-bold text-slate-100 mt-1">0</h4>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] uppercase font-semibold text-slate-400">Total Viajes</span>
+                                    <span id="histLabelPeriodo" class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-accentBlue font-bold">Todo</span>
+                                </div>
+                                <h4 id="histKpiViajes" class="text-2xl font-bold text-slate-100 mt-1">0</h4>
+                            </div>
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                                <span class="text-[10px] uppercase font-semibold text-slate-400">Viajes Entregados</span>
+                                <h4 id="histKpiEntregados" class="text-2xl font-bold text-emerald-400 mt-1">0</h4>
                             </div>
                             <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
                                 <span class="text-[10px] uppercase font-semibold text-slate-400">Total Transporte (Fletes)</span>
-                                <h4 id="histKpiTransporte" class="text-xl font-bold text-cyan-400 mt-1">$0.00</h4>
+                                <h4 id="histKpiTransporte" class="text-2xl font-bold text-cyan-400 mt-1">$0.00</h4>
                             </div>
                             <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
                                 <span class="text-[10px] uppercase font-semibold text-slate-400">Total Facturado</span>
-                                <h4 id="histKpiFacturado" class="text-xl font-bold text-emerald-400 mt-1">$0.00</h4>
+                                <h4 id="histKpiFacturado" class="text-2xl font-bold text-emerald-400 mt-1">$0.00</h4>
                             </div>
                         </div>
 
@@ -957,6 +991,100 @@
                             </thead>
                             <tbody id="driverFutureTripsTableBody" class="divide-y divide-slate-800/60"></tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- ================= HISTORIAL Y RENDIMIENTO DE VIAJES DEL CONDUCTOR (DÍA, SEMANA, MES, AÑO) ================= -->
+                <div class="bg-darkCard border border-emerald-500/30 rounded-2xl p-5 space-y-5 mt-6 shadow-xl">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                        <div>
+                            <h3 class="font-bold text-sm text-emerald-400 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-base"></i> Mi Historial de Viajes Realizados
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Resumen de cuántos viajes ha realizado en el día, semana, mes y año.</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs">
+                            <button id="driverPeriodBtn_dia" onclick="setDriverPeriodo('dia')" class="px-3 py-1.5 rounded-lg font-bold bg-accentBlue text-white transition-all">Hoy</button>
+                            <button id="driverPeriodBtn_semana" onclick="setDriverPeriodo('semana')" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">Esta Semana</button>
+                            <button id="driverPeriodBtn_mes" onclick="setDriverPeriodo('mes')" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">Este Mes</button>
+                            <button id="driverPeriodBtn_anio" onclick="setDriverPeriodo('anio')" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all">Este Año</button>
+                        </div>
+                    </div>
+
+                    <!-- 4 TARJETAS KPIS: DÍA, SEMANA, MES, AÑO -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Hoy (Día)</span>
+                                <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-accentBlue flex items-center justify-center text-xs"><i class="fa-solid fa-calendar-day"></i></span>
+                            </div>
+                            <h4 id="driverKpiPeriodoDia" class="text-2xl font-bold text-slate-100 mt-2">0</h4>
+                            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Entregados: <b id="driverKpiEntregadosDia" class="text-emerald-400">0</b></span>
+                                <span id="driverKpiFleteDia" class="text-cyan-400 font-bold">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Esta Semana</span>
+                                <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs"><i class="fa-solid fa-calendar-week"></i></span>
+                            </div>
+                            <h4 id="driverKpiPeriodoSemana" class="text-2xl font-bold text-slate-100 mt-2">0</h4>
+                            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Entregados: <b id="driverKpiEntregadosSemana" class="text-emerald-400">0</b></span>
+                                <span id="driverKpiFleteSemana" class="text-cyan-400 font-bold">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Este Mes</span>
+                                <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs"><i class="fa-solid fa-calendar"></i></span>
+                            </div>
+                            <h4 id="driverKpiPeriodoMes" class="text-2xl font-bold text-slate-100 mt-2">0</h4>
+                            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Entregados: <b id="driverKpiEntregadosMes" class="text-emerald-400">0</b></span>
+                                <span id="driverKpiFleteMes" class="text-cyan-400 font-bold">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Este Año</span>
+                                <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs"><i class="fa-solid fa-award"></i></span>
+                            </div>
+                            <h4 id="driverKpiPeriodoAnio" class="text-2xl font-bold text-slate-100 mt-2">0</h4>
+                            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                                <span class="text-slate-500">Entregados: <b id="driverKpiEntregadosAnio" class="text-emerald-400">0</b></span>
+                                <span id="driverKpiFleteAnio" class="text-cyan-400 font-bold">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DETALLE DE VIAJES DEL PERÍODO -->
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center justify-between">
+                            <span id="driverPeriodoTituloTabla" class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-table-list text-accentBlue"></i> Detalle de Viajes (Hoy)
+                            </span>
+                            <span id="driverPeriodoContadorTabla" class="text-[11px] text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded-full border border-slate-800 font-medium">0 viajes</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-900/80 text-slate-400 uppercase border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Fecha</th>
+                                        <th class="py-2.5 px-3">Factura</th>
+                                        <th class="py-2.5 px-3">Cliente</th>
+                                        <th class="py-2.5 px-3">Destino</th>
+                                        <th class="py-2.5 px-3">Flete</th>
+                                        <th class="py-2.5 px-3">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="driverPeriodTripsTableBody" class="divide-y divide-slate-800/60"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1315,6 +1443,90 @@
             return f;
         }
 
+        // ==========================================
+        // PARSEO Y CLASIFICACIÓN DE FECHAS (DÍA, SEMANA, MES, AÑO)
+        // ==========================================
+        function parsearFechaRegistro(r) {
+            if (!r) return null;
+
+            // 1. Probar fechaProgramada (YYYY-MM-DD)
+            if (r.fechaProgramada && typeof r.fechaProgramada === 'string') {
+                const sProg = r.fechaProgramada.split('T')[0].trim();
+                const partsProg = sProg.split('-');
+                if (partsProg.length === 3 && partsProg[0].length === 4) {
+                    const y = parseInt(partsProg[0], 10);
+                    const m = parseInt(partsProg[1], 10) - 1;
+                    const d = parseInt(partsProg[2], 10);
+                    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                        return new Date(y, m, d);
+                    }
+                }
+            }
+
+            // 2. Extraer de fecha o fechaHora
+            const str = String(r.fecha || r.fechaHora || '').trim();
+            if (str) {
+                // Formato DD-MM-YYYY o DD/MM/YYYY
+                const mDMY = str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+                if (mDMY) {
+                    const d = parseInt(mDMY[1], 10);
+                    const m = parseInt(mDMY[2], 10) - 1;
+                    const y = parseInt(mDMY[3], 10);
+                    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                        return new Date(y, m, d);
+                    }
+                }
+
+                // Formato YYYY-MM-DD
+                const mYMD = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+                if (mYMD) {
+                    const y = parseInt(mYMD[1], 10);
+                    const m = parseInt(mYMD[2], 10) - 1;
+                    const d = parseInt(mYMD[3], 10);
+                    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                        return new Date(y, m, d);
+                    }
+                }
+
+                // Fallback Date.parse
+                const ts = Date.parse(str);
+                if (!isNaN(ts)) {
+                    return new Date(ts);
+                }
+            }
+
+            return null;
+        }
+
+        function clasificarPeriodoFecha(r) {
+            const ahora = new Date();
+            const hoyY = ahora.getFullYear();
+            const hoyM = ahora.getMonth();
+            const hoyD = ahora.getDate();
+
+            // Semana actual: Lunes a Domingo
+            const diaSem = ahora.getDay();
+            const diffLunes = (diaSem === 0 ? -6 : 1) - diaSem;
+            const inicioSemana = new Date(hoyY, hoyM, hoyD + diffLunes, 0, 0, 0, 0);
+            const finSemana = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + 6, 23, 59, 59, 999);
+
+            const fObj = parsearFechaRegistro(r);
+            if (!fObj) {
+                return { esHoy: true, esSemana: true, esMes: true, esAnio: true, fechaObj: ahora };
+            }
+
+            const regY = fObj.getFullYear();
+            const regM = fObj.getMonth();
+            const regD = fObj.getDate();
+
+            const esHoy = (regY === hoyY && regM === hoyM && regD === hoyD);
+            const esSemana = (fObj.getTime() >= inicioSemana.getTime() && fObj.getTime() <= finSemana.getTime());
+            const esMes = (regY === hoyY && regM === hoyM);
+            const esAnio = (regY === hoyY);
+
+            return { esHoy, esSemana, esMes, esAnio, fechaObj: fObj };
+        }
+
         function limpiarTelefonoWhatsApp(tel) {
             if (!tel) return '';
             let limpio = String(tel).trim().replace(/[^\d]/g, '');
@@ -1606,7 +1818,10 @@
             document.getElementById('driverHeaderName').innerText = driver.name;
             document.getElementById('driverHeaderUnit').innerText = `${driver.unit} • En Ruta`;
 
-            let misViajesAll = registrosGlobales.filter(r => r.driverKey === currentDriverKey);
+            let misViajesAll = registrosGlobales.filter(r => 
+                r.driverKey === currentDriverKey || 
+                (r.conductor && driver && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
+            );
             const hoyISO = new Date().toISOString().split('T')[0];
             let misViajesHoy = [];
             let misViajesFuturos = [];
@@ -1722,6 +1937,121 @@
                     }
                 }
             }
+
+            // 4. Calcular KPIs de Rendimiento Histórico del Conductor (Día, Semana, Mes, Año)
+            calcularKPIsDriverPeriodos(misViajesAll);
+            renderDriverPeriodTripsTable();
+        }
+
+        // ==========================================
+        // GESTIÓN DE RENDIMIENTO DEL CONDUCTOR (DÍA, SEMANA, MES, AÑO)
+        // ==========================================
+        let currentDriverPeriodo = 'dia';
+
+        function calcularKPIsDriverPeriodos(misViajes) {
+            if (!misViajes) return;
+            const viajesDia = misViajes.filter(r => clasificarPeriodoFecha(r).esHoy);
+            const viajesSemana = misViajes.filter(r => clasificarPeriodoFecha(r).esSemana);
+            const viajesMes = misViajes.filter(r => clasificarPeriodoFecha(r).esMes);
+            const viajesAnio = misViajes.filter(r => clasificarPeriodoFecha(r).esAnio);
+
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+
+            setVal('driverKpiPeriodoDia', viajesDia.length);
+            setVal('driverKpiEntregadosDia', viajesDia.filter(r => r.estado === 'Entregado').length);
+            setVal('driverKpiFleteDia', `$${viajesDia.reduce((s, r) => s + (parseFloat(r.transporte) || 0), 0).toFixed(2)}`);
+
+            setVal('driverKpiPeriodoSemana', viajesSemana.length);
+            setVal('driverKpiEntregadosSemana', viajesSemana.filter(r => r.estado === 'Entregado').length);
+            setVal('driverKpiFleteSemana', `$${viajesSemana.reduce((s, r) => s + (parseFloat(r.transporte) || 0), 0).toFixed(2)}`);
+
+            setVal('driverKpiPeriodoMes', viajesMes.length);
+            setVal('driverKpiEntregadosMes', viajesMes.filter(r => r.estado === 'Entregado').length);
+            setVal('driverKpiFleteMes', `$${viajesMes.reduce((s, r) => s + (parseFloat(r.transporte) || 0), 0).toFixed(2)}`);
+
+            setVal('driverKpiPeriodoAnio', viajesAnio.length);
+            setVal('driverKpiEntregadosAnio', viajesAnio.filter(r => r.estado === 'Entregado').length);
+            setVal('driverKpiFleteAnio', `$${viajesAnio.reduce((s, r) => s + (parseFloat(r.transporte) || 0), 0).toFixed(2)}`);
+        }
+
+        function setDriverPeriodo(periodo) {
+            currentDriverPeriodo = periodo;
+            actualizarPildorasDriverPeriodo(periodo);
+            renderDriverPeriodTripsTable();
+        }
+
+        function actualizarPildorasDriverPeriodo(periodo) {
+            const periodos = ['dia', 'semana', 'mes', 'anio'];
+            periodos.forEach(p => {
+                const btn = document.getElementById(`driverPeriodBtn_${p}`);
+                if (btn) {
+                    if (p === periodo) {
+                        btn.className = "px-3 py-1.5 rounded-lg font-bold bg-accentBlue text-white shadow-sm transition-all";
+                    } else {
+                        btn.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition-all";
+                    }
+                }
+            });
+        }
+
+        function renderDriverPeriodTripsTable() {
+            const tbody = document.getElementById('driverPeriodTripsTableBody');
+            if (!tbody || !currentDriverKey) return;
+            const driver = driversData[currentDriverKey];
+
+            let misViajesAll = registrosGlobales.filter(r => 
+                r.driverKey === currentDriverKey || 
+                (r.conductor && driver && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
+            );
+
+            let filtrados = misViajesAll.filter(r => {
+                const c = clasificarPeriodoFecha(r);
+                if (currentDriverPeriodo === 'dia') return c.esHoy;
+                if (currentDriverPeriodo === 'semana') return c.esSemana;
+                if (currentDriverPeriodo === 'mes') return c.esMes;
+                if (currentDriverPeriodo === 'anio') return c.esAnio;
+                return true;
+            });
+
+            const titulos = {
+                dia: 'Detalle de Viajes (Hoy)',
+                semana: 'Detalle de Viajes (Esta Semana)',
+                mes: 'Detalle de Viajes (Este Mes)',
+                anio: 'Detalle de Viajes (Este Año)'
+            };
+            const titEl = document.getElementById('driverPeriodoTituloTabla');
+            if (titEl) {
+                titEl.innerHTML = `<i class="fa-solid fa-table-list text-accentBlue"></i> ${titulos[currentDriverPeriodo] || 'Detalle de Viajes'}`;
+            }
+
+            const contEl = document.getElementById('driverPeriodoContadorTabla');
+            if (contEl) {
+                contEl.innerText = `${filtrados.length} ${filtrados.length === 1 ? 'viaje' : 'viajes'}`;
+            }
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-5 text-center text-slate-500 italic">No tiene viajes registrados en este período.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filtrados.forEach(r => {
+                const badge = r.estado === 'Entregado'
+                    ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`
+                    : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
+
+                html += `
+                    <tr class="hover:bg-slate-900/40">
+                        <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px]">${r.fechaProgramada ? formatearFechaDisplay(r.fechaProgramada) : (r.fecha || 'Hoy')}</td>
+                        <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
+                        <td class="py-2.5 px-3 text-slate-200">${r.cliente}</td>
+                        <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
+                        <td class="py-2.5 px-3 text-cyan-400 font-bold">$${(parseFloat(r.transporte) || 0).toFixed(2)}</td>
+                        <td class="py-2.5 px-3">${badge}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
 
         function switchAdminTab(tab) {
@@ -2570,6 +2900,7 @@
 
             let totalViajes = viajesOperacionHoy.length;
             let totalMonto = viajesOperacionHoy.reduce((acc, r) => acc + r.monto, 0);
+            let totalFletes = viajesOperacionHoy.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
 
             let viajesFuturosPendientes = registrosGlobales.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO && r.estado !== 'Entregado').length;
 
@@ -2577,6 +2908,11 @@
             document.getElementById('kpiTotalTrips').innerText = totalViajes;
             document.getElementById('kpiInvoices').innerText = `$${totalMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             
+            const kpiFletes = document.getElementById('kpiTotalFletesHoy');
+            if (kpiFletes) {
+                kpiFletes.innerText = `$${totalFletes.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            }
+
             const kpiScheduled = document.getElementById('kpiScheduledInvoices');
             if (kpiScheduled) {
                 kpiScheduled.innerText = viajesFuturosPendientes;
@@ -3014,17 +3350,74 @@
             grid.innerHTML = gridHtml;
         }
 
+        function cambiarFiltroHistoricoTipo() {
+            const filterType = document.getElementById('filterType') ? document.getElementById('filterType').value : 'todos';
+            const dateInput = document.getElementById('historicoDateInput');
+            if (dateInput) {
+                if (filterType === 'fecha') {
+                    dateInput.classList.remove('hidden');
+                } else {
+                    dateInput.classList.add('hidden');
+                }
+            }
+            actualizarPildorasHistorico(filterType);
+            renderHistoricoTable();
+        }
+
+        function setHistoricoPeriodo(periodo) {
+            const sel = document.getElementById('filterType');
+            if (sel) sel.value = periodo;
+            cambiarFiltroHistoricoTipo();
+        }
+
+        function actualizarPildorasHistorico(periodo) {
+            const periodos = ['dia', 'semana', 'mes', 'anio', 'todos'];
+            periodos.forEach(p => {
+                const btn = document.getElementById(`histPill_${p}`);
+                if (btn) {
+                    if (p === periodo) {
+                        btn.className = "px-3 py-1 rounded-lg text-xs font-bold bg-accentBlue text-white shadow-sm transition-colors";
+                    } else {
+                        btn.className = "px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors";
+                    }
+                }
+            });
+        }
+
         function renderHistoricoTable() {
             const tbody = document.getElementById('historicoTableBody');
             if(!tbody) return;
-            const searchType = document.getElementById('filterType').value;
-            const selectedDate = document.getElementById('historicoDateInput').value;
-            const search = String(document.getElementById('historicoSearchInput').value).toLowerCase().trim();
+            const searchType = document.getElementById('filterType') ? document.getElementById('filterType').value : 'todos';
+            const selectedDate = document.getElementById('historicoDateInput') ? document.getElementById('historicoDateInput').value : '';
+            const search = document.getElementById('historicoSearchInput') ? String(document.getElementById('historicoSearchInput').value).toLowerCase().trim() : '';
 
             const terms = search ? search.split(/\s+/).filter(Boolean) : [];
 
+            let labelTexto = 'Todo';
+            if (searchType === 'dia') labelTexto = 'Hoy';
+            else if (searchType === 'semana') labelTexto = 'Esta Semana';
+            else if (searchType === 'mes') labelTexto = 'Este Mes';
+            else if (searchType === 'anio') labelTexto = 'Este Año';
+            else if (searchType === 'fecha' && selectedDate) labelTexto = formatearFechaDisplay(selectedDate);
+            
+            const badgeLbl = document.getElementById('histLabelPeriodo');
+            if (badgeLbl) badgeLbl.innerText = labelTexto;
+
             let filtrados = registrosGlobales.filter(r => {
-                if (searchType === 'fecha' && selectedDate) {
+                // 1. Filtro por período de tiempo (Día, Semana, Mes, Año, Fecha Específica o Todos)
+                if (searchType === 'dia') {
+                    const c = clasificarPeriodoFecha(r);
+                    if (!c.esHoy) return false;
+                } else if (searchType === 'semana') {
+                    const c = clasificarPeriodoFecha(r);
+                    if (!c.esSemana) return false;
+                } else if (searchType === 'mes') {
+                    const c = clasificarPeriodoFecha(r);
+                    if (!c.esMes) return false;
+                } else if (searchType === 'anio') {
+                    const c = clasificarPeriodoFecha(r);
+                    if (!c.esAnio) return false;
+                } else if (searchType === 'fecha' && selectedDate) {
                     let fechaRegistro = String(r.fecha || '').toLowerCase();
                     const [year, month, day] = selectedDate.split('-'); 
                     const fechaFormatoBuscado = `${day}-${month}-${year}`;
@@ -3034,8 +3427,9 @@
                     }
                 }
 
+                // 2. Filtro por búsqueda de texto
                 if (terms.length > 0) {
-                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.cliente || ''} ${r.telefonoCliente || ''} ${r.conductor || ''} ${r.camion || ''} ${r.destino || ''} ${r.descripcion || ''}`.toLowerCase();
+                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.cliente || ''} ${r.telefonoCliente || ''} ${r.conductor || ''} ${r.camion || ''} ${r.destino || ''} ${r.linkUbicacion || ''} ${r.descripcion || ''}`.toLowerCase();
                     for (let t = 0; t < terms.length; t++) {
                         if (!rowText.includes(terms[t])) return false;
                     }
@@ -3045,15 +3439,22 @@
             });
 
             let tViajes = filtrados.length;
-            let tTrans = filtrados.reduce((acc, r) => acc + r.transporte, 0);
-            let tFact = filtrados.reduce((acc, r) => acc + r.monto, 0);
+            let tEntregados = filtrados.filter(r => r.estado === 'Entregado').length;
+            let tTrans = filtrados.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
+            let tFact = filtrados.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
 
-            document.getElementById('histKpiViajes').innerText = tViajes;
-            document.getElementById('histKpiTransporte').innerText = `$${tTrans.toFixed(2)}`;
-            document.getElementById('histKpiFacturado').innerText = `$${tFact.toFixed(2)}`;
+            const kpiViajes = document.getElementById('histKpiViajes');
+            const kpiEntregados = document.getElementById('histKpiEntregados');
+            const kpiTrans = document.getElementById('histKpiTransporte');
+            const kpiFact = document.getElementById('histKpiFacturado');
+
+            if (kpiViajes) kpiViajes.innerText = tViajes;
+            if (kpiEntregados) kpiEntregados.innerText = tEntregados;
+            if (kpiTrans) kpiTrans.innerText = `$${tTrans.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            if (kpiFact) kpiFact.innerText = `$${tFact.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500 italic">No se encontraron registros que coincidan con el filtro.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="py-6 text-center text-slate-500 italic">No se encontraron registros que coincidan con el período y filtros seleccionados.</td></tr>`;
                 return;
             }
 
@@ -3064,7 +3465,9 @@
                 
                 let horaExactaBadge = r.horaEntrega && String(r.horaEntrega).trim() !== '' 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold block whitespace-nowrap"><i class="fa-solid fa-check-double mr-1"></i>${r.horaEntrega}</span>`
-                    : `<span class="text-slate-500 text-[10px] italic">No entregado</span>`;
+                    : (r.estado === 'Entregado' 
+                        ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold block whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i>Entregado</span>`
+                        : `<span class="text-amber-400 text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i>Pendiente</span>`);
 
                 let telClienteHTML = '';
                 if (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') {
@@ -3083,7 +3486,10 @@
                             ${telClienteHTML}
                         </td>
                         <td class="py-3 px-4 text-[10px]">${estadoFactText}</td>
-                        <td class="py-3 px-4 text-emerald-400 font-bold">$${r.monto.toFixed(2)}</td>
+                        <td class="py-3 px-4">
+                            <div class="text-emerald-400 font-bold">$${r.monto.toFixed(2)}</div>
+                            <div class="text-[10px] text-cyan-400 font-medium">Flete: $${(parseFloat(r.transporte) || 0).toFixed(2)}</div>
+                        </td>
                         <td class="py-3 px-4">${renderDestinoHTML(r)}</td>
                         <td class="py-3 px-4">${horaExactaBadge}</td>
                     </tr>
@@ -3094,8 +3500,13 @@
 
         function limpiarFiltrosHistorico() {
             document.getElementById('filterType').value = 'todos';
-            document.getElementById('historicoDateInput').value = '';
+            const dateInp = document.getElementById('historicoDateInput');
+            if (dateInp) {
+                dateInp.value = '';
+                dateInp.classList.add('hidden');
+            }
             document.getElementById('historicoSearchInput').value = '';
+            actualizarPildorasHistorico('todos');
             renderHistoricoTable();
         }
 
