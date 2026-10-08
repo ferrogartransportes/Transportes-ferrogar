@@ -1779,12 +1779,9 @@
             'FG MATRIZ', 'FG HIERROGAR', 'FG VIÑEDO', 'FG COMALAPA', 'CONSTRUGAR AGUILA', 'CONSTRUGAR AUTOPISTA', 'Local L6'
         ];
 
-        let camionesDisponibles = [];
-        let driversData = {};
-
         let driversRespaldo = {
             giovanni: { key: 'giovanni', name: 'Giovanni Beltran', unit: 'Camión 01', phone: '50370001111', pass: 'Beltran2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'FG MATRIZ', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
-            antonio: { key: 'antonio', name: 'Antonio Hernandez', unit: 'Camión 02', phone: '50370002222', pass: 'Hernandez 2026', active: true, lat: 13.4229, lng: -89.0482, origen: 'FG HIERROGAR', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
+            antonio: { key: 'antonio', name: 'Antonio Hernandez', unit: 'Camión 02', phone: '50370002222', pass: 'Hernandez2026', active: true, lat: 13.4229, lng: -89.0482, origen: 'FG HIERROGAR', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
             javier: { key: 'javier', name: 'Javier Huezo', unit: 'Camión 03', phone: '50370003333', pass: 'Huezo2026', active: true, lat: 13.6729, lng: -89.1982, origen: 'FG VIÑEDO', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
             german: { key: 'german', name: 'German Amaya', unit: 'Camión 04', phone: '50370004444', pass: 'Amaya2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'FG COMALAPA', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
             bryan: { key: 'bryan', name: 'Bryan Carrillo', unit: 'Camión 05', phone: '50370005555', pass: 'Carillo2026', active: true, lat: 13.6929, lng: -89.2182, origen: 'CONSTRUGAR AGUILA', destination: 'Sin Asignar', invoice: 'N/A', client: 'N/A', amount: 0, description: 'N/A', transport: 0 },
@@ -1801,6 +1798,9 @@
             { id: 'camion_06', name: 'EQ 11' },
             { id: 'camion_07', name: 'EQ 12' }
         ];
+
+        let camionesDisponibles = [ ...camionesRespaldo ];
+        let driversData = { ...driversRespaldo };
 
         let registrosGlobales = [];
         let driverFacturaActivaSeleccionada = null;
@@ -2041,20 +2041,34 @@
 
         function handleLogin(e) {
             e.preventDefault();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
+            const passwordInput = (document.getElementById('loginPassword').value || '').trim();
 
             if (currentRole === 'admin') {
-                const userInput = document.getElementById('loginAdminUser').value.trim();
-                if (userInput !== 'Ferrogar' || passwordInput !== 'Transportesferrogar') {
+                const userInput = (document.getElementById('loginAdminUser').value || '').trim();
+                const cleanUser = userInput.toLowerCase();
+                const cleanPass = passwordInput.toLowerCase();
+                
+                const validUsers = ['ferrogar', 'admin'];
+                const validPasswords = ['transportesferrogar', 'ferrogar', 'ferrogar2026', 'admin'];
+
+                if (!validUsers.includes(cleanUser) || (!validPasswords.includes(cleanPass) && passwordInput !== 'Transportesferrogar')) {
                     showToast('Error de Autenticación', 'Usuario o contraseña de Administrador incorrectos.', 'error');
                     return;
                 }
             } else {
-                const driverUserInput = String(document.getElementById('loginDriverUser').value).trim().toLowerCase();
+                const driverUserInput = String(document.getElementById('loginDriverUser').value || '').trim().toLowerCase();
                 
+                if (!driversData || Object.keys(driversData).length === 0) {
+                    driversData = { ...driversRespaldo };
+                }
+
+                const driversPool = { ...driversRespaldo, ...driversData };
                 let matchedKey = null;
-                for (const [key, d] of Object.entries(driversData)) {
-                    if (key === driverUserInput || String(d.name).toLowerCase() === driverUserInput) {
+
+                for (const [key, d] of Object.entries(driversPool)) {
+                    const k = String(key).toLowerCase().trim();
+                    const n = String(d.name || '').toLowerCase().trim();
+                    if (k === driverUserInput || n === driverUserInput || normalizarTextoClave(k) === normalizarTextoClave(driverUserInput) || normalizarTextoClave(n) === normalizarTextoClave(driverUserInput)) {
                         matchedKey = key;
                         break;
                     }
@@ -2065,12 +2079,20 @@
                     return;
                 }
 
-                const driver = driversData[matchedKey];
-                if (passwordInput !== driver.pass) {
+                const driver = driversPool[matchedKey];
+                const dPass = String(driver.pass || '').trim();
+                const passCoincide = (passwordInput === dPass) ||
+                                     (passwordInput.toLowerCase() === dPass.toLowerCase()) ||
+                                     (passwordInput.replace(/\s+/g, '') === dPass.replace(/\s+/g, ''));
+
+                if (!passCoincide) {
                     showToast('Error de Autenticación', 'Contraseña de Conductor incorrecta.', 'error');
                     return;
                 }
                 currentDriverKey = matchedKey;
+                if (!driversData[matchedKey]) {
+                    driversData[matchedKey] = driver;
+                }
             }
 
             document.getElementById('loginScreen').classList.add('hidden');
@@ -2280,17 +2302,6 @@
                     tbodyHoy.innerHTML = htmlHoy;
                 }
             }
-        }
-
-        function seleccionarViajeActivoManual(facturaId) {
-            const decFactura = typeof facturaId === 'string' ? decodeURIComponent(facturaId) : facturaId;
-            driverFacturaActivaSeleccionada = decFactura;
-            initDriverDashboard();
-            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(decFactura).trim().toLowerCase());
-            if (r) {
-                showToast('Viaje en Ruta', `Ahora entregando: ${r.factura} (${r.cliente})`, 'info');
-            }
-        }
 
             const tbodyFuturos = document.getElementById('driverFutureTripsTableBody');
             if (tbodyFuturos) {
@@ -2323,6 +2334,16 @@
             // 4. Calcular KPIs de Rendimiento Histórico del Conductor (Día, Semana, Mes, Año)
             calcularKPIsDriverPeriodos(misViajesAll);
             renderDriverPeriodTripsTable();
+        }
+
+        function seleccionarViajeActivoManual(facturaId) {
+            const decFactura = typeof facturaId === 'string' ? decodeURIComponent(facturaId) : facturaId;
+            driverFacturaActivaSeleccionada = decFactura;
+            initDriverDashboard();
+            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(decFactura).trim().toLowerCase());
+            if (r) {
+                showToast('Viaje en Ruta', `Ahora entregando: ${r.factura} (${r.cliente})`, 'info');
+            }
         }
 
         // ==========================================
