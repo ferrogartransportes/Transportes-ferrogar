@@ -1222,11 +1222,19 @@
         </div>
 
         <!-- Toast -->
-        <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 z-50 transform translate-y-24 opacity-0 transition-all duration-300">
-            <div id="toastIcon" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-check"></i></div>
-            <div>
-                <h4 id="toastTitle" class="font-bold text-xs">Operación Exitosa</h4>
-                <p id="toastMsg" class="text-[11px] text-slate-400">Datos actualizados correctamente.</p>
+        <div id="toast" class="fixed bottom-6 right-6 max-w-sm bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex flex-col z-50 transform translate-y-24 opacity-0 transition-all duration-300">
+            <div class="flex items-center space-x-3">
+                <div id="toastIcon" class="w-7 h-7 shrink-0 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-check"></i></div>
+                <div class="flex-1 min-w-0">
+                    <h4 id="toastTitle" class="font-bold text-xs truncate">Operación Exitosa</h4>
+                    <p id="toastMsg" class="text-[11px] text-slate-400 break-words">Datos actualizados correctamente.</p>
+                </div>
+            </div>
+            <div id="toastActionContainer" class="hidden mt-2 pt-2 border-t border-slate-800 flex justify-end">
+                <a id="toastActionBtn" href="#" target="_blank" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow transition-all">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span id="toastActionBtnText">Abrir WhatsApp</span>
+                </a>
             </div>
         </div>
     </div>
@@ -1529,12 +1537,19 @@
 
         function limpiarTelefonoWhatsApp(tel) {
             if (!tel) return '';
-            let limpio = String(tel).trim().replace(/[^\d]/g, '');
+            let str = String(tel).trim();
+            str = str.replace(/\.0+$/, '');
+            let limpio = str.replace(/[^\d]/g, '');
             if (limpio.startsWith('00503')) {
                 limpio = limpio.substring(2);
+            } else if (limpio.startsWith('0503')) {
+                limpio = limpio.substring(1);
             }
             if (limpio.startsWith('503503')) {
                 limpio = limpio.substring(3);
+            }
+            if (limpio.startsWith('5030') && limpio.length === 12) {
+                limpio = '503' + limpio.substring(4);
             }
             // Si tiene 8 dígitos (El Salvador sin código de área)
             if (limpio.length === 8) {
@@ -1546,20 +1561,73 @@
         }
 
         function buscarTelefonoConductor(driverKey, conductorNombre) {
-            let d = driversData[driverKey];
+            let tel = '';
+            let d = driverKey ? driversData[driverKey] : null;
             if (!d && conductorNombre) {
                 const nom = String(conductorNombre).toLowerCase().trim();
                 d = Object.values(driversData).find(x => x.name && x.name.toLowerCase().trim() === nom);
             }
             if (!d && driverKey) {
                 const keyBusqueda = String(driverKey).toLowerCase().trim();
-                d = Object.values(driversData).find(x => x.key && (x.key.includes(keyBusqueda) || keyBusqueda.includes(x.key)));
+                d = Object.values(driversData).find(x => x.key && (x.key.toLowerCase().includes(keyBusqueda) || keyBusqueda.includes(x.key.toLowerCase())));
             }
             if (!d && conductorNombre) {
                 const partes = String(conductorNombre).toLowerCase().trim().split(/\s+/).filter(p => p.length > 2);
                 d = Object.values(driversData).find(x => x.name && partes.some(p => x.name.toLowerCase().includes(p)));
             }
-            return d ? limpiarTelefonoWhatsApp(d.phone) : '';
+
+            if (d && d.phone) {
+                tel = limpiarTelefonoWhatsApp(d.phone);
+            }
+
+            // Si aún no hay teléfono o es menor a 8 dígitos, buscar en driversRespaldo
+            if ((!tel || tel.length < 8) && typeof driversRespaldo !== 'undefined') {
+                let dResp = driverKey ? driversRespaldo[driverKey] : null;
+                if (!dResp && conductorNombre) {
+                    const nom = String(conductorNombre).toLowerCase().trim();
+                    dResp = Object.values(driversRespaldo).find(x => x.name && x.name.toLowerCase().trim() === nom);
+                }
+                if (!dResp && driverKey) {
+                    const keyBusqueda = String(driverKey).toLowerCase().trim();
+                    dResp = Object.values(driversRespaldo).find(x => x.key && (x.key.toLowerCase().includes(keyBusqueda) || keyBusqueda.includes(x.key.toLowerCase())));
+                }
+                if (!dResp && conductorNombre) {
+                    const partes = String(conductorNombre).toLowerCase().trim().split(/\s+/).filter(p => p.length > 2);
+                    dResp = Object.values(driversRespaldo).find(x => x.name && partes.some(p => x.name.toLowerCase().includes(p)));
+                }
+                if (dResp && dResp.phone) {
+                    tel = limpiarTelefonoWhatsApp(dResp.phone);
+                }
+            }
+
+            return tel;
+        }
+
+        function abrirVentanaWhatsApp(url) {
+            if (!url) return false;
+            try {
+                const win = window.open(url, '_blank');
+                if (!win || win.closed || typeof win.closed === 'undefined') {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 150);
+                }
+                return true;
+            } catch (e) {
+                console.warn('Error al abrir WhatsApp:', e);
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); }, 150);
+                return false;
+            }
         }
 
         const sucursalesOficiales = [
@@ -1604,11 +1672,15 @@
             }, 15000);
         };
 
-        function showToast(title, msg, type = 'success') {
+        let toastTimeout = null;
+        function showToast(title, msg, type = 'success', actionUrl = '', actionText = 'Abrir WhatsApp') {
             const toast = document.getElementById('toast');
             const toastTitle = document.getElementById('toastTitle');
             const toastMsg = document.getElementById('toastMsg');
             const toastIcon = document.getElementById('toastIcon');
+            const actionContainer = document.getElementById('toastActionContainer');
+            const actionBtn = document.getElementById('toastActionBtn');
+            const actionBtnText = document.getElementById('toastActionBtnText');
 
             if (!toast || !toastTitle || !toastMsg || !toastIcon) return;
 
@@ -1616,20 +1688,31 @@
             toastMsg.innerText = msg;
 
             if (type === 'error') {
-                toastIcon.className = 'w-7 h-7 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm';
+                toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
             } else if (type === 'info') {
-                toastIcon.className = 'w-7 h-7 rounded-full bg-blue-500/20 text-accentBlue flex items-center justify-center text-sm';
+                toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-blue-500/20 text-accentBlue flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-info"></i>';
             } else {
-                toastIcon.className = 'w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm';
+                toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
             }
 
+            if (actionContainer && actionBtn) {
+                if (actionUrl) {
+                    actionBtn.href = actionUrl;
+                    if (actionBtnText) actionBtnText.innerText = actionText;
+                    actionContainer.classList.remove('hidden');
+                } else {
+                    actionContainer.classList.add('hidden');
+                }
+            }
+
             toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => {
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
                 toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3500);
+            }, actionUrl ? 7000 : 3500);
         }
 
         async function cargarDatosDesdeGoogleSheets(silent = false) {
@@ -2393,7 +2476,7 @@
             msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
             
             const urlConductor = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
-            window.open(urlConductor, '_blank');
+            abrirVentanaWhatsApp(urlConductor);
         }
 
         function enviarWhatsAppAction(facturaId) {
@@ -2401,7 +2484,7 @@
             const r = registrosGlobales.find(x => String(x.factura) === String(decFactura));
             if(!r) return;
             const driverPhone = buscarTelefonoConductor(r.driverKey, r.conductor);
-            enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, '', r.cliente, r.telefonoCliente);
+            enviarWhatsApp(driverPhone, r.factura, r.origen, r.destino, r.descripcion, r.camion, r.linkUbicacion || '', r.cliente, r.telefonoCliente);
         }
 
         // ==========================================
@@ -2538,9 +2621,9 @@
                 }
 
                 cerrarModalReasignar();
-                showToast('Reasignación Exitosa', `Factura ${viaje.factura} transferida de ${anteriorConductor} a ${nuevoDriver.name}.`, 'success');
 
                 // 5. Notificar al nuevo conductor por WhatsApp si está marcado
+                let waReasigUrl = '';
                 if (notificarWA) {
                     const telConductor = buscarTelefonoConductor(nuevoDriverKey, nuevoDriver.name);
                     let msgReasignado = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*REASIGNACIÓN DE ENVÍO*\nHola ${nuevoDriver.name}, se le ha reasignado el siguiente envío (previo: ${anteriorConductor}):\n• *Factura/CCF:* ${viaje.factura}`;
@@ -2550,10 +2633,13 @@
                     msgReasignado += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
 
                     const telLimpio = limpiarTelefonoWhatsApp(telConductor);
-                    if (telLimpio) {
-                        window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msgReasignado)}`, '_blank');
+                    if (telLimpio && telLimpio.length >= 8) {
+                        waReasigUrl = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msgReasignado)}`;
+                        abrirVentanaWhatsApp(waReasigUrl);
                     }
                 }
+
+                showToast('Reasignación Exitosa', `Factura ${viaje.factura} transferida a ${nuevoDriver.name}.`, 'success', waReasigUrl, 'Abrir WhatsApp');
 
             } catch (err) {
                 console.error(err);
@@ -2708,10 +2794,14 @@
                     if (exitosos === cantidadViajes) {
                         showToast('Factura Dividida Registrada', `Se guardaron con éxito los ${cantidadViajes} viajes de la factura ${factura}.`, 'success');
                         
-                        let resumenViajes = viajesParaRegistrar.map(v => `• Viaje ${v.index}: ${driversData[v.driverKey]?.name} - Flete: $${v.transporte.toFixed(2)}`).join('\n');
-                        if (confirm(`¡Los ${cantidadViajes} viajes fueron guardados correctamente en la base de datos!\n\n${resumenViajes}\n\n¿Desea abrir WhatsApp para notificar al Conductor del Viaje 1 (${driversData[viajesParaRegistrar[0].driverKey]?.name})?`)) {
-                            const v1 = viajesParaRegistrar[0];
-                            const phone1 = driversData[v1.driverKey]?.phone;
+                        let resumenViajes = viajesParaRegistrar.map(v => {
+                            const cName = (driversData[v.driverKey]?.name) || (driversRespaldo[v.driverKey]?.name) || v.driverKey;
+                            return `• Viaje ${v.index}: ${cName} - Flete: $${v.transporte.toFixed(2)}`;
+                        }).join('\n');
+                        const v1 = viajesParaRegistrar[0];
+                        const c1Name = (driversData[v1.driverKey]?.name) || (driversRespaldo[v1.driverKey]?.name) || v1.driverKey;
+                        if (confirm(`¡Los ${cantidadViajes} viajes fueron guardados correctamente en la base de datos!\n\n${resumenViajes}\n\n¿Desea abrir WhatsApp para notificar al Conductor del Viaje 1 (${c1Name})?`)) {
+                            const phone1 = (driversData[v1.driverKey]?.phone) || buscarTelefonoConductor(v1.driverKey, c1Name);
                             enviarWhatsApp(phone1, `${factura} (Viaje 1/${cantidadViajes})`, origen, destino, `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`, v1.camion, linkUbicacion, cliente, telefonoCliente);
                         }
 
@@ -2776,7 +2866,12 @@
 
         // --- REGISTRAR EN SHEETS Y FRONTEND (OPTIMIZADA CON WAIT, WHATSAPP Y TELÉFONO CLIENTE) ---
         async function registrarNuevoEnvio(origen, driverKey, camion, factura, cliente, monto, transporte, descripcion, destino, lat, lng, estadoFactura, tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente = '', abrirWhatsAppDirecto = true) {
-            const d = driversData[driverKey];
+            let d = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+            if(!d) {
+                const nom = String(driverKey).toLowerCase().trim();
+                d = Object.values(driversData).find(x => x.name && x.name.toLowerCase().trim() === nom) ||
+                    (typeof driversRespaldo !== 'undefined' ? Object.values(driversRespaldo).find(x => x.name && x.name.toLowerCase().trim() === nom) : null);
+            }
             if(!d) {
                 showToast('Error', 'Conductor no seleccionado o inválido.', 'error');
                 return false;
@@ -2821,23 +2916,30 @@
                 linkUbicacion: linkUbicacion || ''
             };
 
-            const telLimpio = limpiarTelefonoWhatsApp(d.phone);
+            // Búsqueda exhaustiva del teléfono del conductor
+            let telLimpio = limpiarTelefonoWhatsApp(d.phone);
+            if (!telLimpio || telLimpio.length < 8) {
+                telLimpio = buscarTelefonoConductor(driverKey, d.name);
+            }
 
             // Preparar el enlace de WhatsApp
-            let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
-            if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
-            if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
-            msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
-            if (linkUbicacion && linkUbicacion.trim() !== '') {
-                msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
+            let waUrl = '';
+            if (telLimpio && telLimpio.length >= 8) {
+                let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
+                if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
+                if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+                msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destinoFinal}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcion}`;
+                if (linkUbicacion && linkUbicacion.trim() !== '') {
+                    msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
+                }
+                msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+                waUrl = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
             }
-            msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
-            const waUrl = telLimpio ? `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}` : '';
 
-            // Se abre la pestaña *antes* del await para evitar que el navegador lo bloquee como "ventana emergente"
-            let waWindow = null;
+            // ABRIR WHATSAPP INMEDIATAMENTE durante el evento de clic del usuario (User Gesture activo)
+            // antes del await de Google Sheets, garantizando que el navegador NO lo bloquee como popup emergente
             if (abrirWhatsAppDirecto && waUrl) {
-                waWindow = window.open('', '_blank');
+                abrirVentanaWhatsApp(waUrl);
             }
 
             try {
@@ -2853,23 +2955,20 @@
 
                 actualizarTodoAdmin();
 
-                // 1. Mostrar mensaje visual del guardado exitoso
-                showToast('Asignación Exitosa', `Guardado con éxito en Base de Datos.`, 'success');
-                
-                // 2. Ejecutar WhatsApp redirigiendo la pestaña que abrimos al inicio
-                if (abrirWhatsAppDirecto && waUrl) {
-                    if (waWindow) {
-                        waWindow.location.href = waUrl;
-                    } else {
-                        window.open(waUrl, '_blank');
+                // Mostrar mensaje visual con botón directo de WhatsApp de respaldo
+                if (waUrl) {
+                    showToast('Asignación Exitosa', `Guardado en base de datos y WhatsApp enviado a ${d.name}.`, 'success', waUrl, 'Reabrir WhatsApp');
+                } else {
+                    showToast('Asignación Guardada', `Guardado en base de datos. (Conductor ${d.name} sin teléfono).`, 'info');
+                    if (abrirWhatsAppDirecto) {
+                        alert(`⚠️ El envío "${factura}" se guardó en Google Sheets, pero WhatsApp no se pudo abrir porque el conductor "${d.name}" no tiene un número telefónico válido registrado.\n\nPuede ingresar su número en la pestaña "Conductores" o "Gestión Personal".`);
                     }
                 }
                 
                 return true;
             } catch (error) {
-                if (waWindow) waWindow.close();
                 console.error(error);
-                showToast('Error de Conexión', 'Hubo un problema comunicando con el servidor', 'error');
+                showToast('Error de Conexión', 'Hubo un problema comunicando con el servidor', 'error', waUrl);
                 return false;
             }
         }
