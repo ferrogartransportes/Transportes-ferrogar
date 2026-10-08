@@ -960,6 +960,20 @@
                                     <span id="driverQueueBadge" class="hidden text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full"></span>
                                 </div>
 
+                                <!-- SELECTOR OPCIONAL DE VIAJE / PRIORIDAD -->
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+                                    <div class="flex items-center justify-between">
+                                        <label for="driverSelectViajeActivo" class="text-[11px] font-bold text-accentBlue flex items-center gap-1.5">
+                                            <i class="fa-solid fa-list-ol"></i> Viaje a Entregar (Prioridad):
+                                        </label>
+                                        <span id="driverBadgeOrdenCola" class="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">En orden</span>
+                                    </div>
+                                    <select id="driverSelectViajeActivo" onchange="seleccionarViajeActivoManual(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium focus:outline-none focus:border-accentBlue"></select>
+                                    <p class="text-[10px] text-slate-400 italic flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-info text-accentBlue"></i> Por defecto sale según el orden asignado. Puede cambiarlo aquí si le piden entregar otro primero.
+                                    </p>
+                                </div>
+
                                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2.5 text-xs">
                                     <div class="flex justify-between border-b border-slate-800 pb-2">
                                         <span class="text-slate-400">Estado Factura:</span>
@@ -1037,12 +1051,14 @@
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/70 text-slate-400 uppercase border-b border-slate-800">
                                 <tr>
+                                    <th class="py-2.5 px-3 w-10 text-center">#</th>
                                     <th class="py-2.5 px-3">Factura</th>
                                     <th class="py-2.5 px-3">Estado Factura</th>
                                     <th class="py-2.5 px-3">Tipo / Horario</th>
                                     <th class="py-2.5 px-3">Destino</th>
                                     <th class="py-2.5 px-3">Cliente</th>
                                     <th class="py-2.5 px-3">Estado Envío</th>
+                                    <th class="py-2.5 px-3 text-right">Prioridad / Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="driverTripsTableBody" class="divide-y divide-slate-800/60"></tbody>
@@ -1787,6 +1803,37 @@
         ];
 
         let registrosGlobales = [];
+        let driverFacturaActivaSeleccionada = null;
+
+        // Memoria persistente local para entregas confirmadas (evita reversión si Sheets tarda en sincronizar)
+        let entregasConfirmadasLocales = {};
+        try {
+            const rawEntregas = localStorage.getItem('logiflow_entregas_confirmadas_v1');
+            if (rawEntregas) entregasConfirmadasLocales = JSON.parse(rawEntregas);
+        } catch(e) {}
+
+        function registrarEntregaConfirmadaLocal(factura, horaEntrega) {
+            if (!factura) return;
+            const claveFact = String(factura).trim().toLowerCase();
+            entregasConfirmadasLocales[claveFact] = {
+                factura: factura,
+                estado: 'Entregado',
+                horaEntrega: horaEntrega,
+                timestamp: Date.now()
+            };
+            try {
+                localStorage.setItem('logiflow_entregas_confirmadas_v1', JSON.stringify(entregasConfirmadasLocales));
+            } catch(e) {}
+        }
+
+        function normalizarTextoClave(str) {
+            if (!str) return "";
+            return String(str)
+                .trim()
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, "");
+        }
 
         window.onload = function() {
             actualizarReloj();
@@ -1822,7 +1869,7 @@
                 toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
             } else if (type === 'info') {
                 toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-blue-500/20 text-accentBlue flex items-center justify-center text-sm';
-                toastIcon.innerHTML = '<i class="fa-solid fa-info"></i>';
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
             } else {
                 toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-check"></i>';
@@ -1882,7 +1929,9 @@
                     if (Array.isArray(data.registros)) {
                         registrosGlobales = data.registros.map((item, index) => {
                             const estadoLimpio = String(item.estado || '').trim();
-                            const esEntregado = estadoLimpio.toLowerCase() === 'entregado';
+                            const cleanFact = String(item.factura || '').trim().toLowerCase();
+                            const localEntrega = entregasConfirmadasLocales[cleanFact];
+                            const esEntregado = (estadoLimpio.toLowerCase() === 'entregado') || Boolean(localEntrega);
                             const coords = obtenerCoordenadas(item.destino);
                             const fechaRecuperada = item.fecha || item.fechaHora || fechaActualStr;
 
@@ -1893,6 +1942,7 @@
 
                             return {
                                 id: index + 1,
+                                ordenAsignacion: item.ordenAsignacion || (index + 1),
                                 fecha: fechaRecuperada,
                                 origen: item.origen || '',
                                 driverKey: item.driverKey || '',
@@ -1913,21 +1963,24 @@
                                 cantidadMercaderia: item.cantidadMercaderia || '',
                                 horarioEntrega: item.horarioEntrega || 'Cualquier hora',
                                 fechaProgramada: fProg,
-                                horaEntrega: item.horaEntrega || '',
+                                horaEntrega: item.horaEntrega || (localEntrega ? localEntrega.horaEntrega : ''),
                                 linkUbicacion: item.linkUbicacion || (item.destino && /^https?:\/\//i.test(item.destino) ? item.destino : '')
                             };
                         });
                         sincronizarCatalogoClientesDesdeRegistros();
                     }
 
-                    // Cargar catálogo de clientes provenientes de la hoja "CLIENTES" de Google Sheets
+                    // Cargar catálogo de clientes provenientes de la hoja "CLIENTES" de Google Sheets (SIN DUPLICADOS)
                     if (Array.isArray(data.clientes) && data.clientes.length > 0) {
                         data.clientes.forEach(c => {
                             if (c.nombre) {
                                 const nom = String(c.nombre).trim();
                                 const tel = String(c.telefono || '').trim();
                                 const dir = String(c.direccion || '').trim();
-                                let idx = catalogoClientes.findIndex(x => x.nombre.toLowerCase().trim() === nom.toLowerCase());
+                                const claveC = normalizarTextoClave(nom);
+                                if (!claveC) return;
+                                
+                                let idx = catalogoClientes.findIndex(x => normalizarTextoClave(x.nombre) === claveC);
                                 if (idx >= 0) {
                                     if (tel) catalogoClientes[idx].telefono = tel;
                                     if (dir && dir !== 'Sin dirección registrada') catalogoClientes[idx].direccion = dir;
@@ -1940,7 +1993,7 @@
                                 }
                             }
                         });
-                        guardarCatalogoClientesEnLocalStorage();
+                        depurarDuplicadosCatalogo();
                         renderClientesTable();
                         poblarAutocompletadoClientes();
                     }
@@ -2066,12 +2119,15 @@
             let misViajesFuturos = [];
 
             misViajesAll.forEach(r => {
-                if (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO) {
+                if (esRegistroDeHoy(r)) {
                     misViajesHoy.push(r);
-                } else {
+                } else if (r.fechaProgramada && r.fechaProgramada > hoyISO) {
                     misViajesFuturos.push(r);
                 }
             });
+
+            // ORDEN ESTRICTO DE ASIGNACIÓN (FIFO): Facturas y traslados en el orden exacto en que fueron asignados
+            misViajesHoy.sort((a, b) => (a.ordenAsignacion || 0) - (b.ordenAsignacion || 0));
 
             let totalTrips = misViajesHoy.length;
             let totalTransport = misViajesHoy.reduce((sum, r) => sum + r.transporte, 0);
@@ -2081,7 +2137,53 @@
             document.getElementById('driverKpiTransport').innerText = `$${totalTransport.toFixed(2)}`;
             document.getElementById('driverKpiAmount').innerText = `$${totalAmount.toFixed(2)}`;
 
-            let viajeActivo = misViajesHoy.find(r => r.estado === 'Pendiente');
+            // LISTA DE VIAJES PENDIENTES
+            const pendientesHoy = misViajesHoy.filter(r => r.estado === 'Pendiente');
+
+            let viajeActivo = null;
+            if (pendientesHoy.length > 0) {
+                if (driverFacturaActivaSeleccionada) {
+                    viajeActivo = pendientesHoy.find(r => String(r.factura).trim().toLowerCase() === String(driverFacturaActivaSeleccionada).trim().toLowerCase());
+                }
+                // Si no hay seleccionado o el seleccionado ya se entregó, tomar el primero en el orden asignado
+                if (!viajeActivo) {
+                    viajeActivo = pendientesHoy[0];
+                    driverFacturaActivaSeleccionada = viajeActivo.factura;
+                }
+            } else {
+                driverFacturaActivaSeleccionada = null;
+            }
+
+            // POBLAR SELECTOR OPCIONAL DE PRIORIDAD
+            const selectViajeActivo = document.getElementById('driverSelectViajeActivo');
+            const badgeOrdenCola = document.getElementById('driverBadgeOrdenCola');
+            if (selectViajeActivo) {
+                if (pendientesHoy.length === 0) {
+                    selectViajeActivo.innerHTML = '<option value="" disabled selected>Todos los viajes de hoy han sido completados</option>';
+                    selectViajeActivo.disabled = true;
+                    if (badgeOrdenCola) {
+                        badgeOrdenCola.innerText = 'Ruta Completada';
+                        badgeOrdenCola.className = 'text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30';
+                    }
+                } else {
+                    selectViajeActivo.disabled = false;
+                    let optHtml = '';
+                    pendientesHoy.forEach((p, idx) => {
+                        const isSelected = viajeActivo && (String(p.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
+                        const tipoTexto = p.cliente === "Uso Interno / Movimiento Logístico" ? "Traslado" : "Factura";
+                        optHtml += `<option value="${p.factura}" ${isSelected ? 'selected' : ''}>Viaje #${idx + 1} [${tipoTexto}]: ${p.factura} - ${p.cliente}</option>`;
+                    });
+                    selectViajeActivo.innerHTML = optHtml;
+
+                    if (badgeOrdenCola && viajeActivo) {
+                        const idxActual = pendientesHoy.findIndex(p => String(p.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
+                        badgeOrdenCola.innerText = `Viaje #${idxActual + 1} de ${pendientesHoy.length} pendientes`;
+                        badgeOrdenCola.className = 'text-[10px] font-bold text-cyan-400 bg-cyan-500/20 px-2 py-0.5 rounded-full border border-cyan-500/30';
+                    }
+                }
+            }
+
+            const btnCompletar = document.getElementById('btnCompletarViaje');
 
             if (viajeActivo) {
                 document.getElementById('driverDestinationLabel').innerText = `Destino: ${viajeActivo.destino}`;
@@ -2110,9 +2212,15 @@
                 if (iframe) {
                     iframe.src = `https://embed.waze.com/iframe?zoom=14&lat=${viajeActivo.lat}&lon=${viajeActivo.lng}&ct=livemap`;
                 }
+
+                if (btnCompletar) {
+                    btnCompletar.disabled = false;
+                    btnCompletar.className = "w-full mt-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer";
+                    btnCompletar.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Marcar ${viajeActivo.factura} como Entregado</span>`;
+                }
             } else {
                 document.getElementById('driverDestinationLabel').innerText = 'Destino: Sin Asignar';
-                document.getElementById('driverInfoDestino').innerText = 'Sin Asignar';
+                document.getElementById('driverInfoDestino').innerText = 'Sin Asignar (Todo Entregado)';
                 document.getElementById('driverInfoEstadoFactura').innerText = 'N/A';
                 document.getElementById('driverInfoTipo').innerText = 'N/A';
                 document.getElementById('driverInfoCantidad').innerText = 'N/A';
@@ -2123,31 +2231,66 @@
                 if (phoneElem) phoneElem.innerText = 'N/A';
                 document.getElementById('driverInfoAmount').innerText = '$0.00';
                 document.getElementById('driverInfoTransport').innerText = '$0.00';
+
+                if (btnCompletar) {
+                    btnCompletar.disabled = true;
+                    btnCompletar.className = "w-full mt-4 py-3 bg-slate-800 text-slate-500 font-semibold rounded-xl text-xs flex items-center justify-center space-x-2 cursor-not-allowed";
+                    btnCompletar.innerHTML = `<i class="fa-solid fa-check-double"></i> <span>No hay viajes pendientes por entregar</span>`;
+                }
             }
 
             const tbodyHoy = document.getElementById('driverTripsTableBody');
             if (tbodyHoy) {
-                let htmlHoy = '';
-                misViajesHoy.forEach(r => {
-                    const badge = r.estado === 'Entregado'
-                        ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`
-                        : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
-                    
-                    let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
+                if (misViajesHoy.length === 0) {
+                    tbodyHoy.innerHTML = `<tr><td colspan="8" class="py-5 text-center text-slate-500 italic">No tiene viajes asignados para hoy.</td></tr>`;
+                } else {
+                    let htmlHoy = '';
+                    misViajesHoy.forEach((r, idx) => {
+                        const isDone = r.estado === 'Entregado';
+                        const badge = isDone
+                            ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`
+                            : `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
+                        
+                        let estadoFactText = r.estadoFactura.includes('Cobrar') ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura}</span>`;
 
-                    htmlHoy += `
-                        <tr class="hover:bg-slate-900/40">
-                            <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
-                            <td class="py-2.5 px-3">${estadoFactText}</td>
-                            <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje} <br><span class="text-amber-400 text-[10px]">${r.horarioEntrega}</span></td>
-                            <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
-                            <td class="py-2.5 px-3 text-slate-300">${r.cliente}</td>
-                            <td class="py-2.5 px-3">${badge}</td>
-                        </tr>
-                    `;
-                });
-                tbodyHoy.innerHTML = htmlHoy;
+                        const isActivo = viajeActivo && (String(r.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
+                        
+                        let accionPrioridad = '';
+                        if (isDone) {
+                            accionPrioridad = `<span class="text-emerald-400/80 text-[11px] font-semibold"><i class="fa-solid fa-check mr-1"></i>Entregado</span>`;
+                        } else if (isActivo) {
+                            accionPrioridad = `<span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-bold inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> En Ruta (Actual)</span>`;
+                        } else {
+                            accionPrioridad = `<button onclick="seleccionarViajeActivoManual('${encodeURIComponent(r.factura)}')" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-accentBlue border border-blue-500/30 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1"><i class="fa-solid fa-play text-[9px]"></i> Priorizar</button>`;
+                        }
+
+                        htmlHoy += `
+                            <tr class="hover:bg-slate-900/40 ${isActivo ? 'bg-slate-900/60 border-l-4 border-emerald-400' : ''}">
+                                <td class="py-2.5 px-3 font-mono text-slate-400 text-center text-[11px]">${idx + 1}</td>
+                                <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">${r.factura}</td>
+                                <td class="py-2.5 px-3">${estadoFactText}</td>
+                                <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje} <br><span class="text-amber-400 text-[10px]">${r.horarioEntrega}</span></td>
+                                <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
+                                <td class="py-2.5 px-3 text-slate-300">${r.cliente}</td>
+                                <td class="py-2.5 px-3">${badge}</td>
+                                <td class="py-2.5 px-3 text-right whitespace-nowrap">${accionPrioridad}</td>
+                            </tr>
+                        `;
+                    });
+                    tbodyHoy.innerHTML = htmlHoy;
+                }
             }
+        }
+
+        function seleccionarViajeActivoManual(facturaId) {
+            const decFactura = typeof facturaId === 'string' ? decodeURIComponent(facturaId) : facturaId;
+            driverFacturaActivaSeleccionada = decFactura;
+            initDriverDashboard();
+            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(decFactura).trim().toLowerCase());
+            if (r) {
+                showToast('Viaje en Ruta', `Ahora entregando: ${r.factura} (${r.cliente})`, 'info');
+            }
+        }
 
             const tbodyFuturos = document.getElementById('driverFutureTripsTableBody');
             if (tbodyFuturos) {
@@ -3027,7 +3170,11 @@
             d.lat = lat;
             d.lng = lng;
 
+            const maxOrden = registrosGlobales.reduce((max, r) => Math.max(max, r.ordenAsignacion || 0), 0);
             const nuevoReg = {
+                id: Date.now() + Math.random(),
+                ordenAsignacion: maxOrden + 1,
+                timestampCreacion: Date.now(),
                 fecha: fechaActualStr,
                 fechaHora: fechaActualStr,
                 origen: origen,
@@ -3756,26 +3903,45 @@
         }
 
         function confirmarEntregaConductor() {
-            const hoyISO = new Date().toISOString().split('T')[0];
-            
-            let viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente' && (!r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO));
-            
-            if (!viajeActivo) {
-                viajeActivo = registrosGlobales.find(r => r.driverKey === currentDriverKey && r.estado === 'Pendiente');
-            }
+            const driver = driversData[currentDriverKey];
+            if (!driver) return;
 
-            if (!viajeActivo) {
-                showToast('Aviso', 'No hay ningún viaje pendiente.', 'info');
+            let misViajesAll = registrosGlobales.filter(r => 
+                r.driverKey === currentDriverKey || 
+                (r.conductor && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
+            );
+            let misViajesHoy = misViajesAll.filter(r => esRegistroDeHoy(r));
+            misViajesHoy.sort((a, b) => (a.ordenAsignacion || 0) - (b.ordenAsignacion || 0));
+
+            const pendientesHoy = misViajesHoy.filter(r => r.estado === 'Pendiente');
+            if (pendientesHoy.length === 0) {
+                showToast('Aviso', 'No tiene ningún viaje pendiente por entregar hoy.', 'info');
                 return;
             }
 
-            if (confirm(`¿Marcar como Entregado el envío con Factura ${viajeActivo.factura}?`)) {
-                viajeActivo.estado = 'Entregado';
+            let viajeActivo = null;
+            if (driverFacturaActivaSeleccionada) {
+                viajeActivo = pendientesHoy.find(r => String(r.factura).trim().toLowerCase() === String(driverFacturaActivaSeleccionada).trim().toLowerCase());
+            }
+            if (!viajeActivo) {
+                viajeActivo = pendientesHoy[0];
+            }
+
+            const tipoDesc = viajeActivo.cliente === "Uso Interno / Movimiento Logístico" ? "el traslado" : "la factura";
+            if (confirm(`¿Marcar como Entregado ${tipoDesc} "${viajeActivo.factura}" (${viajeActivo.cliente})?`)) {
                 const horaEntregaExacta = new Date().toLocaleString('es-ES'); 
+                viajeActivo.estado = 'Entregado';
                 viajeActivo.horaEntrega = horaEntregaExacta;
                 
-                showToast('Entrega Confirmada', `La factura ${viajeActivo.factura} ha sido marcada como entregada a las ${horaEntregaExacta}.`);
+                // 1. Guardar en memoria local persistente para que NUNCA vuelva a salir como pendiente
+                registrarEntregaConfirmadaLocal(viajeActivo.factura, horaEntregaExacta);
+
+                // 2. Limpiar selección para que el sistema retome el siguiente viaje en el orden asignado
+                driverFacturaActivaSeleccionada = null;
                 
+                showToast('Entrega Confirmada', `${viajeActivo.factura} marcada como entregada a las ${horaEntregaExacta}.`, 'success');
+                
+                // 3. Notificar a Google Sheets
                 enviarDatosAGoogleSheets({
                     action: 'updateStatus',
                     factura: viajeActivo.factura,
@@ -3783,6 +3949,7 @@
                     horaEntrega: horaEntregaExacta
                 });
 
+                // 4. Refrescar panel inmediatamente (la factura desaparece de activa y pasa a la siguiente)
                 initDriverDashboard();
             }
         }
@@ -3836,6 +4003,33 @@
             }
         }
 
+        function depurarDuplicadosCatalogo() {
+            const mapaUnicos = new Map();
+            catalogoClientes.forEach(c => {
+                if (!c.nombre || String(c.nombre).trim() === '' || c.nombre === 'N/A' || c.nombre === 'Uso Interno / Movimiento Logístico') return;
+                const clave = normalizarTextoClave(c.nombre);
+                if (!clave) return;
+                
+                if (!mapaUnicos.has(clave)) {
+                    mapaUnicos.set(clave, {
+                        nombre: String(c.nombre).trim(),
+                        telefono: String(c.telefono || '').trim(),
+                        direccion: String(c.direccion || 'Sin dirección registrada').trim()
+                    });
+                } else {
+                    const existente = mapaUnicos.get(clave);
+                    if (!existente.telefono && c.telefono) {
+                        existente.telefono = String(c.telefono).trim();
+                    }
+                    if ((!existente.direccion || existente.direccion === 'Sin dirección registrada' || existente.direccion === 'Destino por coordinar') && c.direccion && c.direccion !== 'Sin dirección registrada' && c.direccion !== 'Destino por coordinar') {
+                        existente.direccion = String(c.direccion).trim();
+                    }
+                }
+            });
+            catalogoClientes = Array.from(mapaUnicos.values());
+            guardarCatalogoClientesEnLocalStorage();
+        }
+
         function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '') {
             if (!nombre || String(nombre).trim() === '' || String(nombre).trim() === 'Uso Interno / Movimiento Logístico' || String(nombre).trim() === 'N/A') {
                 return;
@@ -3851,12 +4045,13 @@
                 }
             }
 
-            let idx = catalogoClientes.findIndex(c => c.nombre.toLowerCase().trim() === nomLimpio.toLowerCase());
+            const claveBuscada = normalizarTextoClave(nomLimpio);
+            let idx = catalogoClientes.findIndex(c => normalizarTextoClave(c.nombre) === claveBuscada);
             if (idx >= 0) {
                 if (telLimpio) {
                     catalogoClientes[idx].telefono = telLimpio;
                 }
-                if (dirLimpia && dirLimpia !== 'Sin dirección registrada') {
+                if (dirLimpia && dirLimpia !== 'Sin dirección registrada' && dirLimpia !== 'Destino por coordinar') {
                     catalogoClientes[idx].direccion = dirLimpia;
                 }
             } else {
@@ -3867,7 +4062,7 @@
                 });
             }
 
-            guardarCatalogoClientesEnLocalStorage();
+            depurarDuplicadosCatalogo();
             renderClientesTable();
             poblarAutocompletadoClientes();
 
@@ -3906,11 +4101,13 @@
                         const nom = String(r.cliente).trim();
                         const tel = String(r.telefonoCliente || '').trim();
                         const dir = String(r.destino || r.linkUbicacion || '').trim();
+                        const claveBuscada = normalizarTextoClave(nom);
+                        if (!claveBuscada) return;
                         
-                        let idx = catalogoClientes.findIndex(c => c.nombre.toLowerCase().trim() === nom.toLowerCase());
+                        let idx = catalogoClientes.findIndex(c => normalizarTextoClave(c.nombre) === claveBuscada);
                         if (idx >= 0) {
                             if (!catalogoClientes[idx].telefono && tel) catalogoClientes[idx].telefono = tel;
-                            if ((!catalogoClientes[idx].direccion || catalogoClientes[idx].direccion === 'Sin dirección registrada') && dir && dir !== 'Destino por coordinar') {
+                            if ((!catalogoClientes[idx].direccion || catalogoClientes[idx].direccion === 'Sin dirección registrada' || catalogoClientes[idx].direccion === 'Destino por coordinar') && dir && dir !== 'Destino por coordinar') {
                                 catalogoClientes[idx].direccion = dir;
                             }
                         } else {
@@ -3924,7 +4121,7 @@
                 });
             }
 
-            guardarCatalogoClientesEnLocalStorage();
+            depurarDuplicadosCatalogo();
             renderClientesTable();
             poblarAutocompletadoClientes();
         }
