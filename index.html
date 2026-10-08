@@ -2690,11 +2690,6 @@
                 }
             }
 
-            const btn = e.target.querySelector('button[type="submit"]');
-            const btnOriginalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
-            btn.disabled = true;
-
             const origen = document.getElementById('manInputOrigen').value;
             const cliente = document.getElementById('manInputCliente').value;
             const telefonoCliente = document.getElementById('manInputTelefonoCliente') ? document.getElementById('manInputTelefonoCliente').value.trim() : '';
@@ -2715,6 +2710,9 @@
             }
             const coords = obtenerCoordenadas(destino);
 
+            const btn = e.target.querySelector('button[type="submit"]');
+            const btnOriginalHTML = btn ? btn.innerHTML : '';
+
             try {
                 if (cantidadViajes === 1) {
                     // MODO 1: VIAJE ÚNICO NORMAL
@@ -2725,16 +2723,54 @@
 
                     if (!driverKey || !camion) {
                         alert('Por favor seleccione el conductor y camión asignados.');
-                        btn.innerHTML = btnOriginalHTML;
-                        btn.disabled = false;
                         return;
+                    }
+
+                    // 1. Obtener conductor y resolver teléfono para WhatsApp
+                    let d = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+                    if (!d) {
+                        const nom = String(driverKey).toLowerCase().trim();
+                        d = Object.values(driversData).find(x => x.name && x.name.toLowerCase().trim() === nom) ||
+                            (typeof driversRespaldo !== 'undefined' ? Object.values(driversRespaldo).find(x => x.name && x.name.toLowerCase().trim() === nom) : null);
+                    }
+                    const conductorNombre = d ? d.name : driverKey;
+                    let telLimpio = limpiarTelefonoWhatsApp(d ? d.phone : '');
+                    if (!telLimpio || telLimpio.length < 8) {
+                        telLimpio = buscarTelefonoConductor(driverKey, conductorNombre);
+                    }
+
+                    // 2. Construir mensaje y URL de WhatsApp
+                    let msg = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${factura}`;
+                    if (cliente && cliente !== 'N/A') msg += `\n• *Cliente:* ${cliente}`;
+                    if (telefonoCliente && telefonoCliente.trim() !== '') msg += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+                    msg += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${camion}\n• *Detalles:* ${descripcionFinal}`;
+                    if (linkUbicacion && linkUbicacion.trim() !== '') {
+                        msg += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
+                    }
+                    msg += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+
+                    let waUrl = '';
+                    if (telLimpio && telLimpio.length >= 8) {
+                        waUrl = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+                    } else {
+                        // Si no tiene teléfono configurado, abrir WhatsApp de todas formas con el mensaje para elegir el contacto
+                        waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+                    }
+
+                    // 3. ABRIR EN OTRA PESTAÑA INMEDIATAMENTE durante el evento de clic nativo (botón aún activo)
+                    abrirVentanaWhatsApp(waUrl);
+
+                    // 4. Cambiar estado visual del botón a cargando
+                    if (btn) {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
+                        btn.disabled = true;
                     }
 
                     const guardadoExitoso = await registrarNuevoEnvio(
                         origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
                         descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
                         "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
-                        telefonoCliente, true
+                        telefonoCliente, false // Ya se abrió en pestaña nueva arriba
                     );
 
                     if (guardadoExitoso) {
@@ -2742,8 +2778,13 @@
                         if (cantInput) cantInput.value = "1";
                         cambiarCantidadViajesFactura();
                         poblarSelectsAsignacionConductores();
+                        showToast('Asignación Exitosa', `Guardado en base de datos y WhatsApp abierto para ${conductorNombre}.`, 'success', waUrl, 'Reabrir WhatsApp');
                     }
                 } else {
+                    if (btn) {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando envío(s)...';
+                        btn.disabled = true;
+                    }
                     // MODO 2: MULTI-VIAJES (FACTURA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
                     let viajesParaRegistrar = [];
                     for (let i = 1; i <= cantidadViajes; i++) {
