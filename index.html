@@ -362,7 +362,7 @@
                             </div>
                         </div>
 
-                        <form id="adminManualForm" autocomplete="off" onsubmit="asignarFacturaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
+                        <form id="adminManualForm" autocomplete="off" novalidate onsubmit="asignarFacturaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
                             <!-- DATOS DEL CLIENTE Y SUCURSAL -->
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
@@ -534,7 +534,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
-                                        <select id="manSelectConductor" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                        <select id="manSelectConductor" onchange="autoSeleccionarCamionSingle(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
@@ -570,7 +570,7 @@
                             </div>
                         </div>
 
-                        <form id="adminLogisticsForm" onsubmit="asignarLogisticaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
+                        <form id="adminLogisticsForm" novalidate onsubmit="asignarLogisticaManual(event)" onkeydown="if(event.key === 'Enter') { event.preventDefault(); return false; }" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nº de Traslado</label>
@@ -611,7 +611,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Conductor</label>
-                                    <select id="logSelectConductor" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    <select id="logSelectConductor" onchange="autoSeleccionarCamionLogistica(this.value)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Camión / Unidad</label>
@@ -3478,6 +3478,13 @@
             if (logSelectCond) logSelectCond.innerHTML = '<option value="" disabled selected>Seleccione conductor...</option>';
             if (logSelectCam) logSelectCam.innerHTML = '<option value="" disabled selected>Seleccione camión...</option>';
 
+            // Sincronizar unidades de conductores en camionesDisponibles para que siempre aparezcan
+            for (const [key, d] of Object.entries(driversData)) {
+                if (d.unit && !camionesDisponibles.some(c => c.name.toLowerCase() === d.unit.toLowerCase())) {
+                    camionesDisponibles.push({ id: `cam_${key}`, name: d.unit });
+                }
+            }
+
             for (const [key, d] of Object.entries(driversData)) {
                 let opt = `<option value="${key}">${d.name}</option>`;
                 if (selectManCond) selectManCond.innerHTML += opt;
@@ -3512,7 +3519,75 @@
             }
         }
 
+        // ==========================================
+        // AUTO-SELECCIÓN INTELIGENTE DE CAMIÓN/UNIDAD
+        // ==========================================
+        function autoSeleccionarCamionSingle(driverKey) {
+            const selCam = document.getElementById('manSelectCamion');
+            if (!selCam || !driverKey) return;
+            const driver = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+            if (!driver) return;
+
+            if (driver.unit) {
+                for (let opt of selCam.options) {
+                    if (opt.value && (
+                        opt.value.toLowerCase() === driver.unit.toLowerCase() ||
+                        opt.text.toLowerCase().includes(driver.unit.toLowerCase()) ||
+                        driver.unit.toLowerCase().includes(opt.value.toLowerCase()) ||
+                        normalizarTextoClave(opt.value) === normalizarTextoClave(driver.unit)
+                    )) {
+                        selCam.value = opt.value;
+                        return;
+                    }
+                }
+            }
+
+            const condKeys = Object.keys(driversData);
+            const condIdx = condKeys.indexOf(driverKey);
+            if (condIdx >= 0 && (condIdx + 1) < selCam.options.length) {
+                selCam.selectedIndex = condIdx + 1;
+                return;
+            }
+
+            if (!selCam.value && selCam.options.length > 1) {
+                selCam.selectedIndex = 1;
+            }
+        }
+
+        function autoSeleccionarCamionLogistica(driverKey) {
+            const selCam = document.getElementById('logSelectCamion');
+            if (!selCam || !driverKey) return;
+            const driver = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+            if (!driver) return;
+
+            if (driver.unit) {
+                for (let opt of selCam.options) {
+                    if (opt.value && (
+                        opt.value.toLowerCase() === driver.unit.toLowerCase() ||
+                        opt.text.toLowerCase().includes(driver.unit.toLowerCase()) ||
+                        driver.unit.toLowerCase().includes(opt.value.toLowerCase()) ||
+                        normalizarTextoClave(opt.value) === normalizarTextoClave(driver.unit)
+                    )) {
+                        selCam.value = opt.value;
+                        return;
+                    }
+                }
+            }
+
+            const condKeys = Object.keys(driversData);
+            const condIdx = condKeys.indexOf(driverKey);
+            if (condIdx >= 0 && (condIdx + 1) < selCam.options.length) {
+                selCam.selectedIndex = condIdx + 1;
+                return;
+            }
+
+            if (!selCam.value && selCam.options.length > 1) {
+                selCam.selectedIndex = 1;
+            }
+        }
+
         // --- GESTIÓN DE DOCUMENTOS FISCALES Y MÚLTIPLES FACTURAS EN EL MISMO VIAJE ---
+        let contadorFilaFactura = 10;
         let filasFacturasAgrupadas = [
             { id: 1, tipo: 'CCF', numero: '', monto: '' },
             { id: 2, tipo: 'CCF', numero: '', monto: '' }
@@ -3546,8 +3621,8 @@
                 contMulti.classList.remove('hidden');
                 if (!filasFacturasAgrupadas || filasFacturasAgrupadas.length === 0) {
                     filasFacturasAgrupadas = [
-                        { id: Date.now(), tipo: 'CCF', numero: '', monto: '' },
-                        { id: Date.now() + 1, tipo: 'CCF', numero: '', monto: '' }
+                        { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' },
+                        { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' }
                     ];
                 }
                 renderizarFilasFacturasAgrupadas();
@@ -3594,8 +3669,9 @@
         }
 
         function agregarFilaFacturaAgrupada() {
+            contadorFilaFactura++;
             filasFacturasAgrupadas.push({
-                id: Date.now() + Math.random(),
+                id: contadorFilaFactura,
                 tipo: 'CCF',
                 numero: '',
                 monto: ''
@@ -3671,6 +3747,7 @@
             if (cant === 1) {
                 containerSimple.classList.remove('hidden');
                 containerMulti.classList.add('hidden');
+                cardsContainer.innerHTML = '';
             } else {
                 containerSimple.classList.add('hidden');
                 containerMulti.classList.remove('hidden');
@@ -3688,11 +3765,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Conductor Asignado</label>
-                                    <select id="multiConductor_${i}" onchange="autoSeleccionarCamionMulti(${i}, this.value)" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    <select id="multiConductor_${i}" onchange="autoSeleccionarCamionMulti(${i}, this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Camión / Unidad</label>
-                                    <select id="multiCamion_${i}" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
+                                    <select id="multiCamion_${i}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-accentBlue"></select>
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-semibold text-slate-300 mb-1">Cobro Flete / Transporte ($)</label>
@@ -3715,13 +3792,31 @@
             const selCam = document.getElementById(`multiCamion_${index}`);
             if (!selCam || !driverKey) return;
             const driver = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
-            if (driver && driver.unit) {
+            if (!driver) return;
+
+            if (driver.unit) {
                 for (let opt of selCam.options) {
-                    if (opt.value === driver.unit || opt.text.toLowerCase().includes(driver.unit.toLowerCase())) {
+                    if (opt.value && (
+                        opt.value.toLowerCase() === driver.unit.toLowerCase() ||
+                        opt.text.toLowerCase().includes(driver.unit.toLowerCase()) ||
+                        driver.unit.toLowerCase().includes(opt.value.toLowerCase()) ||
+                        normalizarTextoClave(opt.value) === normalizarTextoClave(driver.unit)
+                    )) {
                         selCam.value = opt.value;
                         return;
                     }
                 }
+            }
+
+            const condKeys = Object.keys(driversData);
+            const condIdx = condKeys.indexOf(driverKey);
+            if (condIdx >= 0 && (condIdx + 1) < selCam.options.length) {
+                selCam.selectedIndex = condIdx + 1;
+                return;
+            }
+
+            if (!selCam.value && selCam.options.length > 1) {
+                selCam.selectedIndex = 1;
             }
         }
 
@@ -4099,101 +4194,233 @@
                 return;
             }
 
-            const cantInput = document.getElementById('manInputCantidadViajes');
-            const cantidadViajes = parseInt(cantInput ? cantInput.value : 1) || 1;
-            const esMultiFactura = (document.getElementById('manInputEsMultiFactura')?.value || 'no') === 'si';
+            const btnSubmit = document.getElementById('btnGuardarFacturaManual');
+            const originalBtnHTML = btnSubmit ? btnSubmit.innerHTML : '';
 
-            let facturaFinal = '';
-            let montoVal = 0;
-            let desgloseDocsTexto = '';
-
-            if (esMultiFactura) {
-                const docsConNumero = filasFacturasAgrupadas.filter(f => String(f.numero || '').trim() !== '');
-                if (docsConNumero.length === 0) {
-                    showToast('Documentos Requeridos', 'Por favor ingrese al menos un número de factura o Crédito Fiscal (CCF).', 'error');
-                    alert('Por favor ingrese al menos un número de factura o Crédito Fiscal (CCF).');
+            try {
+                const origen = (document.getElementById('manInputOrigen')?.value || '').trim();
+                if (!origen) {
+                    showToast('Campo Requerido', 'Por favor seleccione la Sucursal de Origen.', 'error');
+                    document.getElementById('manInputOrigen')?.focus();
                     return;
                 }
 
-                const docsTokens = [];
-                const desgloseTokens = [];
-                docsConNumero.forEach(f => {
-                    const numLimpio = String(f.numero || '').trim();
-                    const mVal = parseFloat(String(f.monto || '').replace(/\$/g, '').replace(/,/g, '')) || 0;
-                    montoVal += mVal;
-                    const prefijo = f.tipo === 'CCF' 
-                        ? (numLimpio.toUpperCase().startsWith('CCF') ? '' : 'CCF-') 
-                        : (numLimpio.toUpperCase().startsWith('FAC') ? '' : 'FAC-');
-                    const docCompleto = `${prefijo}${numLimpio}`;
-                    docsTokens.push(docCompleto);
-                    desgloseTokens.push(`${docCompleto} ($${mVal.toFixed(2)})`);
-                });
-
-                facturaFinal = docsTokens.join(' + ');
-                desgloseDocsTexto = `[Facturas/CCF agrupadas: ${desgloseTokens.join(', ')}]`;
-            } else {
-                const facturaRaw = (document.getElementById('manInputFactura')?.value || '').trim();
-                const tipoDoc = document.getElementById('manInputTipoDocumento')?.value || 'CCF';
-
-                if (!facturaRaw) {
-                    showToast('Campo Requerido', 'Ingrese el número de factura o Crédito Fiscal (CCF).', 'error');
-                    alert('Ingrese el número de factura o Crédito Fiscal (CCF).');
+                const cliente = (document.getElementById('manInputCliente')?.value || '').trim();
+                if (!cliente) {
+                    showToast('Campo Requerido', 'Por favor ingrese el nombre del Cliente.', 'error');
+                    document.getElementById('manInputCliente')?.focus();
                     return;
                 }
 
-                const prefijo = tipoDoc === 'CCF' 
-                    ? (facturaRaw.toUpperCase().startsWith('CCF') ? '' : 'CCF-') 
-                    : (facturaRaw.toUpperCase().startsWith('FAC') ? '' : 'FAC-');
-                facturaFinal = `${prefijo}${facturaRaw}`;
-                montoVal = parseFloat((document.getElementById('manInputMonto')?.value || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
-            }
+                const cantInput = document.getElementById('manInputCantidadViajes');
+                const cantidadViajes = parseInt(cantInput ? cantInput.value : 1) || 1;
+                const esMultiFactura = (document.getElementById('manInputEsMultiFactura')?.value || 'no') === 'si';
 
-            const origen = document.getElementById('manInputOrigen').value;
-            const cliente = document.getElementById('manInputCliente').value;
-            const telefonoCliente = document.getElementById('manInputTelefonoCliente') ? document.getElementById('manInputTelefonoCliente').value.trim() : '';
-            
-            const estadoFactura = document.getElementById('manInputEstadoFactura').value;
-            const horarioEntrega = document.getElementById('manInputHorario').value;
-            const fechaProgramada = document.getElementById('manInputFechaProgramada').value;
-            const linkUbicacion = (document.getElementById('manInputLinkUbicacion')?.value || '').trim();
-            let destino = (document.getElementById('manInputDestino')?.value || '').trim();
-            if (!destino) {
-                if (linkUbicacion) {
-                    const infoL = detectarTipoUbicacion(linkUbicacion);
-                    destino = infoL.tipo === 'maps' ? 'Ubicación Google Maps' : (infoL.tipo === 'waze' ? 'Ubicación Waze' : 'Ubicación GPS');
+                let facturaFinal = '';
+                let montoVal = 0;
+                let desgloseDocsTexto = '';
+
+                if (esMultiFactura) {
+                    const docsConNumero = filasFacturasAgrupadas.filter(f => String(f.numero || '').trim() !== '');
+                    if (docsConNumero.length === 0) {
+                        showToast('Documentos Requeridos', 'Por favor ingrese al menos un número de factura o Crédito Fiscal (CCF).', 'error');
+                        return;
+                    }
+
+                    const docsTokens = [];
+                    const desgloseTokens = [];
+                    docsConNumero.forEach(f => {
+                        const numLimpio = String(f.numero || '').trim();
+                        const mVal = parseFloat(String(f.monto || '').replace(/\$/g, '').replace(/,/g, '')) || 0;
+                        montoVal += mVal;
+                        const prefijo = f.tipo === 'CCF' 
+                            ? (numLimpio.toUpperCase().startsWith('CCF') ? '' : 'CCF-') 
+                            : (numLimpio.toUpperCase().startsWith('FAC') ? '' : 'FAC-');
+                        const docCompleto = `${prefijo}${numLimpio}`;
+                        docsTokens.push(docCompleto);
+                        desgloseTokens.push(`${docCompleto} ($${mVal.toFixed(2)})`);
+                    });
+
+                    facturaFinal = docsTokens.join(' + ');
+                    desgloseDocsTexto = `[Facturas/CCF agrupadas: ${desgloseTokens.join(', ')}]`;
                 } else {
-                    destino = 'Destino por coordinar';
-                }
-            }
-            const coords = obtenerCoordenadas(destino);
+                    const facturaRaw = (document.getElementById('manInputFactura')?.value || '').trim();
+                    const tipoDoc = document.getElementById('manInputTipoDocumento')?.value || 'CCF';
 
-            if (cantidadViajes === 1) {
-                // MODO 1: VIAJE ÚNICO NORMAL (DIRECTO Y FLUIDO - NOTIFICA A WHATSAPP DE INMEDIATO)
-                const driverKey = document.getElementById('manSelectConductor').value;
-                const camion = document.getElementById('manSelectCamion').value;
-                const transporteVal = parseFloat(document.getElementById('manInputTransporte').value.replace(/\$/g, '').replace(/,/g, '')) || 0;
-                const userDesc = (document.getElementById('manInputDescription')?.value || '').trim();
-                const descripcionFinal = desgloseDocsTexto 
-                    ? (userDesc ? `${desgloseDocsTexto} - ${userDesc}` : desgloseDocsTexto)
-                    : (userDesc || 'Entrega Comercial');
+                    if (!facturaRaw) {
+                        const lblDoc = tipoDoc === 'CCF' ? 'Crédito Fiscal (CCF)' : 'Factura';
+                        showToast('Campo Requerido', `Por favor ingrese el número de ${lblDoc}.`, 'error');
+                        document.getElementById('manInputFactura')?.focus();
+                        return;
+                    }
 
-                if (!driverKey || !camion) {
-                    showToast('Datos Incompletos', 'Por favor seleccione conductor y camión asignados.', 'error');
-                    alert('Por favor seleccione conductor y camión asignados.');
-                    return;
+                    const prefijo = tipoDoc === 'CCF' 
+                        ? (facturaRaw.toUpperCase().startsWith('CCF') ? '' : 'CCF-') 
+                        : (facturaRaw.toUpperCase().startsWith('FAC') ? '' : 'FAC-');
+                    facturaFinal = `${prefijo}${facturaRaw}`;
+                    montoVal = parseFloat((document.getElementById('manInputMonto')?.value || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
                 }
+
+                const telefonoCliente = document.getElementById('manInputTelefonoCliente') ? document.getElementById('manInputTelefonoCliente').value.trim() : '';
+                const estadoFactura = document.getElementById('manInputEstadoFactura')?.value || 'Factura cancelada';
+                const horarioEntrega = document.getElementById('manInputHorario')?.value || 'Ninguno';
+                const fechaProgramada = document.getElementById('manInputFechaProgramada')?.value || '';
+                const linkUbicacion = (document.getElementById('manInputLinkUbicacion')?.value || '').trim();
+                let destino = (document.getElementById('manInputDestino')?.value || '').trim();
+                if (!destino) {
+                    if (linkUbicacion) {
+                        const infoL = detectarTipoUbicacion(linkUbicacion);
+                        destino = infoL.tipo === 'maps' ? 'Ubicación Google Maps' : (infoL.tipo === 'waze' ? 'Ubicación Waze' : 'Ubicación GPS');
+                    } else {
+                        destino = 'Destino por coordinar';
+                    }
+                }
+                const coords = obtenerCoordenadas(destino);
 
                 guardandoFacturaManual = true;
-                setTimeout(() => { guardandoFacturaManual = false; }, 2000);
+                if (btnSubmit) {
+                    btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Guardando Asignación...</span>`;
+                    btnSubmit.disabled = true;
+                }
 
-                const guardadoExitoso = registrarNuevoEnvio(
-                    origen, driverKey, camion, facturaFinal, cliente, montoVal, transporteVal,
-                    descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
-                    "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
-                    telefonoCliente, true
-                );
+                if (cantidadViajes === 1) {
+                    // MODO 1: VIAJE ÚNICO NORMAL (DIRECTO Y FLUIDO - NOTIFICA A WHATSAPP DE INMEDIATO)
+                    let driverKey = document.getElementById('manSelectConductor')?.value || '';
+                    if (!driverKey) {
+                        showToast('Campo Requerido', 'Por favor seleccione el Conductor asignado.', 'error');
+                        document.getElementById('manSelectConductor')?.focus();
+                        return;
+                    }
 
-                if (guardadoExitoso) {
+                    let camion = document.getElementById('manSelectCamion')?.value || '';
+                    if (!camion) {
+                        autoSeleccionarCamionSingle(driverKey);
+                        camion = document.getElementById('manSelectCamion')?.value || '';
+                    }
+                    if (!camion) {
+                        const dFound = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+                        camion = (dFound && dFound.unit) ? dFound.unit : (camionesDisponibles[0]?.name || 'EQ 4');
+                    }
+
+                    const transporteVal = parseFloat((document.getElementById('manInputTransporte')?.value || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
+                    const userDesc = (document.getElementById('manInputDescription')?.value || '').trim();
+                    const descripcionFinal = desgloseDocsTexto 
+                        ? (userDesc ? `${desgloseDocsTexto} - ${userDesc}` : desgloseDocsTexto)
+                        : (userDesc || 'Entrega Comercial');
+
+                    const guardadoExitoso = registrarNuevoEnvio(
+                        origen, driverKey, camion, facturaFinal, cliente, montoVal, transporteVal,
+                        descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
+                        "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
+                        telefonoCliente, true
+                    );
+
+                    if (guardadoExitoso) {
+                        document.getElementById('adminManualForm').reset();
+                        if (cantInput) cantInput.value = "1";
+                        cambiarCantidadViajesFactura();
+                        const selEsMulti = document.getElementById('manInputEsMultiFactura');
+                        if (selEsMulti) selEsMulti.value = "no";
+                        cambiarModalidadMultiFactura();
+                        filasFacturasAgrupadas = [
+                            { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' },
+                            { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' }
+                        ];
+                        recalcularTotalFacturasAgrupadas();
+                        poblarSelectsAsignacionConductores();
+                    }
+                } else {
+                    // MODO 2: MULTI-VIAJES (FACTURA/CARGA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
+                    let viajesParaRegistrar = [];
+                    for (let i = 1; i <= cantidadViajes; i++) {
+                        const selCond = document.getElementById(`multiConductor_${i}`);
+                        const selCam = document.getElementById(`multiCamion_${i}`);
+                        const inpTrans = document.getElementById(`multiTransporte_${i}`);
+                        const inpDesc = document.getElementById(`multiDesc_${i}`);
+
+                        let dKey = selCond ? selCond.value : '';
+                        if (!dKey) {
+                            showToast('Datos Incompletos', `Por favor seleccione el conductor para el Viaje ${i} de ${cantidadViajes}.`, 'error');
+                            selCond?.focus();
+                            return;
+                        }
+
+                        let cam = selCam ? selCam.value : '';
+                        if (!cam) {
+                            autoSeleccionarCamionMulti(i, dKey);
+                            cam = selCam ? selCam.value : '';
+                        }
+                        if (!cam) {
+                            const dFound = driversData[dKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[dKey] : null);
+                            cam = (dFound && dFound.unit) ? dFound.unit : (camionesDisponibles[0]?.name || 'EQ 4');
+                        }
+
+                        const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
+                        const descPart = inpDesc ? inpDesc.value.trim() : '';
+
+                        viajesParaRegistrar.push({
+                            index: i,
+                            driverKey: dKey,
+                            camion: cam,
+                            transporte: transporteVal,
+                            descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
+                        });
+                    }
+
+                    // 1. Registrar Viaje 1 Y ABRIR WHATSAPP DE INMEDIATO EN OTRA PESTAÑA (IGUAL QUE TRASLADOS)
+                    const v1 = viajesParaRegistrar[0];
+                    const subFactura1 = `${facturaFinal} (Viaje 1/${cantidadViajes})`;
+                    const descFinal1 = desgloseDocsTexto 
+                        ? `[Viaje 1/${cantidadViajes}] ${desgloseDocsTexto} - ${v1.descripcion}`
+                        : `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`;
+
+                    registrarNuevoEnvio(
+                        origen, v1.driverKey, v1.camion, subFactura1, cliente, montoVal, v1.transporte,
+                        descFinal1, destino, coords.lat, coords.lng, estadoFactura,
+                        `Entrega Comercial (1/${cantidadViajes})`, `Parte 1 de ${cantidadViajes}`,
+                        horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
+                        true // ¡ABRE WHATSAPP EN OTRA PESTAÑA DE INMEDIATO!
+                    );
+
+                    // 2. Registrar los viajes restantes (Viaje 2 en adelante)
+                    for (let j = 1; j < viajesParaRegistrar.length; j++) {
+                        const vp = viajesParaRegistrar[j];
+                        const subFactura = `${facturaFinal} (Viaje ${vp.index}/${cantidadViajes})`;
+                        const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
+
+                        registrarNuevoEnvio(
+                            origen, vp.driverKey, vp.camion, subFactura, cliente, 0, vp.transporte,
+                            descFinal, destino, coords.lat, coords.lng, estadoFactura,
+                            `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
+                            horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
+                            false
+                        );
+                    }
+
+                    // 3. Si hay un segundo viaje, preparar notificación con botón de WhatsApp rápido
+                    if (viajesParaRegistrar.length > 1) {
+                        const v2 = viajesParaRegistrar[1];
+                        const c2Name = (driversData[v2.driverKey]?.name) || (driversRespaldo[v2.driverKey]?.name) || v2.driverKey;
+                        const phone2 = (driversData[v2.driverKey]?.phone) || buscarTelefonoConductor(v2.driverKey, c2Name);
+                        const telLimpio2 = limpiarTelefonoWhatsApp(phone2);
+                        let msg2 = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${facturaFinal} (Viaje 2/${cantidadViajes})`;
+                        if (cliente && cliente !== 'N/A') msg2 += `\n• *Cliente:* ${cliente}`;
+                        if (telefonoCliente && telefonoCliente.trim() !== '') msg2 += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
+                        msg2 += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${v2.camion}\n• *Detalles:* [Viaje 2/${cantidadViajes}] ${v2.descripcion}`;
+                        if (linkUbicacion) msg2 += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
+                        msg2 += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
+
+                        const waUrl2 = (telLimpio2 && telLimpio2.length >= 8) 
+                            ? `https://api.whatsapp.com/send?phone=${telLimpio2}&text=${encodeURIComponent(msg2)}`
+                            : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg2)}`;
+
+                        setTimeout(() => {
+                            showToast(`Viaje 2 (${c2Name})`, `Haga clic para notificar a ${c2Name}`, 'info', waUrl2, 'Notificar Viaje 2');
+                        }, 600);
+                    }
+
+                    showToast('Asignación Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes para ${facturaFinal}.`, 'success');
+
                     document.getElementById('adminManualForm').reset();
                     if (cantInput) cantInput.value = "1";
                     cambiarCantidadViajesFactura();
@@ -4201,109 +4428,23 @@
                     if (selEsMulti) selEsMulti.value = "no";
                     cambiarModalidadMultiFactura();
                     filasFacturasAgrupadas = [
-                        { id: 1, tipo: 'CCF', numero: '', monto: '' },
-                        { id: 2, tipo: 'CCF', numero: '', monto: '' }
+                        { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' },
+                        { id: ++contadorFilaFactura, tipo: 'CCF', numero: '', monto: '' }
                     ];
                     recalcularTotalFacturasAgrupadas();
                     poblarSelectsAsignacionConductores();
                 }
-            } else {
-                // MODO 2: MULTI-VIAJES (FACTURA/CARGA DIVIDIDA EN 2 O MÁS CAMIONES/FLETES)
-                let viajesParaRegistrar = [];
-                for (let i = 1; i <= cantidadViajes; i++) {
-                    const selCond = document.getElementById(`multiConductor_${i}`);
-                    const selCam = document.getElementById(`multiCamion_${i}`);
-                    const inpTrans = document.getElementById(`multiTransporte_${i}`);
-                    const inpDesc = document.getElementById(`multiDesc_${i}`);
-
-                    const driverKey = selCond ? selCond.value : '';
-                    const camion = selCam ? selCam.value : '';
-                    const transporteVal = parseFloat(inpTrans ? inpTrans.value.replace(/\$/g, '').replace(/,/g, '') : '0') || 0;
-                    const descPart = inpDesc ? inpDesc.value.trim() : '';
-
-                    if (!driverKey || !camion) {
-                        alert(`Por favor seleccione conductor y camión para el Viaje ${i} de ${cantidadViajes}.`);
-                        return;
+            } catch (err) {
+                console.error('Error al procesar asignación manual:', err);
+                showToast('Error', 'Ocurrió un error al procesar la asignación. Revise los datos e intente nuevamente.', 'error');
+            } finally {
+                setTimeout(() => {
+                    guardandoFacturaManual = false;
+                    if (btnSubmit) {
+                        btnSubmit.innerHTML = originalBtnHTML;
+                        btnSubmit.disabled = false;
                     }
-
-                    viajesParaRegistrar.push({
-                        index: i,
-                        driverKey: driverKey,
-                        camion: camion,
-                        transporte: transporteVal,
-                        descripcion: descPart || `Mercadería parte ${i} de ${cantidadViajes}`
-                    });
-                }
-
-                guardandoFacturaManual = true;
-                setTimeout(() => { guardandoFacturaManual = false; }, 2000);
-
-                // 1. Registrar Viaje 1 Y ABRIR WHATSAPP DE INMEDIATO EN OTRA PESTAÑA (IGUAL QUE TRASLADOS)
-                const v1 = viajesParaRegistrar[0];
-                const subFactura1 = `${facturaFinal} (Viaje 1/${cantidadViajes})`;
-                const descFinal1 = desgloseDocsTexto 
-                    ? `[Viaje 1/${cantidadViajes}] ${desgloseDocsTexto} - ${v1.descripcion}`
-                    : `[Viaje 1/${cantidadViajes}] ${v1.descripcion}`;
-
-                registrarNuevoEnvio(
-                    origen, v1.driverKey, v1.camion, subFactura1, cliente, montoVal, v1.transporte,
-                    descFinal1, destino, coords.lat, coords.lng, estadoFactura,
-                    `Entrega Comercial (1/${cantidadViajes})`, `Parte 1 de ${cantidadViajes}`,
-                    horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
-                    true // ¡ABRE WHATSAPP EN OTRA PESTAÑA DE INMEDIATO!
-                );
-
-                // 2. Registrar los viajes restantes (Viaje 2 en adelante)
-                for (let j = 1; j < viajesParaRegistrar.length; j++) {
-                    const vp = viajesParaRegistrar[j];
-                    const subFactura = `${facturaFinal} (Viaje ${vp.index}/${cantidadViajes})`;
-                    const descFinal = `[Viaje ${vp.index}/${cantidadViajes}] ${vp.descripcion}`;
-
-                    registrarNuevoEnvio(
-                        origen, vp.driverKey, vp.camion, subFactura, cliente, 0, vp.transporte,
-                        descFinal, destino, coords.lat, coords.lng, estadoFactura,
-                        `Entrega Comercial (${vp.index}/${cantidadViajes})`, `Parte ${vp.index} de ${cantidadViajes}`,
-                        horarioEntrega, fechaProgramada, linkUbicacion, telefonoCliente,
-                        false
-                    );
-                }
-
-                // 3. Si hay un segundo viaje, preparar notificación con botón de WhatsApp rápido
-                if (viajesParaRegistrar.length > 1) {
-                    const v2 = viajesParaRegistrar[1];
-                    const c2Name = (driversData[v2.driverKey]?.name) || (driversRespaldo[v2.driverKey]?.name) || v2.driverKey;
-                    const phone2 = (driversData[v2.driverKey]?.phone) || buscarTelefonoConductor(v2.driverKey, c2Name);
-                    const telLimpio2 = limpiarTelefonoWhatsApp(phone2);
-                    let msg2 = `*FERRETERIA FERROGAR S.A. DE C.V.*\n\n*NUEVA ASIGNACIÓN DE ENVÍO*\n• *Factura/CCF:* ${facturaFinal} (Viaje 2/${cantidadViajes})`;
-                    if (cliente && cliente !== 'N/A') msg2 += `\n• *Cliente:* ${cliente}`;
-                    if (telefonoCliente && telefonoCliente.trim() !== '') msg2 += `\n• *Teléfono Cliente:* ${telefonoCliente}`;
-                    msg2 += `\n• *Origen:* ${origen}\n• *Destino:* ${destino}\n• *Unidad:* ${v2.camion}\n• *Detalles:* [Viaje 2/${cantidadViajes}] ${v2.descripcion}`;
-                    if (linkUbicacion) msg2 += `\n• *Ubicación Exacta:* ${linkUbicacion}`;
-                    msg2 += `\n\nPor favor abrir el sistema LogiFlow o consultar su Waze para iniciar la ruta.`;
-
-                    const waUrl2 = (telLimpio2 && telLimpio2.length >= 8) 
-                        ? `https://api.whatsapp.com/send?phone=${telLimpio2}&text=${encodeURIComponent(msg2)}`
-                        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg2)}`;
-
-                    setTimeout(() => {
-                        showToast(`Viaje 2 (${c2Name})`, `Haga clic para notificar a ${c2Name}`, 'info', waUrl2, 'Notificar Viaje 2');
-                    }, 600);
-                }
-
-                showToast('Asignación Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes para ${facturaFinal}.`, 'success');
-
-                document.getElementById('adminManualForm').reset();
-                if (cantInput) cantInput.value = "1";
-                cambiarCantidadViajesFactura();
-                const selEsMulti = document.getElementById('manInputEsMultiFactura');
-                if (selEsMulti) selEsMulti.value = "no";
-                cambiarModalidadMultiFactura();
-                filasFacturasAgrupadas = [
-                    { id: 1, tipo: 'CCF', numero: '', monto: '' },
-                    { id: 2, tipo: 'CCF', numero: '', monto: '' }
-                ];
-                recalcularTotalFacturasAgrupadas();
-                poblarSelectsAsignacionConductores();
+                }, 600);
             }
         }
 
@@ -4311,17 +4452,41 @@
         function asignarLogisticaManual(e) {
             e.preventDefault();
 
-            const numeroTraslado = document.getElementById('logInputTransferNumber').value.trim();
-            const origen = document.getElementById('logInputOrigen').value;
-            const sucursalDestino = document.getElementById('logInputDestino').value;
-            const tipoViaje = document.getElementById('logInputTipoViaje').value;
-            const cantidadMercaderia = document.getElementById('logInputCantidad').value;
-            const driverKey = document.getElementById('logSelectConductor').value;
-            const camion = document.getElementById('logSelectCamion').value;
+            const numeroTraslado = (document.getElementById('logInputTransferNumber')?.value || '').trim();
+            const origen = (document.getElementById('logInputOrigen')?.value || '').trim();
+            const sucursalDestino = (document.getElementById('logInputDestino')?.value || '').trim();
+            const tipoViaje = (document.getElementById('logInputTipoViaje')?.value || '').trim();
+            const cantidadMercaderia = (document.getElementById('logInputCantidad')?.value || '').trim();
+            let driverKey = document.getElementById('logSelectConductor')?.value || '';
+            let camion = document.getElementById('logSelectCamion')?.value || '';
 
-            if (!driverKey || !camion) {
-                showToast('Datos Incompletos', 'Por favor seleccione conductor y camión.', 'error');
+            if (!numeroTraslado) {
+                showToast('Campo Requerido', 'Por favor ingrese el Nº de Traslado.', 'error');
+                document.getElementById('logInputTransferNumber')?.focus();
                 return;
+            }
+            if (!origen) {
+                showToast('Campo Requerido', 'Por favor seleccione o ingrese la Sucursal Origen.', 'error');
+                document.getElementById('logInputOrigen')?.focus();
+                return;
+            }
+            if (!sucursalDestino) {
+                showToast('Campo Requerido', 'Por favor seleccione la Sucursal Destino.', 'error');
+                document.getElementById('logInputDestino')?.focus();
+                return;
+            }
+            if (!driverKey) {
+                showToast('Campo Requerido', 'Por favor seleccione el Conductor asignado.', 'error');
+                document.getElementById('logSelectConductor')?.focus();
+                return;
+            }
+            if (!camion) {
+                autoSeleccionarCamionLogistica(driverKey);
+                camion = document.getElementById('logSelectCamion')?.value || '';
+            }
+            if (!camion) {
+                const dFound = driversData[driverKey] || (typeof driversRespaldo !== 'undefined' ? driversRespaldo[driverKey] : null);
+                camion = (dFound && dFound.unit) ? dFound.unit : (camionesDisponibles[0]?.name || 'EQ 4');
             }
 
             const factura = `Traslado #${numeroTraslado}`; 
@@ -4333,14 +4498,14 @@
             const fechaProgramada = "";
             const linkUbicacion = "";
 
-            const descripcionFinal = `${cantidadMercaderia} de ${tipoViaje}. Traslado directo hacia ${sucursalDestino}`;
+            const descripcionFinal = `${cantidadMercaderia || 'Mercadería'} de ${tipoViaje || 'Carga'}. Traslado directo hacia ${sucursalDestino}`;
             const destino = sucursalDestino; 
             const coords = obtenerCoordenadas(destino);
 
             const guardadoExitoso = registrarNuevoEnvio(
                 origen, driverKey, camion, factura, cliente, montoVal, transporteVal,
                 descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
-                tipoViaje, cantidadMercaderia, horarioEntrega, fechaProgramada, linkUbicacion,
+                tipoViaje || 'Traslados entre sucursales', cantidadMercaderia || 'Varios', horarioEntrega, fechaProgramada, linkUbicacion,
                 '', true
             );
 
@@ -4359,15 +4524,46 @@
                     (typeof driversRespaldo !== 'undefined' ? Object.values(driversRespaldo).find(x => x.name && x.name.toLowerCase().trim() === nom) : null);
             }
             if(!d) {
-                showToast('Error', 'Conductor no seleccionado o inválido.', 'error');
-                return false;
+                const normKey = normalizarTextoClave(driverKey);
+                for (const [k, drv] of Object.entries(driversData)) {
+                    if (normalizarTextoClave(k) === normKey || normalizarTextoClave(drv.name) === normKey) {
+                        d = drv;
+                        driverKey = k;
+                        break;
+                    }
+                }
+            }
+            if(!d && typeof driversRespaldo !== 'undefined') {
+                const normKey = normalizarTextoClave(driverKey);
+                for (const [k, drv] of Object.entries(driversRespaldo)) {
+                    if (normalizarTextoClave(k) === normKey || normalizarTextoClave(drv.name) === normKey) {
+                        d = drv;
+                        driverKey = k;
+                        break;
+                    }
+                }
+            }
+            // Ultra-fallback seguro: garantizar que jamás falle el registro por clave no coincidente
+            if(!d) {
+                const safeName = String(driverKey || 'Conductor').trim();
+                d = {
+                    key: normalizarTextoClave(safeName) || 'conductor_gen',
+                    name: safeName,
+                    unit: camion || 'Unidad Asignada',
+                    phone: '',
+                    active: true,
+                    lat: lat || 13.6929,
+                    lng: lng || -89.2182
+                };
+                driversData[d.key] = d;
+                driverKey = d.key;
             }
 
-            // Evitar duplicado accidental de la misma factura si se llamó hace menos de 20 segundos
+            // Evitar duplicado accidental de la misma factura si se llamó hace menos de 3 segundos
             const facturaNormalizada = String(factura || '').trim().toLowerCase();
             const yaRegistradoReciente = registrosGlobales.find(r => 
                 String(r.factura || '').trim().toLowerCase() === facturaNormalizada &&
-                (Date.now() - (r.timestampCreacion || 0)) < 20000
+                (Date.now() - (r.timestampCreacion || 0)) < 3000
             );
             if (yaRegistradoReciente) {
                 console.warn(`Envío ${factura} ya fue registrado recientemente. Evitando duplicado.`);
