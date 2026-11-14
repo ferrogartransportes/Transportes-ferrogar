@@ -3034,15 +3034,25 @@
                     </div>
                 </div>
 
-                <!-- Barra de búsqueda y exportación del expediente -->
+                <!-- Barra de búsqueda, selector de orden y exportación del expediente -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                     <h4 class="font-bold text-xs text-slate-300 flex items-center gap-2">
                         <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> Historial Completo de Facturas, Envíos y Carga
                     </h4>
-                    <div class="flex items-center gap-2">
-                        <div class="relative w-full sm:w-56">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative w-full sm:w-48">
                             <input type="text" id="expedienteSearchInput" oninput="filtrarHistorialExpedienteCliente()" placeholder="Buscar factura, producto, fecha..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <select id="expedienteSortSelect" onchange="filtrarHistorialExpedienteCliente()" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer font-medium" title="Ordenar historial">
+                                <option value="reciente_desc">🕒 Más reciente a más antigua</option>
+                                <option value="reciente_asc">⏳ Más antigua a más reciente</option>
+                                <option value="monto_desc">💰 Mayor monto ($)</option>
+                                <option value="monto_asc">💵 Menor monto ($)</option>
+                                <option value="sucursal">🏢 Sucursal Salida</option>
+                                <option value="estado">✅ Estado de Entrega</option>
+                            </select>
                         </div>
                         <button onclick="exportarExpedienteClienteExcel()" title="Descargar compras de este cliente en Excel" class="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer">
                             <i class="fa-solid fa-file-excel"></i> <span>Excel</span>
@@ -3059,12 +3069,16 @@
                         <thead class="bg-slate-900/90 text-slate-400 uppercase tracking-wider border-b border-slate-800 text-[10px] sticky top-0 z-10 backdrop-blur-sm">
                             <tr>
                                 <th class="py-2.5 px-3 text-center w-8">#</th>
-                                <th class="py-2.5 px-3">Fecha y Hora</th>
+                                <th class="py-2.5 px-3 cursor-pointer hover:text-cyan-400 select-none transition-colors" onclick="toggleExpedienteOrdenFecha()" title="Tocar para alternar orden de fecha">
+                                    Fecha y Hora <i id="expedienteIconSortFecha" class="fa-solid fa-arrow-down-wide-short text-cyan-400 ml-1"></i>
+                                </th>
                                 <th class="py-2.5 px-3 font-bold text-accentBlue">Factura / CCF</th>
                                 <th class="py-2.5 px-3 font-bold text-cyan-400">Sucursal Salida</th>
                                 <th class="py-2.5 px-3 text-slate-200">Mercadería / Lo que llevó</th>
                                 <th class="py-2.5 px-3 text-slate-300">Cantidad / Carga</th>
-                                <th class="py-2.5 px-3 text-right font-bold text-emerald-400">Monto Comprado</th>
+                                <th class="py-2.5 px-3 text-right font-bold text-emerald-400 cursor-pointer hover:text-emerald-300 select-none transition-colors" onclick="toggleExpedienteOrdenMonto()" title="Tocar para ordenar por monto">
+                                    Monto Comprado <i id="expedienteIconSortMonto" class="fa-solid fa-sort text-slate-600 ml-1"></i>
+                                </th>
                                 <th class="py-2.5 px-3 text-right font-bold text-cyan-400">Flete</th>
                                 <th class="py-2.5 px-3">Conductor / Camión</th>
                                 <th class="py-2.5 px-3 text-center">Estado Entrega</th>
@@ -11332,11 +11346,11 @@
             // Obtener todos los viajes / compras registradas para este cliente
             const viajes = registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado');
             
-            // Ordenar por fecha y hora más reciente primero
+            // Ordenar cronológicamente de la más reciente a la más antigua con timestamps reales
             viajes.sort((a, b) => {
-                const fa = (a.fechaProgramada || a.fecha || '') + ' ' + (a.hora || '');
-                const fb = (b.fechaProgramada || b.fecha || '') + ' ' + (b.hora || '');
-                return fb.localeCompare(fa) || ((b.ordenAsignacion || 0) - (a.ordenAsignacion || 0));
+                const tsA = parsearFechaRegistro(a)?.getTime() || Number(a.timestampCreacion) || 0;
+                const tsB = parsearFechaRegistro(b)?.getTime() || Number(b.timestampCreacion) || 0;
+                return (tsB - tsA) || ((b.ordenAsignacion || 0) - (a.ordenAsignacion || 0));
             });
 
             // Llenar datos de cabecera
@@ -11352,7 +11366,8 @@
             const totalCompras = viajes.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
             const totalPedidos = viajes.length;
             const ticketPromedio = totalPedidos > 0 ? (totalCompras / totalPedidos) : 0;
-            const ultimaFecha = viajes.length > 0 ? formatearFechaDisplay(viajes[0].fechaProgramada || viajes[0].fecha) : 'Sin compras registradas';
+            const rawUlt = viajes.length > 0 ? (viajes[0].fechaProgramada || viajes[0].fecha || viajes[0].fechaHora || '') : '';
+            const ultimaFecha = rawUlt ? formatearFechaDisplay(rawUlt) : (viajes.length > 0 ? 'Registrado' : 'Sin compras registradas');
 
             let badgeRangoHTML = '';
             if (totalCompras >= configRangosClientes.minExcelente) {
@@ -11413,17 +11428,19 @@
             if (kpiProm) kpiProm.innerText = `$${ticketPromedio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             if (kpiUlt) kpiUlt.innerText = ultimaFecha;
 
-            // Limpiar buscador interno
+            // Limpiar buscador interno y restablecer selector de orden a 'reciente_desc' (Más reciente primero)
             const searchInput = document.getElementById('expedienteSearchInput');
             if (searchInput) searchInput.value = '';
+
+            const sortSelect = document.getElementById('expedienteSortSelect');
+            if (sortSelect) sortSelect.value = 'reciente_desc';
 
             // Actualizar botón de notas comerciales en el expediente
             const histNotasExp = (typeof obtenerHistorialNotasCliente === 'function') ? obtenerHistorialNotasCliente(normNom) : [];
             const btnExpNotas = document.getElementById('expedienteBtnNotasText');
             if (btnExpNotas) btnExpNotas.innerText = `Notas Comerciales (${histNotasExp.length})`;
 
-            viajesExpedienteFiltrados = viajes;
-            renderExpedienteClienteTabla();
+            filtrarHistorialExpedienteCliente();
 
             const modal = document.getElementById('modalExpedienteCliente');
             if (modal) modal.classList.remove('hidden');
@@ -11437,21 +11454,71 @@
         function filtrarHistorialExpedienteCliente() {
             if (!clienteExpedienteActual) return;
             const normNom = normalizarTextoClave(clienteExpedienteActual.nombre);
-            const todosViajes = registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado');
+            let todosViajes = registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado');
 
             const searchInput = document.getElementById('expedienteSearchInput');
             const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-            if (!term) {
-                viajesExpedienteFiltrados = todosViajes;
-            } else {
-                viajesExpedienteFiltrados = todosViajes.filter(r => {
-                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.destino || ''} ${r.conductor || ''} ${r.camion || ''} ${r.fecha || ''} ${r.fechaProgramada || ''} ${r.monto || ''}`.toLowerCase();
+            if (term) {
+                todosViajes = todosViajes.filter(r => {
+                    const rowText = `${r.factura || ''} ${r.origen || ''} ${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.destino || ''} ${r.conductor || ''} ${r.camion || ''} ${r.fecha || ''} ${r.fechaProgramada || ''} ${r.monto || ''} ${r.estado || ''}`.toLowerCase();
                     return rowText.includes(term);
                 });
             }
 
+            const sortSelect = document.getElementById('expedienteSortSelect');
+            const sortVal = sortSelect ? sortSelect.value : 'reciente_desc';
+
+            todosViajes.sort((a, b) => {
+                const tsA = parsearFechaRegistro(a)?.getTime() || Number(a.timestampCreacion) || 0;
+                const tsB = parsearFechaRegistro(b)?.getTime() || Number(b.timestampCreacion) || 0;
+
+                if (sortVal === 'reciente_asc') {
+                    return (tsA - tsB) || ((a.ordenAsignacion || 0) - (b.ordenAsignacion || 0));
+                } else if (sortVal === 'monto_desc') {
+                    return (Number(b.monto) || 0) - (Number(a.monto) || 0) || (tsB - tsA);
+                } else if (sortVal === 'monto_asc') {
+                    return (Number(a.monto) || 0) - (Number(b.monto) || 0) || (tsB - tsA);
+                } else if (sortVal === 'sucursal') {
+                    return (String(a.origen || '').localeCompare(String(b.origen || ''))) || (tsB - tsA);
+                } else if (sortVal === 'estado') {
+                    return (String(a.estado || '').localeCompare(String(b.estado || ''))) || (tsB - tsA);
+                } else {
+                    // reciente_desc: Más reciente a más antigua (predeterminado)
+                    return (tsB - tsA) || ((b.ordenAsignacion || 0) - (a.ordenAsignacion || 0));
+                }
+            });
+
+            // Actualizar indicadores visuales en los encabezados de columna
+            const iconFecha = document.getElementById('expedienteIconSortFecha');
+            const iconMonto = document.getElementById('expedienteIconSortMonto');
+            if (iconFecha) {
+                if (sortVal === 'reciente_desc') iconFecha.className = 'fa-solid fa-arrow-down-wide-short text-cyan-400 ml-1';
+                else if (sortVal === 'reciente_asc') iconFecha.className = 'fa-solid fa-arrow-up-short-wide text-cyan-400 ml-1';
+                else iconFecha.className = 'fa-solid fa-sort text-slate-600 ml-1';
+            }
+            if (iconMonto) {
+                if (sortVal === 'monto_desc') iconMonto.className = 'fa-solid fa-arrow-down-9-1 text-emerald-400 ml-1';
+                else if (sortVal === 'monto_asc') iconMonto.className = 'fa-solid fa-arrow-up-1-9 text-emerald-400 ml-1';
+                else iconMonto.className = 'fa-solid fa-sort text-slate-600 ml-1';
+            }
+
+            viajesExpedienteFiltrados = todosViajes;
             renderExpedienteClienteTabla();
+        }
+
+        function toggleExpedienteOrdenFecha() {
+            const select = document.getElementById('expedienteSortSelect');
+            if (!select) return;
+            select.value = (select.value === 'reciente_desc') ? 'reciente_asc' : 'reciente_desc';
+            filtrarHistorialExpedienteCliente();
+        }
+
+        function toggleExpedienteOrdenMonto() {
+            const select = document.getElementById('expedienteSortSelect');
+            if (!select) return;
+            select.value = (select.value === 'monto_desc') ? 'monto_asc' : 'monto_desc';
+            filtrarHistorialExpedienteCliente();
         }
 
         function renderExpedienteClienteTabla() {
