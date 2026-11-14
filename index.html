@@ -3690,22 +3690,31 @@
             if (!val) return null;
             if (val instanceof Date && !isNaN(val.getTime())) return val;
             const str = String(val).trim();
-            if (!str || str === 'N/A') return null;
+            if (!str || str === 'N/A' || str === 'Sin compras' || str === 'undefined' || str === 'null') return null;
+
+            // Extraer hora si existe: HH:mm:ss o HH:mm
+            let hr = 0, mn = 0, sc = 0;
+            const mHora = str.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+            if (mHora) {
+                hr = parseInt(mHora[1], 10);
+                mn = parseInt(mHora[2], 10);
+                sc = mHora[3] ? parseInt(mHora[3], 10) : 0;
+            }
 
             // Formato ISO con T (ej: 2026-11-10T00:00:00.000Z)
             const cleanStr = str.includes('T') ? str.split('T')[0].trim() : str;
 
-            // Formato YYYY-MM-DD o YYYY/MM/DD
-            const mYMD = cleanStr.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+            // Formato YYYY-MM-DD o YYYY/MM/DD (año de 4 dígitos al inicio)
+            const mYMD = cleanStr.match(/\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/);
             if (mYMD) {
                 const y = parseInt(mYMD[1], 10);
                 const m = parseInt(mYMD[2], 10) - 1;
                 const d = parseInt(mYMD[3], 10);
-                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d, hr, mn, sc);
             }
 
-            // Formato DD-MM-YYYY o DD/MM/YYYY (o MM/DD/YYYY)
-            const mDMY = cleanStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            // Formato DD-MM-YYYY o DD/MM/YYYY (ej: "Sábado, 31-10-2026 - 08:46:16", "31-10-2026", "05/11/2026")
+            const mDMY = cleanStr.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
             if (mDMY) {
                 let n1 = parseInt(mDMY[1], 10);
                 let n2 = parseInt(mDMY[2], 10);
@@ -3719,7 +3728,7 @@
                     m = n1 - 1;
                     d = n2;
                 }
-                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d, hr, mn, sc);
             }
 
             const ts = Date.parse(str);
@@ -3735,17 +3744,18 @@
             if (r.fechaHora instanceof Date && !isNaN(r.fechaHora.getTime())) return r.fechaHora;
 
             // 2. Probar fechaProgramada, fecha o fechaHora con parsearCualquierFecha
-            if (r.fechaProgramada) {
-                const fp = parsearCualquierFecha(r.fechaProgramada);
-                if (fp && !isNaN(fp.getTime())) return fp;
+            const campos = [r.fechaProgramada, r.fecha, r.fechaHora];
+            for (const c of campos) {
+                if (c) {
+                    const parsed = parsearCualquierFecha(c);
+                    if (parsed && !isNaN(parsed.getTime())) return parsed;
+                }
             }
-            if (r.fecha) {
-                const ff = parsearCualquierFecha(r.fecha);
-                if (ff && !isNaN(ff.getTime())) return ff;
-            }
-            if (r.fechaHora) {
-                const fh = parsearCualquierFecha(r.fechaHora);
-                if (fh && !isNaN(fh.getTime())) return fh;
+
+            // 3. Probar timestampCreacion si existe
+            if (r.timestampCreacion) {
+                const ts = Number(r.timestampCreacion);
+                if (!isNaN(ts) && ts > 0) return new Date(ts);
             }
 
             return null;
@@ -10272,25 +10282,38 @@
                 let diasSinComprar = 9999;
 
                 if (viajesCli.length > 0) {
-                    const viajesOrdenados = [...viajesCli].sort((a, b) => {
-                        const fa = (a.fechaProgramada || a.fecha || '') + ' ' + (a.hora || '');
-                        const fb = (b.fechaProgramada || b.fecha || '') + ' ' + (b.hora || '');
-                        return fb.localeCompare(fa);
-                    });
+                    const viajesConFecha = viajesCli.map(r => {
+                        const parsedDate = parsearFechaRegistro(r);
+                        let ts = 0;
+                        if (parsedDate && !isNaN(parsedDate.getTime())) {
+                            ts = parsedDate.getTime();
+                        } else if (r.timestampCreacion && !isNaN(Number(r.timestampCreacion))) {
+                            ts = Number(r.timestampCreacion);
+                        }
+                        return { reg: r, date: parsedDate, timestamp: ts };
+                    }).sort((a, b) => b.timestamp - a.timestamp);
 
-                    const rUltimo = viajesOrdenados[0];
-                    const rawFecha = rUltimo.fechaProgramada || rUltimo.fecha;
-                    if (rawFecha) {
-                        ultimaFechaStr = formatearFechaDisplay(rawFecha);
-                        try {
-                            const partes = rawFecha.split('-');
-                            if (partes.length === 3) {
-                                const fObj = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
-                                ultimaFecha = fObj;
-                                const diffMs = hoy.getTime() - fObj.getTime();
-                                diasSinComprar = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-                            }
-                        } catch(e) {}
+                    const masReciente = viajesConFecha[0];
+                    if (masReciente && masReciente.date) {
+                        ultimaFecha = masReciente.date;
+                        const rUlt = masReciente.reg;
+                        const rawFecha = rUlt.fechaProgramada || rUlt.fecha || rUlt.fechaHora || '';
+                        ultimaFechaStr = rawFecha ? formatearFechaDisplay(rawFecha) : 'Registrado';
+
+                        const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                        const ultMidnight = new Date(ultimaFecha.getFullYear(), ultimaFecha.getMonth(), ultimaFecha.getDate());
+                        const diffMs = hoyMidnight.getTime() - ultMidnight.getTime();
+                        diasSinComprar = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                    } else if (masReciente && masReciente.timestamp > 0) {
+                        ultimaFecha = new Date(masReciente.timestamp);
+                        const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                        const ultMidnight = new Date(ultimaFecha.getFullYear(), ultimaFecha.getMonth(), ultimaFecha.getDate());
+                        const diffMs = hoyMidnight.getTime() - ultMidnight.getTime();
+                        diasSinComprar = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+                        ultimaFechaStr = `${String(ultimaFecha.getDate()).padStart(2, '0')}/${String(ultimaFecha.getMonth() + 1).padStart(2, '0')}/${ultimaFecha.getFullYear()}`;
+                    } else {
+                        diasSinComprar = 0;
+                        ultimaFechaStr = 'Fecha no registrada';
                     }
                 }
 
@@ -10835,6 +10858,10 @@
                 let inactividadBadge = '';
                 if (c.totalViajes === 0) {
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">Prospecto Nuevo</span>`;
+                } else if (c.diasSinComprar === 0) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (Hoy)</span>`;
+                } else if (c.diasSinComprar === 1) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (Ayer)</span>`;
                 } else if (c.diasSinComprar <= 7) {
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (hace ${c.diasSinComprar}d)</span>`;
                 } else if (c.diasSinComprar <= 15) {
@@ -10842,7 +10869,7 @@
                 } else if (c.diasSinComprar <= 30) {
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⚠️ En riesgo (${c.diasSinComprar}d)</span>`;
                 } else {
-                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">🚨 Inactivo (${c.diasSinComprar}d)</span>`;
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">🚨 Inactivo (${c.diasSinComprar >= 9999 ? '+30' : c.diasSinComprar}d)</span>`;
                 }
 
                 // Selector interactivo de Estado de Seguimiento
