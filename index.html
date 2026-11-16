@@ -5087,6 +5087,34 @@
             renderConductoresGestionTable();
         }
 
+        function formatearFechaCortaConductor(fechaStr) {
+            if (!fechaStr) return '';
+            const str = String(fechaStr).trim();
+            const mDMY = str.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+            if (mDMY) {
+                return `${mDMY[1].padStart(2, '0')}/${mDMY[2].padStart(2, '0')}/${mDMY[3]}`;
+            }
+            const mYMD = str.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (mYMD) {
+                return `${mYMD[3].padStart(2, '0')}/${mYMD[2].padStart(2, '0')}/${mYMD[1]}`;
+            }
+            if (typeof formatearFechaDisplay === 'function') {
+                return formatearFechaDisplay(str);
+            }
+            return str;
+        }
+
+        function obtenerBadgeEstadoFacturaConductor(estadoFactura) {
+            const ef = (estadoFactura || '').toLowerCase().trim();
+            if (ef.includes('cobrar') || ef.includes('contra') || ef.includes('pendiente')) {
+                return `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1 shrink-0"><i class="fa-solid fa-hand-holding-dollar text-[9px]"></i> Por Cobrar</span>`;
+            }
+            if (ef.includes('crédito') || ef.includes('credito')) {
+                return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-cyan-300 border border-blue-500/40 inline-flex items-center gap-1 shrink-0"><i class="fa-solid fa-file-invoice text-[9px]"></i> Crédito</span>`;
+            }
+            return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1 shrink-0"><i class="fa-solid fa-circle-check text-[9px]"></i> Cancelada</span>`;
+        }
+
         function initDriverDashboard() {
             const driver = driversData[currentDriverKey];
             if (!driver) return;
@@ -5228,14 +5256,18 @@
 
             if (viajeActivo) {
                 const esAtrasadoActivo = !esRegistroDeHoy(viajeActivo);
-                const tagDestinoAtrasado = esAtrasadoActivo ? ` [⚠️ Pendiente de ${formatearFechaDisplay(viajeActivo.fechaProgramada || viajeActivo.fecha)}]` : '';
+                const fechaCortaActivo = formatearFechaCortaConductor(viajeActivo.fechaProgramada || viajeActivo.fecha);
+                const tagDestinoAtrasado = esAtrasadoActivo ? ` [⚠️ Pendiente (${fechaCortaActivo})]` : '';
                 document.getElementById('driverDestinationLabel').innerText = `Destino: ${viajeActivo.destino}${tagDestinoAtrasado}`;
                 document.getElementById('driverInfoDestino').innerText = viajeActivo.destino;
                 
-                document.getElementById('driverInfoEstadoFactura').innerText = viajeActivo.estadoFactura || 'N/A';
+                const estadoFactElem = document.getElementById('driverInfoEstadoFactura');
+                if (estadoFactElem) {
+                    estadoFactElem.innerHTML = obtenerBadgeEstadoFacturaConductor(viajeActivo.estadoFactura);
+                }
                 document.getElementById('driverInfoTipo').innerText = viajeActivo.tipoViaje || (viajeActivo.cliente === "Uso Interno / Movimiento Logístico" ? "Traslado Interno" : "Facturación");
                 document.getElementById('driverInfoCantidad').innerText = viajeActivo.cantidadMercaderia || 'N/A';
-                document.getElementById('driverInfoHorario').innerText = esAtrasadoActivo ? `Pendiente desde ${formatearFechaDisplay(viajeActivo.fechaProgramada || viajeActivo.fecha)}` : (viajeActivo.horarioEntrega || 'N/A');
+                document.getElementById('driverInfoHorario').innerText = esAtrasadoActivo ? `Pendiente desde ${fechaCortaActivo}` : (viajeActivo.horarioEntrega || 'N/A');
                 
                 // Buscar cliente en catálogo para datos enriquecidos (dirección, notas, estrellas)
                 const normNomCli = normalizarTextoClave(viajeActivo.cliente || '');
@@ -5349,7 +5381,8 @@
             } else {
                 document.getElementById('driverDestinationLabel').innerText = 'Destino: Sin Asignar';
                 document.getElementById('driverInfoDestino').innerText = 'Sin Asignar (Todo Entregado)';
-                document.getElementById('driverInfoEstadoFactura').innerText = 'N/A';
+                const estadoFactElem = document.getElementById('driverInfoEstadoFactura');
+                if (estadoFactElem) estadoFactElem.innerHTML = '<span class="text-slate-500 font-bold">N/A</span>';
                 document.getElementById('driverInfoTipo').innerText = 'N/A';
                 document.getElementById('driverInfoCantidad').innerText = 'N/A';
                 document.getElementById('driverInfoHorario').innerText = 'N/A';
@@ -5401,22 +5434,22 @@
                     todosLosEnvios.forEach((r, idx) => {
                         const esAtrasado = !esRegistroDeHoy(r);
                         const isDone = r.estado === 'Entregado';
-                        let badge = '';
-                        if (isDone) {
-                            badge = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-check-circle"></i> Entregado</span>`;
-                        } else if (esAtrasado) {
-                            const fechaOrig = formatearFechaDisplay(r.fechaProgramada || r.fecha);
-                            badge = `<span class="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30 inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Pendiente (${fechaOrig})</span>`;
-                        } else {
-                            badge = `<span class="text-amber-400 font-bold"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
-                        }
-                        
-                        let estadoFactText = (r.estadoFactura && r.estadoFactura.includes('Cobrar')) 
-                            ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` 
-                            : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura || 'Pagado'}</span>`;
-
+                        const fechaCorta = formatearFechaCortaConductor(r.fechaProgramada || r.fecha);
                         const isActivo = viajeActivo && (String(r.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
                         
+                        let badgeEntrega = '';
+                        if (isDone) {
+                            badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-check-double text-[9px]"></i> Entregado</span>`;
+                        } else if (isActivo) {
+                            badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> En Ruta</span>`;
+                        } else if (esAtrasado) {
+                            badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Atrasado</span>`;
+                        } else {
+                            badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-clock text-[9px]"></i> Pendiente</span>`;
+                        }
+                        
+                        const estadoFactBadge = obtenerBadgeEstadoFacturaConductor(r.estadoFactura);
+
                         let accionPrioridad = '';
                         let accionCards = '';
                         if (isDone) {
@@ -5460,8 +5493,8 @@
                         }
 
                         const horarioDisplay = esAtrasado && !isDone
-                            ? `<span class="text-amber-400 text-[10px] font-bold"><i class="fa-solid fa-calendar-xmark mr-0.5"></i> Asignado: ${formatearFechaDisplay(r.fechaProgramada || r.fecha)}</span>`
-                            : `<span class="text-amber-400 text-[10px]">${r.horarioEntrega || 'Horario Estándar'}</span>`;
+                            ? `<span class="text-amber-400 text-[10px] font-bold"><i class="fa-solid fa-calendar-xmark mr-0.5"></i> Asignado: ${fechaCorta}</span>`
+                            : `<span class="text-slate-400 text-[10px]">${r.horarioEntrega || 'Horario Estándar'}</span>`;
 
                         htmlHoy += `
                             <tr class="hover:bg-slate-900/40 ${rowBorder}">
@@ -5471,7 +5504,7 @@
                                         <i class="fa-solid fa-file-invoice text-xs"></i> <span>${r.factura}</span>
                                     </button>
                                 </td>
-                                <td class="py-2.5 px-3">${estadoFactText}</td>
+                                <td class="py-2.5 px-3">${estadoFactBadge}</td>
                                 <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje || 'Facturación'} <br>${horarioDisplay}</td>
                                 <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
                                 <td class="py-2.5 px-3 text-slate-300">
@@ -5480,7 +5513,7 @@
                                         <span>${r.cliente}</span>
                                     </button>
                                 </td>
-                                <td class="py-2.5 px-3">${badge}</td>
+                                <td class="py-2.5 px-3">${badgeEntrega}</td>
                                 <td class="py-2.5 px-3 text-right whitespace-nowrap">${accionPrioridad}</td>
                             </tr>
                         `;
@@ -5489,16 +5522,28 @@
                         cardsHoy += `
                             <div class="p-3.5 rounded-2xl border ${cardBorder} space-y-2.5 shadow-lg">
                                 <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                                    <div class="flex items-center gap-2 min-w-0">
-                                        <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold shrink-0">${idx + 1}</span>
-                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-bold text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 truncate cursor-pointer">
-                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span class="truncate">${r.factura}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center text-xs font-mono font-bold shrink-0">${idx + 1}</span>
+                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-black text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 cursor-pointer text-left" title="Ver hoja de Factura">
+                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i>
+                                            <span class="tracking-wide">${r.factura}</span>
                                         </button>
                                     </div>
-                                    <div class="flex items-center gap-1.5 shrink-0 text-right">
-                                        ${estadoFactText}
-                                        ${badge}
+                                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                                        ${estadoFactBadge}
+                                        ${badgeEntrega}
                                     </div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-[11px] text-slate-400 px-0.5">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                                        <span>Fecha: <strong class="text-slate-200 font-semibold">${fechaCorta}</strong></span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 text-slate-400">
+                                        <i class="fa-regular fa-clock text-slate-400 text-xs"></i>
+                                        <span>${r.horarioEntrega || 'Horario Estándar'}</span>
+                                    </span>
                                 </div>
 
                                 <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1">
@@ -5507,13 +5552,12 @@
                                             <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
                                             <span>${r.cliente}</span>
                                         </button>
-                                        <span class="text-[10px] text-slate-400">${r.tipoViaje || 'Facturación'}</span>
+                                        <span class="text-[10px] text-slate-400 font-medium">${r.tipoViaje || 'Facturación'}</span>
                                     </div>
                                     <div class="text-xs text-slate-300 flex items-start gap-1.5 pt-0.5">
                                         <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
                                         <span class="font-medium">${r.destino}</span>
                                     </div>
-                                    ${horarioDisplay ? `<div class="pt-0.5 text-[11px]">${horarioDisplay}</div>` : ''}
                                 </div>
 
                                 <div class="flex items-center justify-between text-xs px-1">
@@ -5547,11 +5591,12 @@
                         let htmlFuturos = '';
                         let cardsFuturos = '';
                         futurosPendientes.forEach(r => {
-                            let estadoFactText = (r.estadoFactura && r.estadoFactura.includes('Cobrar')) ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura || 'Pagado'}</span>`;
+                            const fechaCortaFuturo = formatearFechaCortaConductor(r.fechaProgramada);
+                            const estadoFactBadge = obtenerBadgeEstadoFacturaConductor(r.estadoFactura);
                             
                             htmlFuturos += `
                                 <tr class="hover:bg-slate-900/40 border-l-4 border-amber-500/50">
-                                    <td class="py-2.5 px-3 font-bold text-amber-400">${formatearFechaDisplay(r.fechaProgramada)}</td>
+                                    <td class="py-2.5 px-3 font-bold text-amber-400">${fechaCortaFuturo}</td>
                                     <td class="py-2.5 px-3 font-mono text-accentBlue font-bold">
                                         <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="hover:underline hover:text-cyan-300 inline-flex items-center gap-1.5 cursor-pointer text-left" title="Ver hoja de Factura / CCF">
                                             <i class="fa-solid fa-file-invoice text-xs"></i> <span>${r.factura}</span>
@@ -5565,33 +5610,39 @@
                                     </td>
                                     <td class="py-2.5 px-3 text-slate-300">${r.destino}</td>
                                     <td class="py-2.5 px-3 text-slate-300">${r.tipoViaje || 'Facturación'}</td>
-                                    <td class="py-2.5 px-3">${estadoFactText}</td>
+                                    <td class="py-2.5 px-3">${estadoFactBadge}</td>
                                 </tr>
                             `;
 
                             cardsFuturos += `
                                 <div class="p-3.5 rounded-2xl bg-darkCard/90 border border-blue-500/30 space-y-2.5 shadow-lg">
                                     <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
-                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-bold text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 cursor-pointer">
-                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span>${r.factura}</span>
+                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-black text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 cursor-pointer text-left">
+                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span class="tracking-wide">${r.factura}</span>
                                         </button>
-                                        <span class="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0">
-                                            <i class="fa-solid fa-calendar-day text-[10px]"></i> ${formatearFechaDisplay(r.fechaProgramada)}
-                                        </span>
+                                        <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                                            ${estadoFactBadge}
+                                            <span class="text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0">
+                                                <i class="fa-solid fa-calendar-day text-[10px]"></i> ${fechaCortaFuturo}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1">
-                                        <button type="button" onclick="abrirModalClienteConductor('${encodeURIComponent(r.cliente)}')" class="text-xs font-bold text-slate-100 hover:text-cyan-300 text-left flex items-center gap-1.5 cursor-pointer">
-                                            <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
-                                            <span>${r.cliente}</span>
-                                        </button>
+                                        <div class="flex items-center justify-between text-[11px]">
+                                            <button type="button" onclick="abrirModalClienteConductor('${encodeURIComponent(r.cliente)}')" class="text-xs font-bold text-slate-100 hover:text-cyan-300 text-left flex items-center gap-1.5 cursor-pointer">
+                                                <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
+                                                <span>${r.cliente}</span>
+                                            </button>
+                                            <span class="text-[10px] text-slate-400 font-medium">${r.tipoViaje || 'Facturación'}</span>
+                                        </div>
                                         <div class="text-xs text-slate-300 flex items-start gap-1.5 pt-0.5">
                                             <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
                                             <span>${r.destino}</span>
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between text-xs px-1">
-                                        <span class="text-slate-400 text-[11px]">Tipo: <strong class="text-slate-200">${r.tipoViaje || 'Facturación'}</strong></span>
-                                        <span>${estadoFactText}</span>
+                                        <span class="text-slate-400 text-[11px]">Monto: <strong class="text-emerald-400 font-bold">$${(Number(r.monto) || 0).toFixed(2)}</strong></span>
+                                        <span class="text-slate-400 text-[11px]">Flete: <strong class="text-cyan-400 font-bold">$${(Number(r.transporte) || 0).toFixed(2)}</strong></span>
                                     </div>
                                 </div>
                             `;
@@ -5623,13 +5674,14 @@
                     let cardsAtrasados = '';
                     misViajesAtrasados.forEach(r => {
                         const tipoTexto = r.cliente === "Uso Interno / Movimiento Logístico" ? "Traslado Interno" : (r.tipoViaje || "Facturación");
-                        const fechaOrig = formatearFechaDisplay(r.fechaProgramada || r.fecha);
+                        const fechaCortaAtrasada = formatearFechaCortaConductor(r.fechaProgramada || r.fecha);
                         const isActivo = viajeActivo && (String(r.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
+                        const estadoFactBadge = obtenerBadgeEstadoFacturaConductor(r.estadoFactura);
                         
                         htmlAtrasados += `
                             <tr class="hover:bg-slate-900/60 transition-colors border-l-4 ${isActivo ? 'border-emerald-400 bg-slate-900/60' : 'border-amber-500'}">
                                 <td class="py-2.5 px-3 whitespace-nowrap">
-                                    <span class="font-bold text-amber-400 block">${fechaOrig}</span>
+                                    <span class="font-bold text-amber-400 block">${fechaCortaAtrasada}</span>
                                     <span class="text-[10px] font-bold text-rose-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Pendiente Atrasado</span>
                                 </td>
                                 <td class="py-2.5 px-3 font-mono font-bold text-accentBlue">
@@ -5668,12 +5720,24 @@
                         cardsAtrasados += `
                             <div class="p-3.5 rounded-2xl bg-amber-500/10 border-2 ${isActivo ? 'border-emerald-400 shadow-emerald-500/20' : 'border-amber-500/70'} space-y-2.5 shadow-xl">
                                 <div class="flex items-center justify-between gap-2 border-b border-amber-500/30 pb-2">
-                                    <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-black text-amber-300 hover:text-white flex items-center gap-1.5 cursor-pointer">
-                                        <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span>${r.factura}</span>
+                                    <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-black text-amber-300 hover:text-white flex items-center gap-1.5 cursor-pointer text-left" title="Ver hoja de Factura">
+                                        <i class="fa-solid fa-file-invoice text-xs shrink-0"></i>
+                                        <span class="tracking-wide">${r.factura}</span>
                                     </button>
-                                    <span class="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40 shrink-0 inline-flex items-center gap-1">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> Atrasado (${fechaOrig})
+                                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                                        ${estadoFactBadge}
+                                        <span class="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40 shrink-0 inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Atrasado
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-[11px] text-amber-300/90 px-0.5 font-medium">
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i class="fa-solid fa-calendar-xmark text-amber-400 text-xs"></i>
+                                        <span>Asignado: <strong class="text-white">${fechaCortaAtrasada}</strong></span>
                                     </span>
+                                    <span class="text-slate-400 text-[10px] font-medium">${tipoTexto}</span>
                                 </div>
 
                                 <div class="bg-slate-950/70 p-2.5 rounded-xl border border-amber-500/20 space-y-1">
@@ -5685,10 +5749,7 @@
                                         <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
                                         <span class="font-medium">${r.destino}</span>
                                     </div>
-                                    <div class="text-[11px] text-amber-200/90 pt-0.5">
-                                        <span>${tipoTexto}</span>
-                                        ${r.cantidadMercaderia ? ` • <span class="text-slate-400">${r.cantidadMercaderia}</span>` : ''}
-                                    </div>
+                                    ${r.cantidadMercaderia ? `<div class="text-[11px] text-slate-400 pt-0.5"><i class="fa-solid fa-box text-[10px] mr-1"></i>${r.cantidadMercaderia}</div>` : ''}
                                 </div>
 
                                 <div class="flex items-center justify-between text-xs px-1">
