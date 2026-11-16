@@ -350,52 +350,52 @@
                 <!-- ================= VISTA 1: OPERACIÓN DEL DÍA ================= -->
                 <div id="adminViewDiario" class="space-y-6">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
-                            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-2xl">
+                        <div onclick="abrirModalKpiDetalle('conductores_disponibles')" title="Clic para ver detalle de conductores" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-emerald-500/60 hover:bg-slate-800/50 rounded-2xl p-5 flex items-center space-x-4 shadow-sm transition-all group">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 group-hover:scale-105 flex items-center justify-center text-2xl transition-transform">
                                 <i class="fa-solid fa-users-viewfinder"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Cond. Disponibles</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-emerald-400 transition-colors">Cond. Disponibles</p>
                                 <h3 id="kpiActiveDrivers" class="text-2xl font-bold mt-1 text-slate-100">0 / 0</h3>
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
-                            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 text-accentBlue flex items-center justify-center text-2xl">
+                        <div onclick="abrirModalKpiDetalle('viajes_totales_hoy')" title="Clic para ver todos los viajes de hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-blue-500/60 hover:bg-slate-800/50 rounded-2xl p-5 flex items-center space-x-4 shadow-sm transition-all group">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 text-accentBlue group-hover:scale-105 flex items-center justify-center text-2xl transition-transform">
                                 <i class="fa-solid fa-route"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Viajes Totales (Hoy)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-accentBlue transition-colors">Viajes Totales (Hoy)</p>
                                 <h3 id="kpiTotalTrips" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
-                            <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-2xl">
+                        <div onclick="abrirModalKpiDetalle('fletes_hoy')" title="Clic para ver desglose de fletes de hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800/50 rounded-2xl p-5 flex items-center space-x-4 shadow-sm transition-all group">
+                            <div class="w-14 h-14 rounded-2xl bg-cyan-500/10 text-cyan-400 group-hover:scale-105 flex items-center justify-center text-2xl transition-transform">
                                 <i class="fa-solid fa-hand-holding-dollar"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Fletes (Hoy)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-cyan-400 transition-colors">Total Fletes (Hoy)</p>
                                 <h3 id="kpiTotalFletesHoy" class="text-2xl font-bold mt-1 text-cyan-400">$0.00</h3>
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
-                            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-2xl">
+                        <div onclick="abrirModalKpiDetalle('facturacion_hoy')" title="Clic para ver facturas asignadas de hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-purple-500/60 hover:bg-slate-800/50 rounded-2xl p-5 flex items-center space-x-4 shadow-sm transition-all group">
+                            <div class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 group-hover:scale-105 flex items-center justify-center text-2xl transition-transform">
                                 <i class="fa-solid fa-file-invoice-dollar"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada (Hoy)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-purple-400 transition-colors">Facturación Asignada (Hoy)</p>
                                 <h3 id="kpiInvoices" class="text-2xl font-bold mt-1 text-slate-100">$0.00</h3>
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 flex items-center space-x-4 shadow-sm">
-                            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-2xl">
+                        <div onclick="abrirModalKpiDetalle('viajes_futuros')" title="Clic para ver viajes programados futuros" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-amber-500/60 hover:bg-slate-800/50 rounded-2xl p-5 flex items-center space-x-4 shadow-sm transition-all group">
+                            <div class="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 group-hover:scale-105 flex items-center justify-center text-2xl transition-transform">
                                 <i class="fa-solid fa-calendar-plus"></i>
                             </div>
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturas Prog. (Futuro)</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-amber-400 transition-colors">Facturas Prog. (Futuro)</p>
                                 <h3 id="kpiScheduledInvoices" class="text-2xl font-bold mt-1 text-slate-100">0</h3>
                             </div>
                         </div>
@@ -1932,32 +1932,32 @@
 
             <main class="flex-1 p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-accentBlue flex items-center justify-center text-xl">
+                    <div onclick="abrirModalKpiDetalle('driver_viajes_hoy')" title="Clic para ver detalle de mis viajes hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-blue-500/60 hover:bg-slate-800/50 rounded-2xl p-4 flex items-center space-x-4 shadow-sm transition-all group">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-accentBlue group-hover:scale-105 flex items-center justify-center text-xl transition-transform">
                             <i class="fa-solid fa-route"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mis Viajes Hoy</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-accentBlue transition-colors">Mis Viajes Hoy</p>
                             <h3 id="driverKpiTrips" class="text-xl font-bold mt-0.5 text-slate-100">0</h3>
                         </div>
                     </div>
 
-                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
-                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl">
+                    <div onclick="abrirModalKpiDetalle('driver_fletes_hoy')" title="Clic para ver desglose de mis fletes hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800/50 rounded-2xl p-4 flex items-center space-x-4 shadow-sm transition-all group">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:scale-105 flex items-center justify-center text-xl transition-transform">
                             <i class="fa-solid fa-truck-ramp-box"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total en Transporte</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-cyan-400 transition-colors">Total en Transporte</p>
                             <h3 id="driverKpiTransport" class="text-xl font-bold mt-0.5 text-slate-100">$0.00</h3>
                         </div>
                     </div>
 
-                    <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
-                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl">
+                    <div onclick="abrirModalKpiDetalle('driver_monto_hoy')" title="Clic para ver detalle de facturación asignada hoy" class="cursor-pointer bg-darkCard border border-slate-700/60 hover:border-emerald-500/60 hover:bg-slate-800/50 rounded-2xl p-4 flex items-center space-x-4 shadow-sm transition-all group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-105 flex items-center justify-center text-xl transition-transform">
                             <i class="fa-solid fa-file-invoice-dollar"></i>
                         </div>
                         <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Facturación Asignada</p>
+                            <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 group-hover:text-emerald-400 transition-colors">Facturación Asignada</p>
                             <h3 id="driverKpiAmount" class="text-xl font-bold mt-0.5 text-slate-100">$0.00</h3>
                         </div>
                     </div>
@@ -2098,7 +2098,7 @@
                 </div>
 
                 <!-- ================= VENTANA / SECCIÓN: VIAJES PENDIENTES DE DÍAS ANTERIORES ================= -->
-                <div id="driverCardViajesAtrasados" class="hidden bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl">
+                <div id="driverCardViajesAtrasados" class="bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0">
@@ -2527,7 +2527,7 @@
         </div>
 
         <!-- ================= MODAL: AGREGAR / EDITAR JSON INDIVIDUAL DE FACTURA O CCF ================= -->
-        <div id="modalJsonFilaFactura" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[75] hidden flex items-center justify-center p-3 sm:p-5">
+        <div id="modalJsonFilaFactura" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3 sm:p-5">
             <div class="bg-darkCard border border-cyan-500/50 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
                 
                 <!-- Encabezado -->
@@ -2618,7 +2618,7 @@
         </div>
 
         <!-- ================= MODAL: VISOR DE JSON COMPLETO DE FACTURA / CCF ================= -->
-        <div id="modalVerJsonFacturaCompleto" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[80] hidden flex items-center justify-center p-3 sm:p-5">
+        <div id="modalVerJsonFacturaCompleto" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3 sm:p-5">
             <div class="bg-darkCard border border-cyan-500/50 rounded-3xl max-w-3xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
                 <div class="flex items-start justify-between border-b border-slate-800 pb-3 gap-3 shrink-0">
                     <div class="flex items-center gap-3">
@@ -2657,7 +2657,7 @@
         </div>
 
         <!-- ================= MODAL: ADJUNTAR / ACTUALIZAR JSON A FACTURA EXISTENTE ================= -->
-        <div id="modalAdjuntarJsonFacturaExistente" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[75] hidden flex items-center justify-center p-3 sm:p-5">
+        <div id="modalAdjuntarJsonFacturaExistente" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3 sm:p-5">
             <div class="bg-darkCard border border-cyan-500/50 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
                 
                 <!-- Encabezado -->
@@ -2765,7 +2765,7 @@
         </div>
 
         <!-- ================= MODAL 1: PREVISUALIZAR HOJA DE FACTURA / CCF ================= -->
-        <div id="modalPrevisualizarFactura" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div id="modalPrevisualizarFactura" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <div class="bg-darkCard border border-slate-700/80 rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl relative">
                 <!-- Barra de Acciones Superior (Adaptada para PC y Móvil/Conductor) -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 border-b border-slate-800 bg-slate-900/95 rounded-t-3xl shrink-0">
@@ -2787,6 +2787,9 @@
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                        <button id="btnVerComprobanteEntregaSheet" type="button" onclick="abrirModalVerComprobante(encodeURIComponent(facturaActualPrevisualizada.factura))" class="hidden px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px]" title="Ver comprobante digital de entrega y firma">
+                            <i class="fa-solid fa-receipt text-emerald-400"></i> <span>Comprobante</span>
+                        </button>
                         <button id="btnVerJsonFacturaEnSheet" type="button" onclick="abrirModalVerJsonFacturaActual()" class="hidden px-3 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer" title="Ver código y estructura JSON de este documento">
                             <i class="fa-solid fa-code text-cyan-400"></i> <span>JSON</span>
                         </button>
@@ -2936,29 +2939,61 @@
                         <div id="prevDocSeccionEntrega" class="border-t-2 border-dashed border-slate-300 pt-4">
                             <!-- Si ya está entregado -->
                             <div id="prevDocEntregaRealizada" class="space-y-3">
-                                <div class="font-bold text-slate-900 flex items-center justify-between text-xs">
-                                    <span class="text-emerald-700 flex items-center gap-1.5 uppercase tracking-wider">
-                                        <i class="fa-solid fa-circle-check"></i> Respaldo Digital de Entrega Conforme
-                                    </span>
-                                    <span id="prevDocHoraEntrega" class="text-slate-500 font-medium text-[11px]">Hora: --</span>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 shadow-xs">
+                                            <i class="fa-solid fa-circle-check text-emerald-600"></i> Respaldo Digital de Entrega Conforme
+                                        </span>
+                                        <span id="prevDocConductorEntrega" class="text-slate-600 text-[11px] font-semibold"></span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span id="prevDocHoraEntrega" class="text-slate-600 font-mono text-[11px] font-bold">Hora: --</span>
+                                        <button type="button" onclick="abrirModalVerComprobante(encodeURIComponent(facturaActualPrevisualizada.factura))" class="px-2.5 py-1 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 print:hidden cursor-pointer shadow-xs" title="Abrir visor completo de comprobante">
+                                            <i class="fa-solid fa-expand text-[10px] text-cyan-600"></i> <span>Ver Comprobante Completo</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl text-xs">
-                                    <div>
-                                        <span class="text-slate-500 block text-[11px] mb-1">Firma Digital del Receptor:</span>
-                                        <div id="prevDocFirmaContainer" class="h-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center p-1 overflow-hidden">
-                                            <img id="prevDocImgFirma" src="" alt="Firma" class="max-h-full max-w-full object-contain">
+                                    <!-- FOTOGRAFÍA DEL COMPROBANTE -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-700 font-bold text-[11px] flex items-center gap-1">
+                                                <i class="fa-solid fa-camera text-emerald-600"></i> Fotografía del Producto / Comprobante:
+                                            </span>
+                                            <a id="prevDocLinkDriveFoto" href="#" target="_blank" class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold hidden print:hidden flex items-center gap-1">
+                                                <i class="fa-brands fa-google-drive"></i> Abrir en Drive
+                                            </a>
                                         </div>
-                                        <div class="mt-1.5 text-[11px] text-slate-700 font-bold">
-                                            Recibido por: <span id="prevDocReceptorNombre" class="text-slate-900">---</span>
+                                        <div id="prevDocFotoContainer" class="min-h-[170px] max-h-64 bg-white border border-slate-300 rounded-xl flex items-center justify-center p-2 overflow-hidden shadow-xs relative group">
+                                            <img id="prevDocImgFoto" referrerpolicy="no-referrer" onerror="reintentarCargaImagenDrive(this)" src="" alt="Foto Entrega" class="max-h-60 w-full object-contain cursor-pointer hover:opacity-90 transition-opacity" onclick="abrirModalVerComprobante(encodeURIComponent(facturaActualPrevisualizada.factura))" title="Clic para ampliar comprobante">
+                                            <span id="prevDocFotoVacia" class="text-xs text-slate-400 italic p-4 text-center hidden">No se adjuntó fotografía física</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 italic text-center">
+                                            Fotografía tomada en el lugar de destino por el conductor.
                                         </div>
                                     </div>
-                                    <div>
-                                        <span class="text-slate-500 block text-[11px] mb-1">Fotografía del Producto Entregado:</span>
-                                        <div id="prevDocFotoContainer" class="h-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center p-1 overflow-hidden">
-                                            <img id="prevDocImgFoto" src="" alt="Foto Entrega" class="max-h-full max-w-full object-contain cursor-pointer">
+
+                                    <!-- FIRMA DIGITAL -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-slate-700 font-bold text-[11px] flex items-center gap-1">
+                                                <i class="fa-solid fa-signature text-blue-600"></i> Firma Digital del Receptor:
+                                            </span>
+                                            <a id="prevDocLinkDriveFirma" href="#" target="_blank" class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold hidden print:hidden flex items-center gap-1">
+                                                <i class="fa-brands fa-google-drive"></i> Abrir en Drive
+                                            </a>
                                         </div>
-                                        <div class="mt-1.5 text-[10px] text-slate-500 italic text-center">
-                                            Fotografía tomada en el lugar de destino.
+                                        <div id="prevDocFirmaContainer" class="min-h-[170px] max-h-64 bg-white border border-slate-300 rounded-xl flex items-center justify-center p-2 overflow-hidden shadow-xs">
+                                            <img id="prevDocImgFirma" referrerpolicy="no-referrer" onerror="reintentarCargaImagenDrive(this)" src="" alt="Firma" class="max-h-60 w-full object-contain">
+                                            <span id="prevDocFirmaVacia" class="text-xs text-slate-400 italic p-4 text-center hidden">No se registró firma digital en pantalla</span>
+                                        </div>
+                                        <div class="p-2 bg-white rounded-lg border border-slate-200 text-xs">
+                                            <div class="text-[11px] text-slate-700 font-bold">
+                                                Recibido por: <span id="prevDocReceptorNombre" class="text-slate-900 font-black">---</span>
+                                            </div>
+                                            <div id="prevDocMotivoRetrasoBox" class="mt-1 text-[11px] text-amber-800 font-medium hidden border-t border-slate-100 pt-1">
+                                                <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i>Observación: <span id="prevDocMotivoRetraso"></span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3259,7 +3294,7 @@
         </div>
 
         <!-- ================= MODAL 4: PREVISUALIZAR HOJA DE COTIZACIÓN ================= -->
-        <div id="modalPrevisualizarCotizacion" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div id="modalPrevisualizarCotizacion" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[90] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <div class="bg-darkCard border border-purple-500/40 rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl relative">
                 <!-- Barra Superior de Acciones -->
                 <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/90 rounded-t-3xl shrink-0">
@@ -3896,7 +3931,7 @@
         </div>
 
         <!-- ================= MODAL VISOR DE COMPROBANTE Y FIRMA ================= -->
-        <div id="modalVerComprobanteEntrega" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div id="modalVerComprobanteEntrega" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[95] hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <div class="bg-darkCard border border-cyan-500/40 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div class="flex items-center gap-2.5">
@@ -3927,12 +3962,17 @@
                             <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                                 <i class="fa-solid fa-camera"></i> Foto del Comprobante
                             </span>
-                            <a id="verPodBtnDescargarFoto" href="#" download="comprobante.jpg" target="_blank" class="text-[11px] text-cyan-400 hover:text-cyan-300 hidden">
-                                <i class="fa-solid fa-download mr-1"></i>Descargar
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a id="verPodBtnDriveFoto" href="#" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 hidden">
+                                    <i class="fa-brands fa-google-drive mr-1"></i>Drive
+                                </a>
+                                <a id="verPodBtnDescargarFoto" href="#" download="comprobante.jpg" target="_blank" class="text-[11px] text-cyan-400 hover:text-cyan-300 hidden">
+                                    <i class="fa-solid fa-download mr-1"></i>Descargar
+                                </a>
+                            </div>
                         </div>
                         <div id="verPodFotoContenedor" class="min-h-[180px] bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
-                            <img id="verPodFotoImg" class="max-h-72 w-full object-contain rounded-lg hidden" alt="Comprobante">
+                            <img id="verPodFotoImg" referrerpolicy="no-referrer" onerror="reintentarCargaImagenDrive(this)" class="max-h-72 w-full object-contain rounded-lg hidden" alt="Comprobante">
                             <span id="verPodFotoVacia" class="text-xs text-slate-500 italic p-4 text-center">No se adjuntó foto física</span>
                         </div>
                     </div>
@@ -3943,12 +3983,17 @@
                             <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
                                 <i class="fa-solid fa-signature"></i> Firma Digital del Cliente
                             </span>
-                            <a id="verPodBtnDescargarFirma" href="#" download="firma.png" target="_blank" class="text-[11px] text-cyan-400 hover:text-cyan-300 hidden">
-                                <i class="fa-solid fa-download mr-1"></i>Descargar
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a id="verPodBtnDriveFirma" href="#" target="_blank" class="text-[11px] text-blue-400 hover:text-blue-300 hidden">
+                                    <i class="fa-brands fa-google-drive mr-1"></i>Drive
+                                </a>
+                                <a id="verPodBtnDescargarFirma" href="#" download="firma.png" target="_blank" class="text-[11px] text-cyan-400 hover:text-cyan-300 hidden">
+                                    <i class="fa-solid fa-download mr-1"></i>Descargar
+                                </a>
+                            </div>
                         </div>
                         <div id="verPodFirmaContenedor" class="min-h-[180px] bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden p-2">
-                            <img id="verPodFirmaImg" class="max-h-72 w-full object-contain rounded-lg hidden bg-white/5" alt="Firma">
+                            <img id="verPodFirmaImg" referrerpolicy="no-referrer" onerror="reintentarCargaImagenDrive(this)" class="max-h-72 w-full object-contain rounded-lg hidden bg-white/5" alt="Firma">
                             <span id="verPodFirmaVacia" class="text-xs text-slate-500 italic p-4 text-center">No se registró firma digital en pantalla</span>
                         </div>
                         <div id="verPodNombreReceptorBox" class="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80 hidden">
@@ -3960,6 +4005,54 @@
                 <div class="flex justify-between items-center pt-2">
                     <span id="verPodEnlaceDriveBox"></span>
                     <button type="button" onclick="cerrarModalVerComprobante()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-colors">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODAL DETALLES DE KPIS (DRILL-DOWN INTERACTIVO) ================= -->
+        <div id="modalKpiDetalles" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div class="bg-darkCard border border-cyan-500/40 rounded-2xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl relative my-auto max-h-[92vh] flex flex-col space-y-4">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div id="kpiModalIconoContainer" class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg shrink-0">
+                            <i id="kpiModalIcono" class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 id="kpiModalTitulo" class="font-bold text-base text-slate-100">Detalle de Indicador</h3>
+                                <span id="kpiModalBadgeTotal" class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300">0</span>
+                            </div>
+                            <p id="kpiModalSubtitulo" class="text-xs text-slate-400">Desglose completo de viajes y registros asociados</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="cerrarModalKpiDetalle()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Barra de búsqueda y métricas rápidas -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="kpiModalBuscarInput" oninput="filtrarKpiModalRegistros()" placeholder="Buscar por factura, cliente, conductor, destino..." class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+                    </div>
+                    <div id="kpiModalMetricasBox" class="flex items-center gap-2 text-xs shrink-0 flex-wrap">
+                        <!-- Rellenado dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Contenido dinámico scrollable -->
+                <div id="kpiModalContenido" class="flex-1 overflow-y-auto max-h-[55vh] rounded-xl border border-slate-800/80 bg-slate-950/60 p-2 sm:p-3">
+                    <!-- Tablas o tarjetas inyectadas por JS -->
+                </div>
+
+                <!-- Footer -->
+                <div class="flex items-center justify-between border-t border-slate-800 pt-3 text-xs text-slate-400">
+                    <span id="kpiModalFooterConteo">Mostrando registros</span>
+                    <button type="button" onclick="cerrarModalKpiDetalle()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-colors">
                         Cerrar
                     </button>
                 </div>
@@ -4361,24 +4454,24 @@
 
         function esViajeDeConductor(r, driverKey, driverObj) {
             if (!r || !driverObj) return false;
-            // 1. Coincidencia por driverKey exacta o normalizada
-            if (r.driverKey && driverKey) {
-                const rk = String(r.driverKey).trim().toLowerCase();
-                const dk = String(driverKey).trim().toLowerCase();
-                if (rk === dk || normalizarTextoClave(rk) === normalizarTextoClave(dk)) return true;
-            }
-            // 2. Coincidencia por nombre de conductor normalizado (ignora mayúsculas, tildes y espacios extras)
-            if (r.conductor && driverObj.name) {
-                const rc = normalizarTextoClave(r.conductor);
-                const dn = normalizarTextoClave(driverObj.name);
-                if (rc && dn && rc === dn) return true;
-                if (String(r.conductor).trim().toLowerCase() === String(driverObj.name).trim().toLowerCase()) return true;
-            }
-            // 3. Coincidencia por unidad / camión (si coincide la unidad asignada al conductor)
-            if (r.camion && driverObj.unit) {
-                const rcam = normalizarTextoClave(r.camion);
-                const dunit = normalizarTextoClave(driverObj.unit);
-                if (rcam && dunit && rcam === dunit) return true;
+            const rk = String(r.driverKey || '').trim().toLowerCase();
+            const dk = String(driverKey || '').trim().toLowerCase();
+            const dn = normalizarTextoClave(driverObj.name || '');
+            const rc = normalizarTextoClave(r.conductor || '');
+
+            // 1. Coincidencia directa por nombre de conductor
+            if (rc && dn && rc === dn) return true;
+            if (String(r.conductor || '').trim().toLowerCase() === String(driverObj.name || '').trim().toLowerCase()) return true;
+
+            // 2. Coincidencia por driverKey (solo si no pertenece explícitamente a otro conductor por nombre)
+            if (rk && dk && (rk === dk || normalizarTextoClave(rk) === normalizarTextoClave(dk))) {
+                if (rc) {
+                    const otroChofer = Object.values(driversData).find(d => normalizarTextoClave(d.name) === rc);
+                    if (otroChofer && normalizarTextoClave(otroChofer.name) !== dn) {
+                        return false; // El nombre del conductor en el registro pertenece explícitamente a otro chofer
+                    }
+                }
+                return true;
             }
             return false;
         }
@@ -4647,6 +4740,7 @@
             const modalesIds = [
                 'modalComprobanteEntrega',
                 'modalVerComprobanteEntrega',
+                'modalKpiDetalles',
                 'modalEntregaAtrasada',
                 'modalReasignar',
                 'modalExpedienteCliente',
@@ -4841,13 +4935,23 @@
                                 fProg = fProg.split('T')[0];
                             }
 
+                            let driverKeyNormalizado = item.driverKey || '';
+                            let conductorNormalizado = item.conductor || '';
+                            if (conductorNormalizado) {
+                                const choferMatch = Object.values(driversData).find(d => normalizarTextoClave(d.name) === normalizarTextoClave(conductorNormalizado));
+                                if (choferMatch) {
+                                    driverKeyNormalizado = choferMatch.key;
+                                    conductorNormalizado = choferMatch.name;
+                                }
+                            }
+
                             return {
                                 id: index + 1,
                                 ordenAsignacion: item.ordenAsignacion || (index + 1),
                                 fecha: fechaRecuperada,
                                 origen: item.origen || '',
-                                driverKey: item.driverKey || '',
-                                conductor: item.conductor || '',
+                                driverKey: driverKeyNormalizado,
+                                conductor: conductorNormalizado,
                                 camion: item.camion || '',
                                 factura: item.factura || '',
                                 cliente: item.cliente || '',
@@ -5123,11 +5227,7 @@
             document.getElementById('driverHeaderUnit').innerText = `${driver.unit} • En Ruta`;
             actualizarBotonAlarmaSonoraUI();
 
-            let misViajesAll = registrosGlobales.filter(r => 
-                esViajeDeConductor(r, currentDriverKey, driver) ||
-                r.driverKey === currentDriverKey || 
-                (r.conductor && driver && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
-            );
+            let misViajesAll = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, driver));
 
             // ==========================================
             // DETECCIÓN DE NUEVOS VIAJES PARA LA ALARMA SONORA
@@ -5424,15 +5524,13 @@
             const tbodyHoy = document.getElementById('driverTripsTableBody');
             const cardsHoyEl = document.getElementById('driverTripsCardsMobile');
             if (tbodyHoy || cardsHoyEl) {
-                const todosLosEnvios = [...misViajesAtrasados, ...misViajesHoy];
-                if (todosLosEnvios.length === 0) {
-                    if (tbodyHoy) tbodyHoy.innerHTML = `<tr><td colspan="8" class="py-5 text-center text-slate-500 italic">No tiene viajes asignados para hoy ni pendientes de días anteriores.</td></tr>`;
-                    if (cardsHoyEl) cardsHoyEl.innerHTML = `<div class="p-5 text-center text-slate-500 italic bg-darkCard/50 border border-slate-800 rounded-2xl text-xs">No tiene viajes asignados para hoy ni pendientes de días anteriores.</div>`;
+                if (misViajesHoy.length === 0) {
+                    if (tbodyHoy) tbodyHoy.innerHTML = `<tr><td colspan="8" class="py-5 text-center text-slate-500 italic">No tiene viajes asignados para hoy.</td></tr>`;
+                    if (cardsHoyEl) cardsHoyEl.innerHTML = `<div class="p-5 text-center text-slate-500 italic bg-darkCard/50 border border-slate-800 rounded-2xl text-xs">No tiene viajes asignados para hoy.</div>`;
                 } else {
                     let htmlHoy = '';
                     let cardsHoy = '';
-                    todosLosEnvios.forEach((r, idx) => {
-                        const esAtrasado = !esRegistroDeHoy(r);
+                    misViajesHoy.forEach((r, idx) => {
                         const isDone = r.estado === 'Entregado';
                         const fechaCorta = formatearFechaCortaConductor(r.fechaProgramada || r.fecha);
                         const isActivo = viajeActivo && (String(r.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
@@ -5442,8 +5540,6 @@
                             badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-check-double text-[9px]"></i> Entregado</span>`;
                         } else if (isActivo) {
                             badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> En Ruta</span>`;
-                        } else if (esAtrasado) {
-                            badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Atrasado</span>`;
                         } else {
                             badgeEntrega = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 shrink-0 inline-flex items-center gap-1"><i class="fa-solid fa-clock text-[9px]"></i> Pendiente</span>`;
                         }
@@ -5464,7 +5560,7 @@
                                     <button onclick="seleccionarViajeActivoManual('${encodeURIComponent(r.factura)}')" class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-accentBlue border border-blue-500/30 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1" title="Poner en ruta y ver en mapa">
                                         <i class="fa-solid fa-play text-[9px]"></i> Priorizar
                                     </button>
-                                    <button onclick="${esAtrasado ? `abrirModalEntregaAtrasada('${encodeURIComponent(r.factura)}')` : `abrirModalComprobanteDirectoPorFactura('${encodeURIComponent(r.factura)}')`}" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1" title="Marcar como entregado">
+                                    <button onclick="abrirModalComprobanteDirectoPorFactura('${encodeURIComponent(r.factura)}')" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold transition-all inline-flex items-center gap-1" title="Marcar como entregado">
                                         <i class="fa-solid fa-circle-check text-[9px]"></i> Entregar
                                     </button>
                                 </div>
@@ -5474,27 +5570,19 @@
                                     <button onclick="seleccionarViajeActivoManual('${encodeURIComponent(r.factura)}')" class="py-2.5 px-3 bg-blue-600/30 hover:bg-blue-600/50 text-cyan-300 border border-blue-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
                                         <i class="fa-solid fa-location-arrow"></i> <span>Poner en Ruta</span>
                                     </button>
-                                    <button onclick="${esAtrasado ? `abrirModalEntregaAtrasada('${encodeURIComponent(r.factura)}')` : `abrirModalComprobanteDirectoPorFactura('${encodeURIComponent(r.factura)}')`}" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+                                    <button onclick="abrirModalComprobanteDirectoPorFactura('${encodeURIComponent(r.factura)}')" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
                                         <i class="fa-solid fa-circle-check"></i> <span>Entregar</span>
                                     </button>
                                 </div>
                             `;
                         }
 
-                        let rowBorder = '';
+                        let rowBorder = isActivo ? 'bg-slate-900/60 border-l-4 border-emerald-400' : '';
                         let cardBorder = isActivo 
                             ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' 
-                            : (esAtrasado ? 'border-amber-500/70 bg-amber-500/5' : 'border-slate-700/80 bg-slate-900/60');
+                            : 'border-slate-700/80 bg-slate-900/60';
 
-                        if (isActivo) {
-                            rowBorder = 'bg-slate-900/60 border-l-4 border-emerald-400';
-                        } else if (esAtrasado && !isDone) {
-                            rowBorder = 'bg-amber-500/5 border-l-4 border-amber-500';
-                        }
-
-                        const horarioDisplay = esAtrasado && !isDone
-                            ? `<span class="text-amber-400 text-[10px] font-bold"><i class="fa-solid fa-calendar-xmark mr-0.5"></i> Asignado: ${fechaCorta}</span>`
-                            : `<span class="text-slate-400 text-[10px]">${r.horarioEntrega || 'Horario Estándar'}</span>`;
+                        const horarioDisplay = `<span class="text-slate-400 text-[10px]">${r.horarioEntrega || 'Horario Estándar'}</span>`;
 
                         htmlHoy += `
                             <tr class="hover:bg-slate-900/40 ${rowBorder}">
@@ -5659,15 +5747,19 @@
             const cardsAtrasadosEl = document.getElementById('driverOverdueTripsCardsMobile');
             const badgeAtrasados = document.getElementById('badgeAtrasadosCount');
 
-            if (cardAtrasados && (tbodyAtrasados || cardsAtrasadosEl)) {
+            if (cardAtrasados) {
+                cardAtrasados.classList.remove('hidden');
                 if (misViajesAtrasados.length === 0) {
-                    cardAtrasados.classList.add('hidden');
-                    if (tbodyAtrasados) tbodyAtrasados.innerHTML = '';
-                    if (cardsAtrasadosEl) cardsAtrasadosEl.innerHTML = '';
+                    if (badgeAtrasados) {
+                        badgeAtrasados.innerText = '0 pendientes';
+                        badgeAtrasados.className = "px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 self-start sm:self-auto";
+                    }
+                    if (tbodyAtrasados) tbodyAtrasados.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-500 italic">No tiene viajes pendientes de días anteriores. Todos sus envíos están al día.</td></tr>`;
+                    if (cardsAtrasadosEl) cardsAtrasadosEl.innerHTML = `<div class="p-4 text-slate-500 italic text-center bg-darkCard/50 border border-slate-800 rounded-2xl text-xs"><i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i>No tiene viajes pendientes de días anteriores. Todos sus envíos están al día.</div>`;
                 } else {
-                    cardAtrasados.classList.remove('hidden');
                     if (badgeAtrasados) {
                         badgeAtrasados.innerText = `${misViajesAtrasados.length} pendiente${misViajesAtrasados.length > 1 ? 's' : ''}`;
+                        badgeAtrasados.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 shrink-0 self-start sm:self-auto";
                     }
 
                     let htmlAtrasados = '';
@@ -5863,11 +5955,7 @@
             if (!tbody || !currentDriverKey) return;
             const driver = driversData[currentDriverKey];
 
-            let misViajesAll = registrosGlobales.filter(r => 
-                esViajeDeConductor(r, currentDriverKey, driver) ||
-                r.driverKey === currentDriverKey || 
-                (r.conductor && driver && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
-            );
+            let misViajesAll = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, driver));
 
             let filtrados = misViajesAll.filter(r => {
                 const c = clasificarPeriodoFecha(r);
@@ -9645,30 +9733,35 @@
 
             for (const [key, d] of Object.entries(driversData)) {
                 // Solo viajes del día de hoy
-                let viajesDriver = registrosGlobales.filter(r => r.driverKey === key && esRegistroDeHoy(r));
+                let viajesDriver = registrosGlobales.filter(r => (r.driverKey === key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r));
                 let totalViajes = viajesDriver.length;
-                let transporteTotal = viajesDriver.reduce((acc, r) => acc + r.transporte, 0);
-                let facturadoTotal = viajesDriver.reduce((acc, r) => acc + r.monto, 0);
+                let transporteTotal = viajesDriver.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
+                let facturadoTotal = viajesDriver.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
 
                 html += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div onclick="abrirModalKpiDetalle('conductor_individual', '${key}')" title="Clic para ver detalle de viajes de ${d.name}" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-accentBlue/60 hover:bg-slate-800/60 rounded-xl p-4 space-y-2 transition-all group shadow-sm">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-xs text-slate-100">${d.name}</span>
+                            <span class="font-bold text-xs text-slate-100 group-hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-tag text-[10px] text-slate-400"></i> ${d.name}
+                            </span>
                             <span class="text-[10px] bg-accentBlue/20 text-accentBlue px-2 py-0.5 rounded font-medium">${d.unit}</span>
                         </div>
                         <div class="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800 text-center text-xs">
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Viajes</span>
                                 <span class="font-bold text-slate-100">${totalViajes}</span>
                             </div>
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Transporte</span>
                                 <span class="font-bold text-cyan-400">$${transporteTotal.toFixed(2)}</span>
                             </div>
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Facturado</span>
                                 <span class="font-bold text-emerald-400">$${facturadoTotal.toFixed(2)}</span>
                             </div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 text-right group-hover:text-cyan-400 transition-colors flex items-center justify-end gap-1">
+                            <span>Ver viajes</span> <i class="fa-solid fa-arrow-right text-[9px]"></i>
                         </div>
                     </div>
                 `;
@@ -9685,28 +9778,33 @@
                 // Solo viajes del día de hoy
                 let itemsSuc = registrosGlobales.filter(r => r.origen === suc && esRegistroDeHoy(r));
                 let viajes = itemsSuc.length;
-                let transporteTotal = itemsSuc.reduce((acc, r) => acc + r.transporte, 0);
-                let facturadoTotal = itemsSuc.reduce((acc, r) => acc + r.monto, 0);
+                let transporteTotal = itemsSuc.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
+                let facturadoTotal = itemsSuc.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
 
                 html += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div onclick="abrirModalKpiDetalle('sucursal_origen', '${suc}')" title="Clic para ver detalle de viajes desde ${suc}" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-emerald-500/60 hover:bg-slate-800/60 rounded-xl p-4 space-y-2 transition-all group shadow-sm">
                         <div class="flex items-center justify-between">
-                            <span class="font-bold text-xs text-accentBlue">${suc}</span>
+                            <span class="font-bold text-xs text-accentBlue group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-store text-[10px] text-emerald-400"></i> ${suc}
+                            </span>
                             <span class="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-300">Hoy</span>
                         </div>
                         <div class="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800 text-center text-xs">
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Viajes</span>
                                 <span class="font-bold text-slate-100">${viajes}</span>
                             </div>
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Transporte</span>
                                 <span class="font-bold text-cyan-400">$${transporteTotal.toFixed(2)}</span>
                             </div>
-                            <div class="bg-slate-800/50 p-1.5 rounded-lg">
+                            <div class="bg-slate-800/50 p-1.5 rounded-lg group-hover:bg-slate-800 transition-colors">
                                 <span class="text-[9px] text-slate-400 block">Facturado</span>
                                 <span class="font-bold text-emerald-400">$${facturadoTotal.toFixed(2)}</span>
                             </div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 text-right group-hover:text-emerald-400 transition-colors flex items-center justify-end gap-1">
+                            <span>Ver viajes</span> <i class="fa-solid fa-arrow-right text-[9px]"></i>
                         </div>
                     </div>
                 `;
@@ -10362,30 +10460,134 @@
             initDriverDashboard();
         }
 
-        function guardarComprobanteLocal(factura, foto, firma, receptor) {
+        function normalizarUrlImagenParaVisualizar(url) {
+            if (!url || typeof url !== 'string') return '';
+            const trimmed = url.trim();
+            if (!trimmed) return '';
+            if (trimmed.startsWith('data:image')) return trimmed;
+
+            // Extraer ID de archivo de Google Drive (distintos formatos estándar)
+            const driveMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/) || 
+                               trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+                               trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (driveMatch && driveMatch[1]) {
+                return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w1200`;
+            }
+
+            return trimmed;
+        }
+
+        function reintentarCargaImagenDrive(img) {
+            if (!img || img.dataset.retried) return;
+            img.dataset.retried = '1';
+            const src = img.src || '';
+            const m = src.match(/id=([a-zA-Z0-9_-]+)/) || src.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (m && m[1]) {
+                if (!src.includes('lh3.googleusercontent.com')) {
+                    img.src = `https://lh3.googleusercontent.com/d/${m[1]}`;
+                }
+            }
+        }
+
+        const DB_POD_NAME = 'TransportesPOD_DB';
+        const DB_POD_STORE = 'comprobantes';
+        let podDBInstance = null;
+
+        function getPodDB() {
+            if (podDBInstance) return Promise.resolve(podDBInstance);
+            return new Promise((resolve) => {
+                if (!window.indexedDB) return resolve(null);
+                try {
+                    const req = window.indexedDB.open(DB_POD_NAME, 1);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(DB_POD_STORE)) {
+                            db.createObjectStore(DB_POD_STORE, { keyPath: 'key' });
+                        }
+                    };
+                    req.onsuccess = (e) => {
+                        podDBInstance = e.target.result;
+                        resolve(podDBInstance);
+                    };
+                    req.onerror = () => resolve(null);
+                } catch (err) {
+                    resolve(null);
+                }
+            });
+        }
+
+        const comprobantesEnMemoria = new Map();
+
+        (async function initComprobantesIndexedDB() {
             try {
-                const key = `comprobante_${String(factura).trim().toLowerCase()}`;
-                const data = {
-                    factura: factura,
-                    fotoComprobante: foto || '',
-                    firmaDigital: firma || '',
-                    receptorNombre: receptor || '',
-                    fechaHora: new Date().toLocaleString('es-ES')
+                const db = await getPodDB();
+                if (!db) return;
+                const tx = db.transaction(DB_POD_STORE, 'readonly');
+                const req = tx.objectStore(DB_POD_STORE).getAll();
+                req.onsuccess = () => {
+                    if (Array.isArray(req.result)) {
+                        req.result.forEach(item => {
+                            if (item && item.key) {
+                                comprobantesEnMemoria.set(item.key, item);
+                            }
+                        });
+                    }
                 };
-                localStorage.setItem(key, JSON.stringify(data));
-            } catch(e) {
-                console.warn('Almacenamiento local lleno al guardar comprobante:', e);
+            } catch(e) {}
+        })();
+
+        async function guardarComprobanteLocal(factura, foto, firma, receptor) {
+            if (!factura) return;
+            const key = `comprobante_${String(factura).trim().toLowerCase()}`;
+            const data = {
+                key: key,
+                factura: factura,
+                fotoComprobante: foto || '',
+                firmaDigital: firma || '',
+                receptorNombre: receptor || '',
+                fechaHora: new Date().toLocaleString('es-ES')
+            };
+
+            comprobantesEnMemoria.set(key, data);
+
+            try {
+                const dataStr = JSON.stringify(data);
+                if (dataStr.length < 500000) {
+                    localStorage.setItem(key, dataStr);
+                } else {
+                    const lightweight = { ...data, fotoComprobante: (foto && foto.startsWith('http')) ? foto : '' };
+                    localStorage.setItem(key, JSON.stringify(lightweight));
+                }
+            } catch (e) {
+                console.warn('localStorage al límite, usando IndexedDB:', e);
+            }
+
+            try {
+                const db = await getPodDB();
+                if (db) {
+                    const tx = db.transaction(DB_POD_STORE, 'readwrite');
+                    tx.objectStore(DB_POD_STORE).put(data);
+                }
+            } catch (err) {
+                console.warn('Error guardando en IndexedDB:', err);
             }
         }
 
         function obtenerComprobanteLocal(factura) {
-            try {
-                const key = `comprobante_${String(factura).trim().toLowerCase()}`;
-                const raw = localStorage.getItem(key);
-                return raw ? JSON.parse(raw) : null;
-            } catch(e) {
-                return null;
+            if (!factura) return null;
+            const key = `comprobante_${String(factura).trim().toLowerCase()}`;
+            if (comprobantesEnMemoria.has(key)) {
+                return comprobantesEnMemoria.get(key);
             }
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    comprobantesEnMemoria.set(key, parsed);
+                    return parsed;
+                }
+            } catch(e) {}
+            return null;
         }
 
         function abrirModalVerComprobante(facturaEncoded) {
@@ -10404,9 +10606,13 @@
             const camion = r ? (r.camion || 'N/A') : 'N/A';
             const horaEntrega = r ? (r.horaEntrega || r.fechaHora || 'Fecha no registrada') : 'N/A';
             const destino = r ? (r.destino || 'Destino no especificado') : 'N/A';
-            const foto = (r && r.fotoComprobante) || (localData && localData.fotoComprobante) || '';
-            const firma = (r && r.firmaDigital) || (localData && localData.firmaDigital) || '';
+            
+            let rawFoto = (r && r.fotoComprobante) || (localData && localData.fotoComprobante) || '';
+            let rawFirma = (r && r.firmaDigital) || (localData && localData.firmaDigital) || '';
             const receptor = (r && r.receptorNombre) || (localData && localData.receptorNombre) || '';
+
+            const fotoVisual = normalizarUrlImagenParaVisualizar(rawFoto);
+            const firmaVisual = normalizarUrlImagenParaVisualizar(rawFirma);
 
             const detalles = document.getElementById('verPodDetallesViaje');
             if (detalles) {
@@ -10421,43 +10627,73 @@
             const fotoImg = document.getElementById('verPodFotoImg');
             const fotoVacia = document.getElementById('verPodFotoVacia');
             const btnDescFoto = document.getElementById('verPodBtnDescargarFoto');
-            if (foto) {
+            const btnDriveFoto = document.getElementById('verPodBtnDriveFoto');
+
+            if (fotoVisual) {
                 if (fotoImg) {
-                    fotoImg.src = foto;
+                    fotoImg.dataset.retried = '';
+                    fotoImg.src = fotoVisual;
                     fotoImg.classList.remove('hidden');
                 }
                 if (fotoVacia) fotoVacia.classList.add('hidden');
                 if (btnDescFoto) {
-                    btnDescFoto.href = foto;
+                    btnDescFoto.href = rawFoto.startsWith('http') ? rawFoto : fotoVisual;
                     btnDescFoto.download = `Comprobante_${factura.replace(/\s+/g, '_')}.jpg`;
                     btnDescFoto.classList.remove('hidden');
                 }
+                if (btnDriveFoto) {
+                    if (rawFoto.startsWith('http')) {
+                        btnDriveFoto.href = rawFoto;
+                        btnDriveFoto.classList.remove('hidden');
+                    } else {
+                        btnDriveFoto.classList.add('hidden');
+                    }
+                }
             } else {
-                if (fotoImg) fotoImg.classList.add('hidden');
+                if (fotoImg) {
+                    fotoImg.src = '';
+                    fotoImg.classList.add('hidden');
+                }
                 if (fotoVacia) fotoVacia.classList.remove('hidden');
                 if (btnDescFoto) btnDescFoto.classList.add('hidden');
+                if (btnDriveFoto) btnDriveFoto.classList.add('hidden');
             }
 
             const firmaImg = document.getElementById('verPodFirmaImg');
             const firmaVacia = document.getElementById('verPodFirmaVacia');
             const btnDescFirma = document.getElementById('verPodBtnDescargarFirma');
+            const btnDriveFirma = document.getElementById('verPodBtnDriveFirma');
             const receptorBox = document.getElementById('verPodNombreReceptorBox');
             const receptorNom = document.getElementById('verPodNombreReceptor');
-            if (firma) {
+
+            if (firmaVisual) {
                 if (firmaImg) {
-                    firmaImg.src = firma;
+                    firmaImg.dataset.retried = '';
+                    firmaImg.src = firmaVisual;
                     firmaImg.classList.remove('hidden');
                 }
                 if (firmaVacia) firmaVacia.classList.add('hidden');
                 if (btnDescFirma) {
-                    btnDescFirma.href = firma;
+                    btnDescFirma.href = rawFirma.startsWith('http') ? rawFirma : firmaVisual;
                     btnDescFirma.download = `Firma_${factura.replace(/\s+/g, '_')}.png`;
                     btnDescFirma.classList.remove('hidden');
                 }
+                if (btnDriveFirma) {
+                    if (rawFirma.startsWith('http')) {
+                        btnDriveFirma.href = rawFirma;
+                        btnDriveFirma.classList.remove('hidden');
+                    } else {
+                        btnDriveFirma.classList.add('hidden');
+                    }
+                }
             } else {
-                if (firmaImg) firmaImg.classList.add('hidden');
+                if (firmaImg) {
+                    firmaImg.src = '';
+                    firmaImg.classList.add('hidden');
+                }
                 if (firmaVacia) firmaVacia.classList.remove('hidden');
                 if (btnDescFirma) btnDescFirma.classList.add('hidden');
+                if (btnDriveFirma) btnDriveFirma.classList.add('hidden');
             }
 
             if (receptor) {
@@ -10469,11 +10705,14 @@
 
             const driveBox = document.getElementById('verPodEnlaceDriveBox');
             if (driveBox) {
-                if (foto && /^https?:\/\//i.test(foto)) {
-                    driveBox.innerHTML = `<a href="${foto}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5"><i class="fa-brands fa-google-drive"></i> Ver en Google Drive</a>`;
-                } else {
-                    driveBox.innerHTML = '';
+                let enlaces = [];
+                if (rawFoto && /^https?:\/\//i.test(rawFoto)) {
+                    enlaces.push(`<a href="${rawFoto}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5"><i class="fa-brands fa-google-drive"></i> Abrir Foto en Google Drive</a>`);
                 }
+                if (rawFirma && /^https?:\/\//i.test(rawFirma)) {
+                    enlaces.push(`<a href="${rawFirma}" target="_blank" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1.5"><i class="fa-brands fa-google-drive"></i> Abrir Firma en Drive</a>`);
+                }
+                driveBox.innerHTML = enlaces.join('<span class="text-slate-600 mx-2">|</span>');
             }
 
             modal.classList.remove('hidden');
@@ -10484,15 +10723,407 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        // ================= GESTOR DE MODAL KPI DETALLES (DRILL-DOWN INTERACTIVO) =================
+        let kpiModalTipoActual = '';
+        let kpiModalParametroActual = '';
+        let kpiModalRegistrosBase = [];
+
+        function abrirModalKpiDetalle(tipo, parametro = '') {
+            kpiModalTipoActual = tipo;
+            kpiModalParametroActual = parametro;
+
+            const modal = document.getElementById('modalKpiDetalles');
+            if (!modal) return;
+
+            const inputBuscar = document.getElementById('kpiModalBuscarInput');
+            if (inputBuscar) inputBuscar.value = '';
+
+            const iconEl = document.getElementById('kpiModalIcono');
+            const iconBox = document.getElementById('kpiModalIconoContainer');
+            const tituloEl = document.getElementById('kpiModalTitulo');
+            const subtituloEl = document.getElementById('kpiModalSubtitulo');
+            const badgeEl = document.getElementById('kpiModalBadgeTotal');
+
+            if (tipo === 'conductores_disponibles') {
+                if (iconEl) iconEl.className = 'fa-solid fa-users-viewfinder';
+                if (iconBox) iconBox.className = 'w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg shrink-0';
+                if (tituloEl) tituloEl.textContent = 'Conductores Disponibles y en Ruta (Hoy)';
+                if (subtituloEl) subtituloEl.textContent = 'Estado operativo actual y asignaciones de la flota';
+
+                const listaConductores = Object.values(driversData);
+                kpiModalRegistrosBase = listaConductores;
+                if (badgeEl) badgeEl.textContent = listaConductores.length;
+
+                renderizarKpiModalConductores(listaConductores);
+                actualizarMetricasKpiModal(listaConductores);
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            let titulo = 'Detalle de Indicador';
+            let subtitulo = 'Registros correspondientes';
+            let iconClass = 'fa-solid fa-chart-pie';
+            let iconColorClass = 'bg-cyan-500/20 text-cyan-400';
+            let registros = [];
+
+            if (tipo === 'viajes_totales_hoy') {
+                titulo = 'Viajes Totales Asignados (Hoy)';
+                subtitulo = 'Todas las entregas y traslados correspondientes a la fecha actual';
+                iconClass = 'fa-solid fa-route';
+                iconColorClass = 'bg-blue-500/20 text-accentBlue';
+                registros = registrosGlobales.filter(r => esRegistroDeHoy(r));
+            } else if (tipo === 'fletes_hoy') {
+                titulo = 'Total Fletes Generados (Hoy)';
+                subtitulo = 'Desglose detallado de valores de transporte y flete de las entregas de hoy';
+                iconClass = 'fa-solid fa-hand-holding-dollar';
+                iconColorClass = 'bg-cyan-500/20 text-cyan-400';
+                registros = registrosGlobales.filter(r => esRegistroDeHoy(r));
+            } else if (tipo === 'facturacion_hoy') {
+                titulo = 'Facturación Asignada en Viajes (Hoy)';
+                subtitulo = 'Montos de mercadería facturada en las rutas de hoy';
+                iconClass = 'fa-solid fa-file-invoice-dollar';
+                iconColorClass = 'bg-purple-500/20 text-purple-400';
+                registros = registrosGlobales.filter(r => esRegistroDeHoy(r));
+            } else if (tipo === 'viajes_futuros') {
+                titulo = 'Viajes y Facturas Programadas (Futuro)';
+                subtitulo = 'Entregas calendarizadas para días posteriores';
+                iconClass = 'fa-solid fa-calendar-plus';
+                iconColorClass = 'bg-amber-500/20 text-amber-400';
+                registros = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && r.estado !== 'Entregado');
+            } else if (tipo === 'conductor_individual') {
+                const d = driversData[parametro] || { name: parametro, unit: 'Unidad N/A' };
+                titulo = `Viajes de ${d.name} (${d.unit}) - Hoy`;
+                subtitulo = 'Entregas asignadas para hoy a este conductor';
+                iconClass = 'fa-solid fa-id-card-clip';
+                iconColorClass = 'bg-cyan-500/20 text-cyan-400';
+                registros = registrosGlobales.filter(r => (r.driverKey === parametro || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r));
+            } else if (tipo === 'sucursal_origen') {
+                titulo = `Viajes desde Sucursal: ${parametro} (Hoy)`;
+                subtitulo = 'Cargas despachadas desde esta sucursal hoy';
+                iconClass = 'fa-solid fa-store';
+                iconColorClass = 'bg-emerald-500/20 text-emerald-400';
+                registros = registrosGlobales.filter(r => r.origen === parametro && esRegistroDeHoy(r));
+            } else if (tipo === 'driver_viajes_hoy') {
+                const d = driversData[currentDriverKey] || { name: 'Conductor', unit: 'Mi Unidad' };
+                titulo = 'Mis Viajes Asignados (Hoy y Pendientes)';
+                subtitulo = 'Entregas que tienes a tu cargo en tu ruta';
+                iconClass = 'fa-solid fa-route';
+                iconColorClass = 'bg-blue-500/20 text-accentBlue';
+                registros = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, d) && (esRegistroDeHoy(r) || (!esFechaProgramadaFutura(r) && r.estado !== 'Entregado')));
+            } else if (tipo === 'driver_fletes_hoy') {
+                const d = driversData[currentDriverKey] || { name: 'Conductor', unit: 'Mi Unidad' };
+                titulo = 'Mi Total en Transporte / Fletes (Hoy)';
+                subtitulo = 'Valores de flete generados en tus viajes';
+                iconClass = 'fa-solid fa-truck-ramp-box';
+                iconColorClass = 'bg-cyan-500/20 text-cyan-400';
+                registros = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, d) && esRegistroDeHoy(r));
+            } else if (tipo === 'driver_monto_hoy') {
+                const d = driversData[currentDriverKey] || { name: 'Conductor', unit: 'Mi Unidad' };
+                titulo = 'Facturación Asignada a Mi Unidad (Hoy)';
+                subtitulo = 'Montos de mercadería asignados a tu ruta hoy';
+                iconClass = 'fa-solid fa-file-invoice-dollar';
+                iconColorClass = 'bg-emerald-500/20 text-emerald-400';
+                registros = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, d) && esRegistroDeHoy(r));
+            }
+
+            if (iconEl) iconEl.className = iconClass;
+            if (iconBox) iconBox.className = `w-10 h-10 rounded-xl ${iconColorClass} flex items-center justify-center text-lg shrink-0`;
+            if (tituloEl) tituloEl.textContent = titulo;
+            if (subtituloEl) subtituloEl.textContent = subtitulo;
+            if (badgeEl) badgeEl.textContent = registros.length;
+
+            kpiModalRegistrosBase = [...registros];
+            renderizarKpiModalContenido(registros);
+            actualizarMetricasKpiModal(registros);
+
+            modal.classList.remove('hidden');
+        }
+
+        function cerrarModalKpiDetalle() {
+            const modal = document.getElementById('modalKpiDetalles');
+            if (modal) modal.classList.add('hidden');
+            kpiModalTipoActual = '';
+            kpiModalParametroActual = '';
+            kpiModalRegistrosBase = [];
+        }
+
+        function actualizarMetricasKpiModal(items) {
+            const box = document.getElementById('kpiModalMetricasBox');
+            const footerConteo = document.getElementById('kpiModalFooterConteo');
+            if (!box) return;
+
+            if (kpiModalTipoActual === 'conductores_disponibles') {
+                const total = items.length;
+                let disponibles = 0;
+                items.forEach(d => {
+                    const pend = registrosGlobales.filter(r => (r.driverKey === d.key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r) && r.estado !== 'Entregado').length;
+                    if (pend === 0) disponibles++;
+                });
+                box.innerHTML = `
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-circle-check mr-1"></i>${disponibles} Disponibles</span>
+                    <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-truck-fast mr-1"></i>${total - disponibles} En Ruta</span>
+                `;
+                if (footerConteo) footerConteo.textContent = `Mostrando ${total} conductores en el sistema`;
+                return;
+            }
+
+            const totalViajes = items.length;
+            const totalFletes = items.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
+            const totalFact = items.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
+            const entregados = items.filter(r => r.estado === 'Entregado').length;
+
+            box.innerHTML = `
+                <span class="bg-slate-800 text-cyan-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono font-bold">Fletes: $${totalFletes.toFixed(2)}</span>
+                <span class="bg-slate-800 text-emerald-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono font-bold">Facturado: $${totalFact.toFixed(2)}</span>
+                <span class="bg-slate-800 text-slate-300 border border-slate-700 px-2 py-1 rounded-lg"><strong class="text-emerald-400">${entregados}</strong> / ${totalViajes} entregados</span>
+            `;
+
+            if (footerConteo) {
+                footerConteo.textContent = `Mostrando ${totalViajes} registro${totalViajes !== 1 ? 's' : ''}`;
+            }
+        }
+
+        function renderizarKpiModalConductores(conductoresLista) {
+            const contenedor = document.getElementById('kpiModalContenido');
+            if (!contenedor) return;
+
+            if (!conductoresLista || conductoresLista.length === 0) {
+                contenedor.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">No se encontraron conductores.</div>';
+                return;
+            }
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-1">';
+            
+            conductoresLista.forEach(d => {
+                const key = d.key;
+                const viajesHoy = registrosGlobales.filter(r => (r.driverKey === key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r));
+                const entregados = viajesHoy.filter(r => r.estado === 'Entregado');
+                const pendientes = viajesHoy.filter(r => r.estado !== 'Entregado');
+                const totalFlete = viajesHoy.reduce((a, b) => a + (parseFloat(b.transporte) || 0), 0);
+                const totalMonto = viajesHoy.reduce((a, b) => a + (parseFloat(b.monto) || 0), 0);
+
+                const estaDisponible = pendientes.length === 0;
+
+                html += `
+                    <div class="bg-slate-900/80 border ${estaDisponible ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-amber-500/30 bg-amber-950/10'} rounded-xl p-3.5 space-y-3 shadow-md hover:border-cyan-500/50 transition-all">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-id-badge text-cyan-400"></i> ${d.name}
+                                </h4>
+                                <span class="text-[11px] text-accentBlue font-medium"><i class="fa-solid fa-truck text-[10px] mr-1"></i>${d.unit}</span>
+                                <div class="text-[10px] text-slate-400 mt-0.5"><i class="fa-solid fa-location-crosshairs mr-1"></i>${d.origen || 'FG MATRIZ'}</div>
+                            </div>
+                            <div>
+                                ${estaDisponible ? `
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm">
+                                        <i class="fa-solid fa-circle-check"></i> Disponible
+                                    </span>
+                                ` : `
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm">
+                                        <i class="fa-solid fa-truck-fast"></i> En Ruta (${pendientes.length} pend.)
+                                    </span>
+                                `}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5 bg-slate-950/60 p-2 rounded-lg text-center text-xs border border-slate-800">
+                            <div>
+                                <span class="text-[9px] text-slate-400 block uppercase font-semibold">Viajes Hoy</span>
+                                <span class="font-bold text-slate-100">${viajesHoy.length}</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] text-slate-400 block uppercase font-semibold">Entregados</span>
+                                <span class="font-bold text-emerald-400">${entregados.length}</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] text-slate-400 block uppercase font-semibold">Pendientes</span>
+                                <span class="font-bold text-amber-400">${pendientes.length}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
+                            <span class="text-[11px] text-cyan-400 font-mono font-bold">Flete: $${totalFlete.toFixed(2)}</span>
+                            <span class="text-[11px] text-emerald-400 font-mono font-bold">Monto: $${totalMonto.toFixed(2)}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-1">
+                            <div class="flex items-center gap-1.5">
+                                ${d.phone ? `
+                                    <a href="https://wa.me/${d.phone.replace(/[^0-9]/g, '')}" target="_blank" class="p-1.5 bg-green-600/20 hover:bg-green-600/40 border border-green-500/40 text-green-300 rounded-lg text-xs transition-colors" title="WhatsApp a ${d.name}">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
+                                    <a href="tel:${d.phone}" class="p-1.5 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/40 text-blue-300 rounded-lg text-xs transition-colors" title="Llamar a ${d.name}">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </a>
+                                ` : ''}
+                            </div>
+                            <button type="button" onclick="abrirModalKpiDetalle('conductor_individual', '${key}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg text-[11px] transition-colors flex items-center gap-1">
+                                <span>Ver viajes</span> <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            contenedor.innerHTML = html;
+        }
+
+        function renderizarKpiModalContenido(registros) {
+            const contenedor = document.getElementById('kpiModalContenido');
+            if (!contenedor) return;
+
+            if (kpiModalTipoActual === 'conductores_disponibles') {
+                renderizarKpiModalConductores(registros);
+                return;
+            }
+
+            if (!registros || registros.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="p-8 text-center text-slate-500 space-y-2">
+                        <i class="fa-solid fa-folder-open text-3xl text-slate-600"></i>
+                        <p class="text-xs">No se encontraron viajes ni facturas con los filtros seleccionados.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let rowsHtml = '';
+            registros.forEach(r => {
+                const cleanFact = String(r.factura || '').trim();
+                const escFact = encodeURIComponent(cleanFact);
+                const esEntregado = (r.estado === 'Entregado');
+                const tieneDocJson = !!(r.jsonData || r.jsonRaw || (typeof obtenerJsonFacturaLocal === 'function' && obtenerJsonFacturaLocal(cleanFact)));
+                const localPod = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(cleanFact) : null;
+                const tieneFotoFirma = !!((r.fotoComprobante || (localPod && localPod.fotoComprobante)) || (r.firmaDigital || (localPod && localPod.firmaDigital)));
+
+                let badgeEstado = '';
+                if (esEntregado) {
+                    badgeEstado = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"><i class="fa-solid fa-circle-check text-[9px]"></i> Entregado</span>`;
+                } else if (r.estado === 'En Tránsito') {
+                    badgeEstado = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30"><i class="fa-solid fa-truck-fast text-[9px]"></i> En Tránsito</span>`;
+                } else {
+                    badgeEstado = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-clock text-[9px]"></i> Pendiente</span>`;
+                }
+
+                const fechaDisp = r.fechaProgramada || r.fecha || r.fechaHora || 'Hoy';
+
+                rowsHtml += `
+                    <tr class="hover:bg-slate-900/70 border-b border-slate-800/80 transition-colors">
+                        <td class="py-2.5 px-3 font-mono font-bold text-accentBlue text-xs">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <button type="button" onclick="abrirModalPrevisualizarFactura('${escFact}')" class="hover:underline hover:text-cyan-300 inline-flex items-center gap-1 cursor-pointer text-left font-bold" title="Ver Factura">
+                                    <i class="fa-solid fa-file-invoice text-[11px]"></i> <span>${cleanFact}</span>
+                                </button>
+                                ${tieneDocJson ? `<span class="text-[9px] px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-500/40">JSON</span>` : ''}
+                            </div>
+                            <div class="text-[10px] text-slate-400 font-normal mt-0.5">
+                                <i class="fa-solid fa-store text-slate-500 mr-1"></i>${r.origen || 'FG MATRIZ'}
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-xs">
+                            <span class="font-semibold text-slate-200 block">${r.conductor || 'Sin asignar'}</span>
+                            <span class="text-[11px] text-accentBlue block"><i class="fa-solid fa-truck text-[9px] mr-1"></i>${r.camion || 'Unidad N/A'}</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-xs">
+                            <span class="font-medium text-slate-200 block truncate max-w-[200px]" title="${r.cliente || 'Consumidor Final'}">${r.cliente || 'Consumidor Final'}</span>
+                            <span class="text-[11px] text-slate-400 block truncate max-w-[220px]" title="${r.destino || 'Destino acordado'}"><i class="fa-solid fa-location-dot text-red-400 text-[10px] mr-1"></i>${r.destino || 'N/A'}</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-xs text-slate-300 font-mono whitespace-nowrap">
+                            ${fechaDisp}
+                        </td>
+                        <td class="py-2.5 px-3 text-xs font-mono font-bold text-cyan-400 whitespace-nowrap ${kpiModalTipoActual.includes('flete') ? 'bg-cyan-950/30' : ''}">
+                            $${(parseFloat(r.transporte) || 0).toFixed(2)}
+                        </td>
+                        <td class="py-2.5 px-3 text-xs font-mono font-bold text-emerald-400 whitespace-nowrap ${kpiModalTipoActual.includes('factura') || kpiModalTipoActual.includes('monto') ? 'bg-emerald-950/30' : ''}">
+                            $${(parseFloat(r.monto) || 0).toFixed(2)}
+                            ${r.condicionPago ? `<span class="block text-[10px] font-normal ${r.condicionPago === 'Cancelada' ? 'text-emerald-400' : 'text-amber-400'}">${r.condicionPago}</span>` : ''}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            ${badgeEstado}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-1.5">
+                                ${esEntregado ? `
+                                    <button type="button" onclick="abrirModalVerComprobante('${escFact}')" class="px-2.5 py-1 bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/40 text-cyan-300 font-bold rounded-lg text-xs transition-all flex items-center gap-1" title="Ver foto y firma de entrega">
+                                        <i class="fa-solid ${tieneFotoFirma ? 'fa-receipt' : 'fa-check'} text-[10px]"></i>
+                                        <span>Comprobante</span>
+                                    </button>
+                                ` : `
+                                    <button type="button" onclick="abrirModalPrevisualizarFactura('${escFact}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-xs transition-colors flex items-center gap-1" title="Ver hoja de factura">
+                                        <i class="fa-solid fa-eye text-[10px]"></i>
+                                        <span>Ver</span>
+                                    </button>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            contenedor.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-900/60 sticky top-0 z-10">
+                                <th class="py-2.5 px-3">Documento</th>
+                                <th class="py-2.5 px-3">Conductor / Unidad</th>
+                                <th class="py-2.5 px-3">Cliente / Destino</th>
+                                <th class="py-2.5 px-3">Fecha / Prog.</th>
+                                <th class="py-2.5 px-3">Flete ($)</th>
+                                <th class="py-2.5 px-3">Facturado ($)</th>
+                                <th class="py-2.5 px-3 text-center">Estado</th>
+                                <th class="py-2.5 px-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function filtrarKpiModalRegistros() {
+            const input = document.getElementById('kpiModalBuscarInput');
+            const q = input ? String(input.value).toLowerCase().trim() : '';
+
+            if (kpiModalTipoActual === 'conductores_disponibles') {
+                const filtrados = kpiModalRegistrosBase.filter(d => {
+                    const txt = [d.name, d.unit, d.phone, d.origen].join(' ').toLowerCase();
+                    return txt.includes(q);
+                });
+                renderizarKpiModalConductores(filtrados);
+                actualizarMetricasKpiModal(filtrados);
+                return;
+            }
+
+            const filtrados = kpiModalRegistrosBase.filter(r => {
+                const txt = [
+                    r.factura,
+                    r.cliente,
+                    r.conductor,
+                    r.camion,
+                    r.destino,
+                    r.origen,
+                    r.estado,
+                    r.condicionPago || '',
+                    r.monto,
+                    r.transporte
+                ].join(' ').toLowerCase();
+                return txt.includes(q);
+            });
+
+            renderizarKpiModalContenido(filtrados);
+            actualizarMetricasKpiModal(filtrados);
+        }
+
         function confirmarEntregaConductor() {
             const driver = driversData[currentDriverKey];
             if (!driver) return;
 
-            let misViajesAll = registrosGlobales.filter(r => 
-                esViajeDeConductor(r, currentDriverKey, driver) ||
-                r.driverKey === currentDriverKey || 
-                (r.conductor && r.conductor.toLowerCase().trim() === driver.name.toLowerCase().trim())
-            );
+            let misViajesAll = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, driver));
 
             let misViajesHoy = misViajesAll.filter(r => esRegistroDeHoy(r));
             misViajesHoy.sort((a, b) => (a.ordenAsignacion || 0) - (b.ordenAsignacion || 0));
@@ -14010,28 +14641,105 @@
             const seccionRealizada = document.getElementById('prevDocEntregaRealizada');
             const seccionPendiente = document.getElementById('prevDocEntregaPendiente');
             const fotoImg = document.getElementById('prevDocImgFoto');
+            const fotoVacia = document.getElementById('prevDocFotoVacia');
             const firmaImg = document.getElementById('prevDocImgFirma');
+            const firmaVacia = document.getElementById('prevDocFirmaVacia');
             const receptorEl = document.getElementById('prevDocReceptorNombre');
             const horaEntregaEl = document.getElementById('prevDocHoraEntrega');
+            const conductorEntregaEl = document.getElementById('prevDocConductorEntrega');
+            const linkDriveFoto = document.getElementById('prevDocLinkDriveFoto');
+            const linkDriveFirma = document.getElementById('prevDocLinkDriveFirma');
+            const motivoBox = document.getElementById('prevDocMotivoRetrasoBox');
+            const motivoEl = document.getElementById('prevDocMotivoRetraso');
+            const btnComprobanteSheet = document.getElementById('btnVerComprobanteEntregaSheet');
 
-            const fotoSrc = (r && r.fotoComprobante) || (localData && localData.fotoComprobante) || '';
-            const firmaSrc = (r && r.firmaDigital) || (localData && localData.firmaDigital) || '';
-            const receptorNom = (r && r.receptorNombre) || (localData && localData.receptorNombre) || 'Cliente / Receptor';
+            const cleanFactClave = String(r.factura || '').trim().toLowerCase();
+            const localEntrega = (typeof entregasConfirmadasLocales !== 'undefined') ? entregasConfirmadasLocales[cleanFactClave] : null;
+            const localPod = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(r.factura) : null;
 
-            if (r.estado === 'Entregado' && (fotoSrc || firmaSrc)) {
+            const rawFotoSrc = (r && r.fotoComprobante) || (localEntrega && localEntrega.fotoComprobante) || (localPod && localPod.fotoComprobante) || '';
+            const rawFirmaSrc = (r && r.firmaDigital) || (localEntrega && localEntrega.firmaDigital) || (localPod && localPod.firmaDigital) || '';
+            const fotoSrc = normalizarUrlImagenParaVisualizar(rawFotoSrc);
+            const firmaSrc = normalizarUrlImagenParaVisualizar(rawFirmaSrc);
+            const receptorNom = (r && r.receptorNombre) || (localEntrega && localEntrega.receptorNombre) || (localPod && localPod.receptorNombre) || 'Cliente / Receptor';
+            const horaEntregaVal = r.horaEntrega || (localEntrega && localEntrega.horaEntrega) || r.hora || 'Registrada';
+            const motivoRetrasoVal = r.motivoRetraso || (localEntrega && localEntrega.motivoRetraso) || '';
+
+            const estadoLimpio = String(r.estado || '').toLowerCase().trim();
+            const esEntregado = (estadoLimpio === 'entregado') || Boolean(localEntrega) || Boolean(localPod);
+
+            if (esEntregado) {
                 if (seccionRealizada) seccionRealizada.classList.remove('hidden');
                 if (seccionPendiente) seccionPendiente.classList.add('hidden');
-                if (firmaImg) {
-                    firmaImg.src = firmaSrc || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><text x="20" y="45" font-family="sans-serif" font-size="12" fill="%23888">Firma no registrada</text></svg>';
+                if (btnComprobanteSheet) btnComprobanteSheet.classList.remove('hidden');
+
+                if (horaEntregaEl) horaEntregaEl.textContent = `Hora entrega: ${horaEntregaVal}`;
+                if (conductorEntregaEl) {
+                    conductorEntregaEl.textContent = `Entregado por: ${r.conductor || 'Conductor'} (${r.camion || 'Unidad'})`;
                 }
-                if (fotoImg) {
-                    fotoImg.src = fotoSrc || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80"><text x="20" y="45" font-family="sans-serif" font-size="12" fill="%23888">Foto no registrada</text></svg>';
-                }
+
                 if (receptorEl) receptorEl.textContent = receptorNom;
-                if (horaEntregaEl) horaEntregaEl.textContent = `Hora entrega: ${r.horaEntrega || r.hora || 'Registrada'}`;
+
+                if (fotoSrc) {
+                    if (fotoImg) {
+                        fotoImg.dataset.retried = '';
+                        fotoImg.src = fotoSrc;
+                        fotoImg.classList.remove('hidden');
+                    }
+                    if (fotoVacia) fotoVacia.classList.add('hidden');
+                    if (linkDriveFoto) {
+                        if (rawFotoSrc.startsWith('http')) {
+                            linkDriveFoto.href = rawFotoSrc;
+                            linkDriveFoto.classList.remove('hidden');
+                        } else {
+                            linkDriveFoto.classList.add('hidden');
+                        }
+                    }
+                } else {
+                    if (fotoImg) {
+                        fotoImg.src = '';
+                        fotoImg.classList.add('hidden');
+                    }
+                    if (fotoVacia) fotoVacia.classList.remove('hidden');
+                    if (linkDriveFoto) linkDriveFoto.classList.add('hidden');
+                }
+
+                if (firmaSrc) {
+                    if (firmaImg) {
+                        firmaImg.dataset.retried = '';
+                        firmaImg.src = firmaSrc;
+                        firmaImg.classList.remove('hidden');
+                    }
+                    if (firmaVacia) firmaVacia.classList.add('hidden');
+                    if (linkDriveFirma) {
+                        if (rawFirmaSrc.startsWith('http')) {
+                            linkDriveFirma.href = rawFirmaSrc;
+                            linkDriveFirma.classList.remove('hidden');
+                        } else {
+                            linkDriveFirma.classList.add('hidden');
+                        }
+                    }
+                } else {
+                    if (firmaImg) {
+                        firmaImg.src = '';
+                        firmaImg.classList.add('hidden');
+                    }
+                    if (firmaVacia) firmaVacia.classList.remove('hidden');
+                    if (linkDriveFirma) linkDriveFirma.classList.add('hidden');
+                }
+
+                if (motivoBox && motivoEl) {
+                    if (motivoRetrasoVal) {
+                        motivoEl.textContent = motivoRetrasoVal;
+                        motivoBox.classList.remove('hidden');
+                    } else {
+                        motivoBox.classList.add('hidden');
+                    }
+                }
             } else {
                 if (seccionRealizada) seccionRealizada.classList.add('hidden');
                 if (seccionPendiente) seccionPendiente.classList.remove('hidden');
+                if (btnComprobanteSheet) btnComprobanteSheet.classList.add('hidden');
             }
 
             modal.classList.remove('hidden');
