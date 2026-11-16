@@ -121,6 +121,37 @@
             padding-bottom: 8px !important;
         }
 
+        /* Soporte adaptativo para tablas vs tarjetas de conductor (sin scroll horizontal en móvil) */
+        .driver-cards-mobile {
+            display: none;
+        }
+        .driver-table-desktop {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .driver-cards-mobile {
+                display: block !important;
+            }
+            .driver-table-desktop {
+                display: none !important;
+            }
+        }
+
+        .device-mobile .driver-cards-mobile {
+            display: block !important;
+        }
+        .device-mobile .driver-table-desktop {
+            display: none !important;
+        }
+
+        .device-desktop .driver-cards-mobile {
+            display: none !important;
+        }
+        .device-desktop .driver-table-desktop {
+            display: block !important;
+        }
+
         @media print {
             body {
                 background: white !important;
@@ -2067,7 +2098,7 @@
                 </div>
 
                 <!-- ================= VENTANA / SECCIÓN: VIAJES PENDIENTES DE DÍAS ANTERIORES ================= -->
-                <div id="driverCardViajesAtrasados" class="hidden bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-5 space-y-4 shadow-2xl">
+                <div id="driverCardViajesAtrasados" class="hidden bg-amber-500/10 border-2 border-amber-500/50 rounded-2xl p-4 sm:p-5 space-y-4 shadow-2xl">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-500/30 pb-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0">
@@ -2083,7 +2114,11 @@
                         <span id="badgeAtrasadosCount" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 shrink-0 self-start sm:self-auto">0 pendientes</span>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <!-- Vista Celular (Tarjetas adaptadas 100% visibles sin deslizar) -->
+                    <div id="driverOverdueTripsCardsMobile" class="driver-cards-mobile space-y-3"></div>
+
+                    <!-- Vista Escritorio / PC (Tabla amplia tradicional) -->
+                    <div class="driver-table-desktop overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/80 text-amber-400 uppercase border-b border-amber-500/30 text-[11px]">
                                 <tr>
@@ -2101,11 +2136,15 @@
                     </div>
                 </div>
 
-                <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 space-y-4">
+                <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 sm:p-5 space-y-4">
                     <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
                         <i class="fa-solid fa-list-check text-emerald-400"></i> Mis Envíos Asignados & Pendientes de Entrega
                     </h3>
-                    <div class="overflow-x-auto">
+                    <!-- Vista Celular (Tarjetas adaptadas 100% visibles sin deslizar) -->
+                    <div id="driverTripsCardsMobile" class="driver-cards-mobile space-y-3"></div>
+
+                    <!-- Vista Escritorio / PC (Tabla amplia tradicional) -->
+                    <div class="driver-table-desktop overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/70 text-slate-400 uppercase border-b border-slate-800">
                                 <tr>
@@ -2124,11 +2163,15 @@
                     </div>
                 </div>
 
-                <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-5 space-y-4 mt-6">
+                <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 sm:p-5 space-y-4 mt-6">
                     <h3 class="font-bold text-sm text-slate-200 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-days text-accentBlue"></i> Viajes Pendientes Programados (Para Siguientes Días)
                     </h3>
-                    <div class="overflow-x-auto">
+                    <!-- Vista Celular (Tarjetas adaptadas 100% visibles sin deslizar) -->
+                    <div id="driverFutureTripsCardsMobile" class="driver-cards-mobile space-y-3"></div>
+
+                    <!-- Vista Escritorio / PC (Tabla amplia tradicional) -->
+                    <div class="driver-table-desktop overflow-x-auto">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-900/70 text-slate-400 uppercase border-b border-slate-800">
                                 <tr>
@@ -2724,36 +2767,42 @@
         <!-- ================= MODAL 1: PREVISUALIZAR HOJA DE FACTURA / CCF ================= -->
         <div id="modalPrevisualizarFactura" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <div class="bg-darkCard border border-slate-700/80 rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl relative">
-                <!-- Barra de Acciones Superior -->
-                <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/90 rounded-t-3xl shrink-0">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-9 h-9 rounded-xl bg-accentBlue/20 text-accentBlue flex items-center justify-center text-base">
-                            <i class="fa-solid fa-file-invoice"></i>
-                        </span>
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
-                                Hoja de Factura / CCF: <span id="prevDocNumeroHeader" class="text-emerald-400 font-mono">---</span>
-                            </h3>
-                            <p class="text-[11px] text-slate-400">Previsualización formal de entrega y documentación fiscal lista para imprimir o compartir.</p>
+                <!-- Barra de Acciones Superior (Adaptada para PC y Móvil/Conductor) -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 border-b border-slate-800 bg-slate-900/95 rounded-t-3xl shrink-0">
+                    <div class="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto min-w-0">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-9 h-9 rounded-xl bg-accentBlue/20 text-accentBlue flex items-center justify-center text-base shrink-0">
+                                <i class="fa-solid fa-file-invoice"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2 truncate">
+                                    <span>Doc:</span> <span id="prevDocNumeroHeader" class="text-emerald-400 font-mono">---</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400 truncate hidden xs:block">Hoja formal de entrega y documentación fiscal.</p>
+                            </div>
                         </div>
+                        <button onclick="cerrarModalPrevisualizarFactura()" class="sm:hidden w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors shrink-0">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btnVerJsonFacturaEnSheet" type="button" onclick="abrirModalVerJsonFacturaActual()" class="hidden px-3.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer" title="Ver código y estructura JSON de este documento">
+
+                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                        <button id="btnVerJsonFacturaEnSheet" type="button" onclick="abrirModalVerJsonFacturaActual()" class="hidden px-3 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer" title="Ver código y estructura JSON de este documento">
                             <i class="fa-solid fa-code text-cyan-400"></i> <span>JSON</span>
                         </button>
-                        <button id="btnAdjuntarJsonFacturaEnSheet" type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer" title="Adjuntar o actualizar el archivo JSON (DTE) de esta factura ya creada">
+                        <button id="btnAdjuntarJsonFacturaEnSheet" type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer" title="Adjuntar o actualizar el archivo JSON (DTE) de esta factura ya creada">
                             <i class="fa-solid fa-file-arrow-up text-cyan-200"></i> <span id="labelBtnAdjuntarJsonSheet">Adjuntar JSON</span>
                         </button>
-                        <button onclick="imprimirHojaFactura()" class="px-3.5 py-1.5 bg-accentBlue hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer">
+                        <button onclick="imprimirHojaFactura()" class="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-accentBlue hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer min-h-[38px]">
                             <i class="fa-solid fa-print"></i> <span>Imprimir</span>
                         </button>
-                        <button onclick="descargarFacturaIndividualPDF()" class="px-3.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
+                        <button onclick="descargarFacturaIndividualPDF()" class="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px]">
                             <i class="fa-solid fa-file-pdf"></i> <span>PDF</span>
                         </button>
-                        <button onclick="compartirFacturaPorWhatsApp()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
-                            <i class="fab fa-whatsapp"></i> <span class="hidden sm:inline">WhatsApp</span>
+                        <button onclick="compartirFacturaPorWhatsApp()" class="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px]">
+                            <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
                         </button>
-                        <button onclick="cerrarModalPrevisualizarFactura()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors">
+                        <button onclick="cerrarModalPrevisualizarFactura()" class="hidden sm:flex w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white items-center justify-center cursor-pointer transition-colors shrink-0">
                             <i class="fa-solid fa-xmark text-sm"></i>
                         </button>
                     </div>
@@ -5340,12 +5389,15 @@
             }
 
             const tbodyHoy = document.getElementById('driverTripsTableBody');
-            if (tbodyHoy) {
+            const cardsHoyEl = document.getElementById('driverTripsCardsMobile');
+            if (tbodyHoy || cardsHoyEl) {
                 const todosLosEnvios = [...misViajesAtrasados, ...misViajesHoy];
                 if (todosLosEnvios.length === 0) {
-                    tbodyHoy.innerHTML = `<tr><td colspan="8" class="py-5 text-center text-slate-500 italic">No tiene viajes asignados para hoy ni pendientes de días anteriores.</td></tr>`;
+                    if (tbodyHoy) tbodyHoy.innerHTML = `<tr><td colspan="8" class="py-5 text-center text-slate-500 italic">No tiene viajes asignados para hoy ni pendientes de días anteriores.</td></tr>`;
+                    if (cardsHoyEl) cardsHoyEl.innerHTML = `<div class="p-5 text-center text-slate-500 italic bg-darkCard/50 border border-slate-800 rounded-2xl text-xs">No tiene viajes asignados para hoy ni pendientes de días anteriores.</div>`;
                 } else {
                     let htmlHoy = '';
+                    let cardsHoy = '';
                     todosLosEnvios.forEach((r, idx) => {
                         const esAtrasado = !esRegistroDeHoy(r);
                         const isDone = r.estado === 'Entregado';
@@ -5366,10 +5418,13 @@
                         const isActivo = viajeActivo && (String(r.factura).trim().toLowerCase() === String(viajeActivo.factura).trim().toLowerCase());
                         
                         let accionPrioridad = '';
+                        let accionCards = '';
                         if (isDone) {
                             accionPrioridad = `<button onclick="abrirModalVerComprobante('${encodeURIComponent(r.factura)}')" class="px-2 py-1 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded-lg text-[10px] font-semibold inline-flex items-center gap-1 transition-colors" title="Ver foto y firma de entrega"><i class="fa-solid fa-camera"></i> Ver Firma / Foto</button>`;
+                            accionCards = `<button onclick="abrirModalVerComprobante('${encodeURIComponent(r.factura)}')" class="w-full py-2.5 px-3 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-2 cursor-pointer shadow-sm"><i class="fa-solid fa-camera"></i> Ver Firma / Foto de Entrega</button>`;
                         } else if (isActivo) {
                             accionPrioridad = `<span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-bold inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> En Ruta (Actual)</span>`;
+                            accionCards = `<div class="w-full py-2.5 px-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Viaje Actual en Ruta</div>`;
                         } else {
                             accionPrioridad = `
                                 <div class="flex items-center justify-end gap-1.5">
@@ -5381,9 +5436,23 @@
                                     </button>
                                 </div>
                             `;
+                            accionCards = `
+                                <div class="grid grid-cols-2 gap-2 w-full">
+                                    <button onclick="seleccionarViajeActivoManual('${encodeURIComponent(r.factura)}')" class="py-2.5 px-3 bg-blue-600/30 hover:bg-blue-600/50 text-cyan-300 border border-blue-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+                                        <i class="fa-solid fa-location-arrow"></i> <span>Poner en Ruta</span>
+                                    </button>
+                                    <button onclick="${esAtrasado ? `abrirModalEntregaAtrasada('${encodeURIComponent(r.factura)}')` : `abrirModalComprobanteDirectoPorFactura('${encodeURIComponent(r.factura)}')`}" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+                                        <i class="fa-solid fa-circle-check"></i> <span>Entregar</span>
+                                    </button>
+                                </div>
+                            `;
                         }
 
                         let rowBorder = '';
+                        let cardBorder = isActivo 
+                            ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-950/20' 
+                            : (esAtrasado ? 'border-amber-500/70 bg-amber-500/5' : 'border-slate-700/80 bg-slate-900/60');
+
                         if (isActivo) {
                             rowBorder = 'bg-slate-900/60 border-l-4 border-emerald-400';
                         } else if (esAtrasado && !isDone) {
@@ -5415,21 +5484,68 @@
                                 <td class="py-2.5 px-3 text-right whitespace-nowrap">${accionPrioridad}</td>
                             </tr>
                         `;
+
+                        // Tarjeta para Celular (Todo visible sin deslizar horizontalmente)
+                        cardsHoy += `
+                            <div class="p-3.5 rounded-2xl border ${cardBorder} space-y-2.5 shadow-lg">
+                                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="w-6 h-6 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold shrink-0">${idx + 1}</span>
+                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-bold text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 truncate cursor-pointer">
+                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span class="truncate">${r.factura}</span>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0 text-right">
+                                        ${estadoFactText}
+                                        ${badge}
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 space-y-1">
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <button type="button" onclick="abrirModalClienteConductor('${encodeURIComponent(r.cliente)}')" class="text-xs font-bold text-slate-100 hover:text-cyan-300 text-left flex items-center gap-1.5 cursor-pointer">
+                                            <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
+                                            <span>${r.cliente}</span>
+                                        </button>
+                                        <span class="text-[10px] text-slate-400">${r.tipoViaje || 'Facturación'}</span>
+                                    </div>
+                                    <div class="text-xs text-slate-300 flex items-start gap-1.5 pt-0.5">
+                                        <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
+                                        <span class="font-medium">${r.destino}</span>
+                                    </div>
+                                    ${horarioDisplay ? `<div class="pt-0.5 text-[11px]">${horarioDisplay}</div>` : ''}
+                                </div>
+
+                                <div class="flex items-center justify-between text-xs px-1">
+                                    <span class="text-slate-400 text-[11px]">Monto: <strong class="text-emerald-400 font-bold">$${(Number(r.monto) || 0).toFixed(2)}</strong></span>
+                                    <span class="text-slate-400 text-[11px]">Flete: <strong class="text-cyan-400 font-bold">$${(Number(r.transporte) || 0).toFixed(2)}</strong></span>
+                                </div>
+
+                                <div class="pt-1">
+                                    ${accionCards}
+                                </div>
+                            </div>
+                        `;
                     });
-                    tbodyHoy.innerHTML = htmlHoy;
+                    if (tbodyHoy) tbodyHoy.innerHTML = htmlHoy;
+                    if (cardsHoyEl) cardsHoyEl.innerHTML = cardsHoy;
                 }
             }
 
             const tbodyFuturos = document.getElementById('driverFutureTripsTableBody');
-            if (tbodyFuturos) {
+            const cardsFuturosEl = document.getElementById('driverFutureTripsCardsMobile');
+            if (tbodyFuturos || cardsFuturosEl) {
                 if(misViajesFuturos.length === 0) {
-                    tbodyFuturos.innerHTML = `<tr><td colspan="6" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
+                    if (tbodyFuturos) tbodyFuturos.innerHTML = `<tr><td colspan="6" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
+                    if (cardsFuturosEl) cardsFuturosEl.innerHTML = `<div class="p-4 text-slate-500 italic text-center bg-darkCard/50 border border-slate-800 rounded-2xl text-xs">No tiene viajes programados para días siguientes.</div>`;
                 } else {
                     let futurosPendientes = misViajesFuturos.filter(v => v.estado !== 'Entregado');
                     if (futurosPendientes.length === 0) {
-                         tbodyFuturos.innerHTML = `<tr><td colspan="6" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
+                        if (tbodyFuturos) tbodyFuturos.innerHTML = `<tr><td colspan="6" class="py-4 px-3 text-slate-500 italic text-center">No tiene viajes programados para días siguientes.</td></tr>`;
+                        if (cardsFuturosEl) cardsFuturosEl.innerHTML = `<div class="p-4 text-slate-500 italic text-center bg-darkCard/50 border border-slate-800 rounded-2xl text-xs">No tiene viajes programados para días siguientes.</div>`;
                     } else {
                         let htmlFuturos = '';
+                        let cardsFuturos = '';
                         futurosPendientes.forEach(r => {
                             let estadoFactText = (r.estadoFactura && r.estadoFactura.includes('Cobrar')) ? `<span class="text-rose-400 font-bold text-[10px]">${r.estadoFactura}</span>` : `<span class="text-emerald-400 font-bold text-[10px]">${r.estadoFactura || 'Pagado'}</span>`;
                             
@@ -5452,8 +5568,36 @@
                                     <td class="py-2.5 px-3">${estadoFactText}</td>
                                 </tr>
                             `;
+
+                            cardsFuturos += `
+                                <div class="p-3.5 rounded-2xl bg-darkCard/90 border border-blue-500/30 space-y-2.5 shadow-lg">
+                                    <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                                        <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-bold text-accentBlue hover:text-cyan-300 flex items-center gap-1.5 cursor-pointer">
+                                            <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span>${r.factura}</span>
+                                        </button>
+                                        <span class="text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shrink-0">
+                                            <i class="fa-solid fa-calendar-day text-[10px]"></i> ${formatearFechaDisplay(r.fechaProgramada)}
+                                        </span>
+                                    </div>
+                                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                                        <button type="button" onclick="abrirModalClienteConductor('${encodeURIComponent(r.cliente)}')" class="text-xs font-bold text-slate-100 hover:text-cyan-300 text-left flex items-center gap-1.5 cursor-pointer">
+                                            <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
+                                            <span>${r.cliente}</span>
+                                        </button>
+                                        <div class="text-xs text-slate-300 flex items-start gap-1.5 pt-0.5">
+                                            <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
+                                            <span>${r.destino}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-xs px-1">
+                                        <span class="text-slate-400 text-[11px]">Tipo: <strong class="text-slate-200">${r.tipoViaje || 'Facturación'}</strong></span>
+                                        <span>${estadoFactText}</span>
+                                    </div>
+                                </div>
+                            `;
                         });
-                        tbodyFuturos.innerHTML = htmlFuturos;
+                        if (tbodyFuturos) tbodyFuturos.innerHTML = htmlFuturos;
+                        if (cardsFuturosEl) cardsFuturosEl.innerHTML = cardsFuturos;
                     }
                 }
             }
@@ -5461,12 +5605,14 @@
             // 3.5. Renderizar Ventana de Viajes Pendientes de Días Anteriores (Atrasados)
             const cardAtrasados = document.getElementById('driverCardViajesAtrasados');
             const tbodyAtrasados = document.getElementById('driverOverdueTripsTableBody');
+            const cardsAtrasadosEl = document.getElementById('driverOverdueTripsCardsMobile');
             const badgeAtrasados = document.getElementById('badgeAtrasadosCount');
 
-            if (cardAtrasados && tbodyAtrasados) {
+            if (cardAtrasados && (tbodyAtrasados || cardsAtrasadosEl)) {
                 if (misViajesAtrasados.length === 0) {
                     cardAtrasados.classList.add('hidden');
-                    tbodyAtrasados.innerHTML = '';
+                    if (tbodyAtrasados) tbodyAtrasados.innerHTML = '';
+                    if (cardsAtrasadosEl) cardsAtrasadosEl.innerHTML = '';
                 } else {
                     cardAtrasados.classList.remove('hidden');
                     if (badgeAtrasados) {
@@ -5474,6 +5620,7 @@
                     }
 
                     let htmlAtrasados = '';
+                    let cardsAtrasados = '';
                     misViajesAtrasados.forEach(r => {
                         const tipoTexto = r.cliente === "Uso Interno / Movimiento Logístico" ? "Traslado Interno" : (r.tipoViaje || "Facturación");
                         const fechaOrig = formatearFechaDisplay(r.fechaProgramada || r.fecha);
@@ -5517,8 +5664,51 @@
                                 </td>
                             </tr>
                         `;
+
+                        cardsAtrasados += `
+                            <div class="p-3.5 rounded-2xl bg-amber-500/10 border-2 ${isActivo ? 'border-emerald-400 shadow-emerald-500/20' : 'border-amber-500/70'} space-y-2.5 shadow-xl">
+                                <div class="flex items-center justify-between gap-2 border-b border-amber-500/30 pb-2">
+                                    <button type="button" onclick="abrirModalPrevisualizarFactura('${encodeURIComponent(r.factura)}')" class="font-mono text-sm sm:text-base font-black text-amber-300 hover:text-white flex items-center gap-1.5 cursor-pointer">
+                                        <i class="fa-solid fa-file-invoice text-xs shrink-0"></i> <span>${r.factura}</span>
+                                    </button>
+                                    <span class="text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40 shrink-0 inline-flex items-center gap-1">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Atrasado (${fechaOrig})
+                                    </span>
+                                </div>
+
+                                <div class="bg-slate-950/70 p-2.5 rounded-xl border border-amber-500/20 space-y-1">
+                                    <button type="button" onclick="abrirModalClienteConductor('${encodeURIComponent(r.cliente)}')" class="text-xs font-bold text-slate-100 hover:text-cyan-300 text-left flex items-center gap-1.5 cursor-pointer">
+                                        <i class="fa-solid fa-user-check text-emerald-400 text-xs shrink-0"></i>
+                                        <span>${r.cliente}</span>
+                                    </button>
+                                    <div class="text-xs text-slate-300 flex items-start gap-1.5 pt-0.5">
+                                        <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0 mt-0.5"></i>
+                                        <span class="font-medium">${r.destino}</span>
+                                    </div>
+                                    <div class="text-[11px] text-amber-200/90 pt-0.5">
+                                        <span>${tipoTexto}</span>
+                                        ${r.cantidadMercaderia ? ` • <span class="text-slate-400">${r.cantidadMercaderia}</span>` : ''}
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between text-xs px-1">
+                                    <span class="text-slate-400 text-[11px]">Monto: <strong class="text-emerald-400 font-bold">$${(Number(r.monto) || 0).toFixed(2)}</strong></span>
+                                    <span class="text-slate-400 text-[11px]">Flete: <strong class="text-cyan-400 font-bold">$${(Number(r.transporte) || 0).toFixed(2)}</strong></span>
+                                </div>
+
+                                <div class="pt-1 grid grid-cols-2 gap-2">
+                                    <button onclick="seleccionarViajeActivoManual('${encodeURIComponent(r.factura)}')" class="py-2.5 px-2 bg-blue-600/30 hover:bg-blue-600/50 text-cyan-300 border border-blue-500/40 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+                                        <i class="fa-solid fa-location-arrow"></i> <span>Poner en Ruta</span>
+                                    </button>
+                                    <button onclick="abrirModalEntregaAtrasada('${encodeURIComponent(r.factura)}')" class="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md text-center">
+                                        <i class="fa-solid fa-circle-check"></i> <span>Entregar</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
                     });
-                    tbodyAtrasados.innerHTML = htmlAtrasados;
+                    if (tbodyAtrasados) tbodyAtrasados.innerHTML = htmlAtrasados;
+                    if (cardsAtrasadosEl) cardsAtrasadosEl.innerHTML = cardsAtrasados;
                 }
             }
 
@@ -13512,19 +13702,28 @@
 
             const tieneJsonVinculado = !!(docJsonData || docJsonRaw || (r.subFacturas && r.subFacturas.some(s => s.jsonData || s.jsonRaw)));
 
-            // Mostrar u ocultar el botón [JSON] del encabezado
+            const esConductor = (typeof currentRole !== 'undefined' && currentRole === 'driver');
+            const btnAdjuntarJson = document.getElementById('btnAdjuntarJsonFacturaEnSheet');
             const btnVerJson = document.getElementById('btnVerJsonFacturaEnSheet');
-            if (btnVerJson) {
-                if (tieneJsonVinculado) {
-                    btnVerJson.classList.remove('hidden');
-                } else {
-                    btnVerJson.classList.add('hidden');
-                }
-            }
 
-            const labelAdjBtn = document.getElementById('labelBtnAdjuntarJsonSheet');
-            if (labelAdjBtn) {
-                labelAdjBtn.textContent = tieneJsonVinculado ? 'Cambiar JSON' : 'Adjuntar JSON';
+            if (esConductor) {
+                // A los conductores no mostrar opciones ni botones de adjuntar/ver JSON
+                if (btnAdjuntarJson) btnAdjuntarJson.classList.add('hidden');
+                if (btnVerJson) btnVerJson.classList.add('hidden');
+            } else {
+                // Administrador: mostrar y configurar botones de JSON
+                if (btnAdjuntarJson) btnAdjuntarJson.classList.remove('hidden');
+                if (btnVerJson) {
+                    if (tieneJsonVinculado) {
+                        btnVerJson.classList.remove('hidden');
+                    } else {
+                        btnVerJson.classList.add('hidden');
+                    }
+                }
+                const labelAdjBtn = document.getElementById('labelBtnAdjuntarJsonSheet');
+                if (labelAdjBtn) {
+                    labelAdjBtn.textContent = tieneJsonVinculado ? 'Cambiar JSON' : 'Adjuntar JSON';
+                }
             }
 
             const modal = document.getElementById('modalPrevisualizarFactura');
@@ -13621,51 +13820,57 @@
                                ((docJsonData && Array.isArray(docJsonData.productos)) ? docJsonData.productos :
                                ((docJsonData && Array.isArray(docJsonData.lineas)) ? docJsonData.lineas : null)));
 
-            // Renderizar Banner Informativo de JSON en la Hoja
+            // Renderizar Banner Informativo de JSON en la Hoja (Solo para Administrador)
             const bannerJson = document.getElementById('prevDocBannerJson');
             if (bannerJson) {
-                if (tieneJsonVinculado) {
-                    const cantProds = (itemsArray && itemsArray.length > 0) ? itemsArray.length : (r.subFacturas ? r.subFacturas.length : 0);
-                    bannerJson.innerHTML = `
-                        <div class="mb-4 p-3 bg-cyan-50 border border-cyan-300 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs text-cyan-900 shadow-sm">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-lg bg-cyan-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm"><i class="fa-solid fa-file-check"></i></span>
-                                <div>
-                                    <div class="font-bold text-cyan-950 flex items-center gap-1.5">
-                                        <span>Documento Electrónico (JSON / DTE) Vinculado</span>
-                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded">Activo</span>
-                                    </div>
-                                    <span class="text-[11px] text-cyan-800">${cantProds > 0 ? `${cantProds} producto${cantProds !== 1 ? 's' : ''} cargado${cantProds !== 1 ? 's' : ''} en el detalle` : 'Estructura electrónica registrada'}</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-1.5 ml-auto">
-                                <button type="button" onclick="abrirModalVerJsonFacturaActual()" class="px-2.5 py-1.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm">
-                                    <i class="fa-solid fa-code"></i> <span>Ver JSON</span>
-                                </button>
-                                <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-cyan-900 border border-cyan-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-sm">
-                                    <i class="fa-solid fa-pen-to-square"></i> <span>Cambiar</span>
-                                </button>
-                                <button type="button" onclick="quitarJsonFacturaExistenteActual()" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-[11px] font-bold cursor-pointer transition-colors" title="Desvincular archivo JSON">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
+                if (esConductor) {
+                    bannerJson.innerHTML = '';
+                    bannerJson.classList.add('hidden');
                 } else {
-                    bannerJson.innerHTML = `
-                        <div class="mb-4 p-3 bg-slate-50 border border-dashed border-slate-300 hover:border-cyan-400 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs transition-colors shadow-sm">
-                            <div class="flex items-center gap-2 text-slate-700">
-                                <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-file-code"></i></span>
-                                <div>
-                                    <strong class="font-bold text-slate-900 block">Esta factura aún no tiene archivo JSON (DTE) adjunto</strong>
-                                    <span class="text-[11px] text-slate-500">Vincule el JSON oficial para extraer sus artículos, cliente y montos oficiales.</span>
+                    bannerJson.classList.remove('hidden');
+                    if (tieneJsonVinculado) {
+                        const cantProds = (itemsArray && itemsArray.length > 0) ? itemsArray.length : (r.subFacturas ? r.subFacturas.length : 0);
+                        bannerJson.innerHTML = `
+                            <div class="mb-4 p-3 bg-cyan-50 border border-cyan-300 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs text-cyan-900 shadow-sm">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-cyan-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm"><i class="fa-solid fa-file-check"></i></span>
+                                    <div>
+                                        <div class="font-bold text-cyan-950 flex items-center gap-1.5">
+                                            <span>Documento Electrónico (JSON / DTE) Vinculado</span>
+                                            <span class="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-1.5 py-0.5 rounded">Activo</span>
+                                        </div>
+                                        <span class="text-[11px] text-cyan-800">${cantProds > 0 ? `${cantProds} producto${cantProds !== 1 ? 's' : ''} cargado${cantProds !== 1 ? 's' : ''} en el detalle` : 'Estructura electrónica registrada'}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5 ml-auto">
+                                    <button type="button" onclick="abrirModalVerJsonFacturaActual()" class="px-2.5 py-1.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm">
+                                        <i class="fa-solid fa-code"></i> <span>Ver JSON</span>
+                                    </button>
+                                    <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-cyan-900 border border-cyan-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-sm">
+                                        <i class="fa-solid fa-pen-to-square"></i> <span>Cambiar</span>
+                                    </button>
+                                    <button type="button" onclick="quitarJsonFacturaExistenteActual()" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-[11px] font-bold cursor-pointer transition-colors" title="Desvincular archivo JSON">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all ml-auto">
-                                <i class="fa-solid fa-file-circle-plus"></i> <span>Adjuntar JSON (DTE)</span>
-                            </button>
-                        </div>
-                    `;
+                        `;
+                    } else {
+                        bannerJson.innerHTML = `
+                            <div class="mb-4 p-3 bg-slate-50 border border-dashed border-slate-300 hover:border-cyan-400 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs transition-colors shadow-sm">
+                                <div class="flex items-center gap-2 text-slate-700">
+                                    <span class="w-7 h-7 rounded-lg bg-slate-200 text-slate-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-file-code"></i></span>
+                                    <div>
+                                        <strong class="font-bold text-slate-900 block">Esta factura aún no tiene archivo JSON (DTE) adjunto</strong>
+                                        <span class="text-[11px] text-slate-500">Vincule el JSON oficial para extraer sus artículos, cliente y montos oficiales.</span>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all ml-auto">
+                                    <i class="fa-solid fa-file-circle-plus"></i> <span>Adjuntar JSON (DTE)</span>
+                                </button>
+                            </div>
+                        `;
+                    }
                 }
             }
 
@@ -13705,10 +13910,10 @@
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="font-bold text-blue-700 font-mono">${sub.tipo || 'DOC'}: ${subNum}</span>
                                     <div class="flex items-center gap-1.5">
-                                        ${hasSubJson 
+                                        ${esConductor ? '' : (hasSubJson 
                                             ? `<button type="button" onclick="event.stopPropagation(); abrirModalVerJsonFactura('${subRawEscaped}', '', null)" class="px-2 py-0.5 bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-700 border border-cyan-400/40 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-sm"><i class="fa-solid fa-code"></i> <span>Ver JSON</span></button>
                                                <button type="button" onclick="event.stopPropagation(); abrirModalAdjuntarJsonFacturaExistente('${subRawEscaped}')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-[10px] font-medium cursor-pointer transition-colors flex items-center gap-1" title="Cambiar JSON"><i class="fa-solid fa-pen"></i></button>` 
-                                            : `<button type="button" onclick="event.stopPropagation(); abrirModalAdjuntarJsonFacturaExistente('${subRawEscaped}')" class="px-2 py-0.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-300 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-sm" title="Vincular archivo JSON a este documento"><i class="fa-solid fa-file-circle-plus"></i> <span>+ Adjuntar JSON</span></button>`}
+                                            : `<button type="button" onclick="event.stopPropagation(); abrirModalAdjuntarJsonFacturaExistente('${subRawEscaped}')" class="px-2 py-0.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-300 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-sm" title="Vincular archivo JSON a este documento"><i class="fa-solid fa-file-circle-plus"></i> <span>+ Adjuntar JSON</span></button>`)}
                                     </div>
                                 </div>
                                 <span class="text-[11px] text-slate-500 block">${sub.cliente ? 'Cliente: ' + sub.cliente + ' • ' : ''}${r.descripcion || 'Materiales de construcción'}</span>
