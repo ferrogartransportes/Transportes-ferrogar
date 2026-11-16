@@ -2,7 +2,11 @@
 <html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Transportes - Ferretería Ferrogar S.A. de C.V.</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -41,6 +45,81 @@
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* Utilidad para ocultar barras de desplazamiento manteniendo el scroll táctil */
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Safe areas para celulares con notch y gestos */
+        body {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+
+        /* Adaptación de tamaño de inputs en celular: previene el zoom automático molesto en iOS y Android */
+        .device-mobile input,
+        .device-mobile select,
+        .device-mobile textarea {
+            font-size: 16px !important;
+        }
+        @media (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        /* En PC / Escritorio: TODAS las pestañas 100% visibles en pantalla en filas completas */
+        .admin-nav-tabs-container,
+        .device-desktop .admin-nav-tabs-container {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            overflow-x: visible !important;
+            gap: 0.75rem !important;
+        }
+        .admin-nav-tabs-container > button,
+        .device-desktop .admin-nav-tabs-container > button {
+            flex-shrink: 0;
+            white-space: normal;
+        }
+
+        /* Solo en Móvil / Celular: barra deslizable compacta con swipe táctil */
+        .device-mobile .admin-nav-tabs-container {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scroll-behavior: smooth !important;
+            gap: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+        .device-mobile .admin-nav-tabs-container > button {
+            flex-shrink: 0 !important;
+            white-space: nowrap !important;
+        }
+
+        /* Modales adaptados en Móvil / Celular: pantalla completa o 96vw para no salirse */
+        .device-mobile .modal-inner-card,
+        .device-mobile [id$="Modal"] > div > div {
+            max-width: 96vw !important;
+            width: 96vw !important;
+            margin: 8px auto !important;
+            max-height: 92vh !important;
+            padding: 16px !important;
+        }
+
+        /* Ajustes de densidad en modo celular */
+        .device-mobile table th,
+        .device-mobile table td {
+            padding-top: 8px !important;
+            padding-bottom: 8px !important;
+        }
 
         @media print {
             body {
@@ -139,39 +218,62 @@
 
         <!-- ================= ADMIN DASHBOARD ================= -->
         <div id="adminDashboard" class="hidden flex-1 flex flex-col">
-            <header class="bg-darkCard border-b border-slate-700/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-accentBlue/20 text-accentBlue flex items-center justify-center text-lg">
+            <header class="bg-darkCard border-b border-slate-700/60 px-3 sm:px-6 py-2.5 sm:py-4 flex items-center justify-between sticky top-0 z-30">
+                <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-accentBlue/20 text-accentBlue flex items-center justify-center text-base sm:text-lg shrink-0">
                         <i class="fa-solid fa-shield-halved"></i>
                     </div>
-                    <div>
-                        <h2 class="font-bold text-base leading-tight">Panel Ejecutivo - Ferretería Ferrogar S.A. de C.V.</h2>
-                        <span id="currentAdminDateLabel" class="text-xs text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> <span id="adminDateText">Cargando fecha y hora...</span>
+                    <div class="min-w-0">
+                        <h2 class="font-bold text-xs sm:text-base leading-tight truncate max-w-[140px] xs:max-w-xs sm:max-w-none">Panel Ejecutivo - Ferretería Ferrogar S.A. de C.V.</h2>
+                        <span id="currentAdminDateLabel" class="text-[11px] sm:text-xs text-emerald-400 flex items-center gap-1.5 mt-0.5 truncate">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span> <span id="adminDateText" class="truncate">Cargando fecha y hora...</span>
                         </span>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-3">
-                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+                    <!-- Selector de Modo Dispositivo (PC / Celular) -->
+                    <div class="relative">
+                        <button id="btnDeviceModeAdmin" onclick="toggleMenuModoDispositivo('admin')" title="Cambiar modo de visualización (PC o Celular)" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-medium text-slate-300 transition-all flex items-center space-x-1.5 cursor-pointer">
+                            <i id="iconoModoAdmin" class="fa-solid fa-laptop text-accentBlue"></i>
+                            <span id="textoModoAdmin" class="hidden sm:inline">Modo PC</span>
+                            <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+                        </button>
+                        <div id="menuModoDispositivoAdmin" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+                            <button onclick="cambiarModoDispositivo('auto')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-wand-magic-sparkles text-amber-400 mr-2"></i>Automático</span>
+                                <i id="checkModoAutoAdmin" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                            <button onclick="cambiarModoDispositivo('pc')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-desktop text-accentBlue mr-2"></i>Modo PC</span>
+                                <i id="checkModoPcAdmin" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                            <button onclick="cambiarModoDispositivo('mobile')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-mobile-screen-button text-emerald-400 mr-2"></i>Modo Celular</span>
+                                <i id="checkModoMobileAdmin" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-2.5 sm:px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 sm:space-x-2">
                         <i class="fa-solid fa-rotate"></i>
                         <span class="hidden sm:inline">Sincronizar Datos</span>
                     </button>
-                    <button onclick="openConfigModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                    <button onclick="openConfigModal()" class="px-2.5 sm:px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 sm:space-x-2">
                         <i class="fa-solid fa-gear text-slate-400"></i>
                         <span class="hidden sm:inline">Google Sheets</span>
                     </button>
-                    <button onclick="logout()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                    <button onclick="logout()" class="px-2.5 sm:px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 sm:space-x-2">
                         <i class="fa-solid fa-right-from-bracket"></i>
                         <span class="hidden sm:inline">Cerrar Sesión</span>
                     </button>
                 </div>
             </header>
 
-            <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <main class="flex-1 p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
                 
-                <!-- PESTAÑAS DE NAVEGACIÓN ADMIN -->
-                <div class="flex flex-wrap border-b border-slate-700/60 pb-3 gap-3">
+                <!-- PESTAÑAS DE NAVEGACIÓN ADMIN (Visibles completas en pantalla en PC, adaptables en Móvil) -->
+                <div id="adminNavTabsContainer" class="admin-nav-tabs-container flex flex-wrap border-b border-slate-700/60 pb-3 gap-3">
                     <button onclick="switchAdminTab('diario')" id="adminTabDiarioBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2">
                         <i class="fa-solid fa-calendar-day"></i> Operación del Día (KPIs)
                     </button>
@@ -1742,39 +1844,62 @@
                 </div>
             </div>
 
-            <header class="bg-darkCard border-b border-slate-700/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-                <div class="flex items-center space-x-3">
-                    <div id="driverAvatarBadge" class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+            <header class="bg-darkCard border-b border-slate-700/60 px-3 sm:px-6 py-2.5 sm:py-4 flex items-center justify-between sticky top-0 z-30">
+                <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                    <div id="driverAvatarBadge" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-base sm:text-lg shrink-0">
                         <i class="fa-solid fa-id-card"></i>
                     </div>
-                    <div>
-                        <h2 id="driverHeaderName" class="font-bold text-base leading-tight">Nombre Conductor</h2>
-                        <span id="driverHeaderUnit" class="text-xs text-slate-400">Unidad • En Ruta</span>
+                    <div class="min-w-0">
+                        <h2 id="driverHeaderName" class="font-bold text-xs sm:text-base leading-tight truncate max-w-[140px] xs:max-w-xs sm:max-w-none">Nombre Conductor</h2>
+                        <span id="driverHeaderUnit" class="text-[11px] sm:text-xs text-slate-400 truncate block">Unidad • En Ruta</span>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-3">
-                    <button id="btnAlarmaSonoraConductor" onclick="toggleAlarmaSonoraConductor()" title="Alarma sonora al recibir viajes nuevos (clic para activar, silenciar o probar tono)" class="px-3 py-2 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer">
+                <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+                    <!-- Selector de Modo Dispositivo Conductor (PC / Celular) -->
+                    <div class="relative">
+                        <button id="btnDeviceModeDriver" onclick="toggleMenuModoDispositivo('driver')" title="Cambiar modo de visualización (PC o Celular)" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-medium text-slate-300 transition-all flex items-center space-x-1.5 cursor-pointer">
+                            <i id="iconoModoDriver" class="fa-solid fa-laptop text-accentBlue"></i>
+                            <span id="textoModoDriver" class="hidden sm:inline">Modo PC</span>
+                            <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+                        </button>
+                        <div id="menuModoDispositivoDriver" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+                            <button onclick="cambiarModoDispositivo('auto')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-wand-magic-sparkles text-amber-400 mr-2"></i>Automático</span>
+                                <i id="checkModoAutoDriver" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                            <button onclick="cambiarModoDispositivo('pc')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-desktop text-accentBlue mr-2"></i>Modo PC</span>
+                                <i id="checkModoPcDriver" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                            <button onclick="cambiarModoDispositivo('mobile')" class="w-full text-left px-3 py-2 hover:bg-slate-800 flex items-center justify-between text-slate-200">
+                                <span><i class="fa-solid fa-mobile-screen-button text-emerald-400 mr-2"></i>Modo Celular</span>
+                                <i id="checkModoMobileDriver" class="fa-solid fa-check text-emerald-400 hidden"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="btnAlarmaSonoraConductor" onclick="toggleAlarmaSonoraConductor()" title="Alarma sonora al recibir viajes nuevos (clic para activar, silenciar o probar tono)" class="px-2.5 sm:px-3 py-2 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer">
                         <i id="iconoAlarmaSonora" class="fa-solid fa-bell text-amber-400"></i>
                         <span id="textoAlarmaSonora" class="hidden sm:inline">Alarma Activa</span>
                     </button>
-                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                    <button onclick="cargarDatosDesdeGoogleSheets()" class="px-2.5 sm:px-3.5 py-2 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 sm:space-x-2">
                         <i class="fa-solid fa-rotate"></i>
                         <span class="hidden sm:inline">Actualizar Mis Viajes</span>
                     </button>
-                    <div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700">
-                        <span id="connectionDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span id="connectionText" class="text-xs font-medium text-emerald-400">Disponible</span>
-                        <button onclick="toggleDriverStatus()" class="ml-2 text-slate-400 hover:text-white text-xs underline cursor-pointer">Cambiar</button>
+                    <div class="flex items-center space-x-1.5 sm:space-x-2 bg-slate-900 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700">
+                        <span id="connectionDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                        <span id="connectionText" class="text-xs font-medium text-emerald-400 hidden xs:inline">Disponible</span>
+                        <button onclick="toggleDriverStatus()" class="ml-1 sm:ml-2 text-slate-400 hover:text-white text-xs underline cursor-pointer">Cambiar</button>
                     </div>
-                    <button onclick="logout()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-2">
+                    <button onclick="logout()" class="px-2.5 sm:px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-medium transition-all flex items-center space-x-1.5 sm:space-x-2">
                         <i class="fa-solid fa-right-from-bracket"></i>
                         <span class="hidden sm:inline">Salir</span>
                     </button>
                 </div>
             </header>
 
-            <main class="flex-1 p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <main class="flex-1 p-3.5 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div class="bg-darkCard border border-slate-700/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm">
                         <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-accentBlue flex items-center justify-center text-xl">
@@ -4558,6 +4683,7 @@
         }
 
         window.onload = function() {
+            aplicarModoDispositivo();
             actualizarReloj();
             setInterval(actualizarReloj, 1000);
             
@@ -5606,52 +5732,59 @@
 
             const activeClass = "px-4 py-2 rounded-xl text-xs font-bold bg-accentBlue text-white shadow transition-all flex items-center gap-2";
 
+            let targetActiveBtn = null;
             if (tab === 'diario') {
-                if (btnDiario) btnDiario.className = activeClass;
+                if (btnDiario) { btnDiario.className = activeClass; targetActiveBtn = btnDiario; }
                 if (viewDiario) viewDiario.classList.remove('hidden');
             } else if (tab === 'pendientes') {
-                if (btnPendientes) btnPendientes.className = "px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-lg transition-all flex items-center gap-2";
+                if (btnPendientes) { btnPendientes.className = "px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-lg transition-all flex items-center gap-2"; targetActiveBtn = btnPendientes; }
                 if (viewPendientes) viewPendientes.classList.remove('hidden');
                 renderPendientesTable();
             } else if (tab === 'asignacion') {
-                if (btnAsignacion) btnAsignacion.className = activeClass;
+                if (btnAsignacion) { btnAsignacion.className = activeClass; targetActiveBtn = btnAsignacion; }
                 if (viewAsignacion) viewAsignacion.classList.remove('hidden');
             } else if (tab === 'facturas') {
-                if (btnFacturas) btnFacturas.className = "px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2";
+                if (btnFacturas) { btnFacturas.className = "px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2"; targetActiveBtn = btnFacturas; }
                 if (viewFacturas) viewFacturas.classList.remove('hidden');
                 if (typeof renderModuloFacturasCcf === 'function') renderModuloFacturasCcf();
             } else if (tab === 'clientes') {
-                if (btnClientes) btnClientes.className = activeClass;
+                if (btnClientes) { btnClientes.className = activeClass; targetActiveBtn = btnClientes; }
                 if (viewClientes) viewClientes.classList.remove('hidden');
                 actualizarModuloClientesCompleto();
             } else if (tab === 'cotizaciones') {
-                if (btnCotizaciones) btnCotizaciones.className = "px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2";
+                if (btnCotizaciones) { btnCotizaciones.className = "px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"; targetActiveBtn = btnCotizaciones; }
                 if (viewCotizaciones) viewCotizaciones.classList.remove('hidden');
                 renderCotizacionesTable();
             } else if (tab === 'programados') {
-                if (btnProgramados) btnProgramados.className = activeClass;
+                if (btnProgramados) { btnProgramados.className = activeClass; targetActiveBtn = btnProgramados; }
                 if (viewProgramados) viewProgramados.classList.remove('hidden');
                 renderAdminTableProgramados();
             } else if (tab === 'traslados') {
-                if (btnTraslados) btnTraslados.className = activeClass;
+                if (btnTraslados) { btnTraslados.className = activeClass; targetActiveBtn = btnTraslados; }
                 if (viewTraslados) viewTraslados.classList.remove('hidden');
                 renderTrasladosTable();
             } else if (tab === 'monitoreo') {
-                if (btnMonitoreo) btnMonitoreo.className = activeClass;
+                if (btnMonitoreo) { btnMonitoreo.className = activeClass; targetActiveBtn = btnMonitoreo; }
                 if (viewMonitoreo) viewMonitoreo.classList.remove('hidden');
                 renderMonitoreoConductores();
             } else if (tab === 'conductores') {
-                if (btnCond) btnCond.className = activeClass;
+                if (btnCond) { btnCond.className = activeClass; targetActiveBtn = btnCond; }
                 if (viewCond) viewCond.classList.remove('hidden');
                 renderConductoresGestionTable();
             } else if (tab === 'historial_conductores') {
-                if (btnHistEmp) btnHistEmp.className = activeClass;
+                if (btnHistEmp) { btnHistEmp.className = activeClass; targetActiveBtn = btnHistEmp; }
                 if (viewHistEmp) viewHistEmp.classList.remove('hidden');
                 renderHistorialConductoresTable();
             } else {
-                if (btnHistorico) btnHistorico.className = activeClass;
+                if (btnHistorico) { btnHistorico.className = activeClass; targetActiveBtn = btnHistorico; }
                 if (viewHistorico) viewHistorico.classList.remove('hidden');
                 renderHistoricoTable();
+            }
+
+            if (typeof dispositivoDetectadoActual !== 'undefined' && dispositivoDetectadoActual === 'mobile' && targetActiveBtn && typeof targetActiveBtn.scrollIntoView === 'function') {
+                try {
+                    targetActiveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } catch(e) {}
             }
         }
 
@@ -16114,6 +16247,169 @@
             doc.save(`Reporte_Facturas_y_CCF_${fechaStr}.pdf`);
             showToast('PDF Descargado', `Reporte generado con ${docs.length} facturas/CCF.`, 'success');
         }
+
+        // ================= MOTOR DE DETECCIÓN Y ADAPTACIÓN DE DISPOSITIVO (PC / CELULAR) =================
+        let modoDispositivoConfigurado = localStorage.getItem('logiflow_modo_dispositivo') || 'auto'; // 'auto' | 'pc' | 'mobile'
+        let dispositivoDetectadoActual = 'pc'; // 'pc' | 'mobile'
+
+        function detectarDispositivoFisico() {
+            try {
+                const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+                const esUAMovil = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|crios|samsungbrowser/i.test(ua);
+                const esIPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const anchoPantalla = window.innerWidth || (document.documentElement ? document.documentElement.clientWidth : 0) || (document.body ? document.body.clientWidth : 0) || 1024;
+                const esAnchoMovil = anchoPantalla <= 768;
+                const esTactil = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+
+                if (esUAMovil || esIPadOS || (esAnchoMovil && esTactil)) {
+                    return 'mobile';
+                }
+                if (anchoPantalla <= 768) {
+                    return 'mobile';
+                }
+            } catch (e) {
+                console.warn('Error detectando dispositivo:', e);
+            }
+            return 'pc';
+        }
+
+        function aplicarModoDispositivo() {
+            const modoFisico = detectarDispositivoFisico();
+            let modoEfectivo = modoFisico;
+
+            if (modoDispositivoConfigurado === 'pc') {
+                modoEfectivo = 'pc';
+            } else if (modoDispositivoConfigurado === 'mobile') {
+                modoEfectivo = 'mobile';
+            }
+
+            dispositivoDetectadoActual = modoEfectivo;
+
+            const htmlEl = document.documentElement;
+            const bodyEl = document.body;
+
+            if (modoEfectivo === 'mobile') {
+                if (htmlEl) {
+                    htmlEl.classList.remove('device-desktop');
+                    htmlEl.classList.add('device-mobile');
+                    htmlEl.setAttribute('data-device', 'mobile');
+                }
+                if (bodyEl) {
+                    bodyEl.classList.remove('device-desktop');
+                    bodyEl.classList.add('device-mobile');
+                    bodyEl.setAttribute('data-device', 'mobile');
+                }
+            } else {
+                if (htmlEl) {
+                    htmlEl.classList.remove('device-mobile');
+                    htmlEl.classList.add('device-desktop');
+                    htmlEl.setAttribute('data-device', 'pc');
+                }
+                if (bodyEl) {
+                    bodyEl.classList.remove('device-mobile');
+                    bodyEl.classList.add('device-desktop');
+                    bodyEl.setAttribute('data-device', 'pc');
+                }
+            }
+
+            actualizarBadgesDispositivoUI(modoEfectivo, modoDispositivoConfigurado);
+        }
+
+        function actualizarBadgesDispositivoUI(modoEfectivo, configuracion) {
+            const iconoAdmin = document.getElementById('iconoModoAdmin');
+            const textoAdmin = document.getElementById('textoModoAdmin');
+            const checkAutoAdmin = document.getElementById('checkModoAutoAdmin');
+            const checkPcAdmin = document.getElementById('checkModoPcAdmin');
+            const checkMobileAdmin = document.getElementById('checkModoMobileAdmin');
+
+            const iconoDriver = document.getElementById('iconoModoDriver');
+            const textoDriver = document.getElementById('textoModoDriver');
+            const checkAutoDriver = document.getElementById('checkModoAutoDriver');
+            const checkPcDriver = document.getElementById('checkModoPcDriver');
+            const checkMobileDriver = document.getElementById('checkModoMobileDriver');
+
+            const labelTexto = (configuracion === 'auto')
+                ? (modoEfectivo === 'mobile' ? 'Auto (Celular)' : 'Auto (PC)')
+                : (configuracion === 'mobile' ? 'Modo Celular' : 'Modo PC');
+
+            const iconClass = modoEfectivo === 'mobile'
+                ? 'fa-solid fa-mobile-screen-button text-emerald-400'
+                : 'fa-solid fa-laptop text-accentBlue';
+
+            if (iconoAdmin) iconoAdmin.className = iconClass;
+            if (textoAdmin) textoAdmin.textContent = labelTexto;
+            if (iconoDriver) iconoDriver.className = iconClass;
+            if (textoDriver) textoDriver.textContent = labelTexto;
+
+            [checkAutoAdmin, checkAutoDriver].forEach(el => {
+                if (el) el.classList.toggle('hidden', configuracion !== 'auto');
+            });
+            [checkPcAdmin, checkPcDriver].forEach(el => {
+                if (el) el.classList.toggle('hidden', configuracion !== 'pc');
+            });
+            [checkMobileAdmin, checkMobileDriver].forEach(el => {
+                if (el) el.classList.toggle('hidden', configuracion !== 'mobile');
+            });
+        }
+
+        function toggleMenuModoDispositivo(origen) {
+            const menuId = origen === 'admin' ? 'menuModoDispositivoAdmin' : 'menuModoDispositivoDriver';
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            const isHidden = menu.classList.contains('hidden');
+            const menuAdmin = document.getElementById('menuModoDispositivoAdmin');
+            const menuDriver = document.getElementById('menuModoDispositivoDriver');
+            if (menuAdmin) menuAdmin.classList.add('hidden');
+            if (menuDriver) menuDriver.classList.add('hidden');
+
+            if (isHidden) {
+                menu.classList.remove('hidden');
+            }
+        }
+
+        function cambiarModoDispositivo(nuevoModo) {
+            modoDispositivoConfigurado = nuevoModo;
+            localStorage.setItem('logiflow_modo_dispositivo', nuevoModo);
+            aplicarModoDispositivo();
+
+            const menuAdmin = document.getElementById('menuModoDispositivoAdmin');
+            const menuDriver = document.getElementById('menuModoDispositivoDriver');
+            if (menuAdmin) menuAdmin.classList.add('hidden');
+            if (menuDriver) menuDriver.classList.add('hidden');
+
+            const descModo = nuevoModo === 'auto'
+                ? `Automático (${dispositivoDetectadoActual === 'mobile' ? 'Adaptado a Celular' : 'Adaptado a PC'})`
+                : (nuevoModo === 'mobile' ? 'Modo Celular forzado' : 'Modo PC forzado');
+
+            showToast('Visualización de Pantalla', `Configuración guardada: ${descModo}`, 'info');
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#btnDeviceModeAdmin') && !e.target.closest('#menuModoDispositivoAdmin') &&
+                !e.target.closest('#btnDeviceModeDriver') && !e.target.closest('#menuModoDispositivoDriver')) {
+                const menuAdmin = document.getElementById('menuModoDispositivoAdmin');
+                const menuDriver = document.getElementById('menuModoDispositivoDriver');
+                if (menuAdmin) menuAdmin.classList.add('hidden');
+                if (menuDriver) menuDriver.classList.add('hidden');
+            }
+        });
+
+        let debounceResizeTimerDispositivo = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(debounceResizeTimerDispositivo);
+            debounceResizeTimerDispositivo = setTimeout(() => {
+                aplicarModoDispositivo();
+            }, 150);
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                aplicarModoDispositivo();
+            }, 200);
+        });
+
+        // Ejecutar inmediatamente para configurar clases y atributos al cargar el DOM
+        aplicarModoDispositivo();
     </script>
 </body>
 </html>
