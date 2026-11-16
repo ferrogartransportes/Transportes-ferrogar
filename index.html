@@ -715,9 +715,39 @@
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Cobro Transporte ($)</label>
                                         <input type="text" id="manInputTransporte" autocomplete="off" placeholder="Ej. $30.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
                                     </div>
-                                    <div class="md:col-span-3">
-                                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos / Carga</label>
-                                        <input type="text" id="manInputDescription" autocomplete="off" placeholder="Ej. Kit de herramientas y tornillería" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    <div class="md:col-span-3 space-y-2">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Descripción de Productos / Carga</label>
+                                                <input type="text" id="manInputDescription" oninput="actualizarPrevisualizacionCategoriasManual()" autocomplete="off" placeholder="Ej. 50 bolsas cemento, 30 varillas 3/8..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fa-solid fa-tags mr-1"></i>Material / Categoría</span>
+                                                    <span class="text-[10px] text-slate-400 font-normal">Segmentación</span>
+                                                </label>
+                                                <select id="manInputCategoria" onchange="actualizarPrevisualizacionCategoriasManual()" class="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-bold cursor-pointer">
+                                                    <option value="auto">⚡ Auto-detectar de la descripción</option>
+                                                    <option value="Cemento">🏗️ Cemento / Concreto</option>
+                                                    <option value="Hierro / Varilla">🔩 Hierro / Varilla / Perfiles</option>
+                                                    <option value="Arena / Grava">🏔️ Arena / Grava / Áridos</option>
+                                                    <option value="Bloques">🧱 Bloques / Ladrillos / Adoquines</option>
+                                                    <option value="Láminas / Techos">🏠 Láminas / Techos / Zinc</option>
+                                                    <option value="Pegamentos / Repello">🧪 Pegamentos / Repello / Pegamix</option>
+                                                    <option value="Fontanería / PVC">🚰 Fontanería / PVC / Tubería</option>
+                                                    <option value="Pinturas / Acabados">🎨 Pinturas / Acabados</option>
+                                                    <option value="Eléctricos / Iluminación">⚡ Eléctricos / Iluminación</option>
+                                                    <option value="Herramientas / Ferretería">🛠️ Herramientas / Ferretería</option>
+                                                    <option value="Carga General">📦 Carga General / Mixta</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Segmentación detectada:</span>
+                                            <div id="previewCategoriasSegmentadas" class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">Esperando descripción...</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1581,15 +1611,97 @@
                             </div>
                         </div>
 
-                        <!-- SECCIÓN 2: LO QUE MÁS LLEVAN LOS CLIENTES (ESTUDIO DE DEMANDA) -->
+                        <!-- SECCIÓN 2: FILTRO Y EXPLORADOR DE CLIENTES POR PRODUCTO Y TIEMPO (ÚLTIMAS 2 SEMANAS / PERÍODO) -->
+                        <div class="bg-slate-900/80 border border-amber-500/30 rounded-2xl p-5 space-y-4 shadow-xl">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-sm text-amber-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-boxes-packing text-amber-400"></i>
+                                        <span>Filtro de Clientes por Producto y Tiempo (Demanda Específica)</span>
+                                    </h4>
+                                    <p class="text-xs text-slate-400 mt-0.5">Consulte al instante qué clientes compraron determinado producto en las últimas 2 semanas, este mes o históricamente con su ficha completa.</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span id="badgeConteoFiltroMateriales" class="text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-xl">0 clientes</span>
+                                </div>
+                            </div>
+                            
+                            <!-- CONTROLES DEL FILTRO -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-1">
+                                        <i class="fa-solid fa-cube mr-1"></i>Producto / Material
+                                    </label>
+                                    <select id="filtroMatSelectMaterial" onchange="ejecutarFiltroClientesMaterial()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-bold cursor-pointer">
+                                        <option value="todos">Todos los Materiales</option>
+                                        <option value="Cemento" selected>🏗️ Cemento</option>
+                                        <option value="Hierro / Varilla">🔩 Hierro / Varilla</option>
+                                        <option value="Arena / Grava">🏔️ Arena / Grava</option>
+                                        <option value="Bloques">🧱 Bloques</option>
+                                        <option value="Láminas / Techos">🏠 Láminas / Techos</option>
+                                        <option value="Pegamentos / Repello">🧪 Pegamentos / Repello</option>
+                                        <option value="Fontanería / PVC">🚰 Fontanería / PVC</option>
+                                        <option value="Pinturas / Acabados">🎨 Pinturas / Acabados</option>
+                                        <option value="Eléctricos / Iluminación">⚡ Eléctricos / Iluminación</option>
+                                        <option value="Herramientas / Ferretería">🛠️ Herramientas / Ferretería</option>
+                                        <option value="Carga General">📦 Carga General / Mixta</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-cyan-400 mb-1">
+                                        <i class="fa-solid fa-calendar-days mr-1"></i>Período de Compra
+                                    </label>
+                                    <select id="filtroMatSelectPeriodo" onchange="ejecutarFiltroClientesMaterial()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-cyan-400 font-bold cursor-pointer">
+                                        <option value="14" selected>⏱️ Últimas 2 Semanas (≤14 días)</option>
+                                        <option value="7">📅 Esta Semana (≤7 días)</option>
+                                        <option value="30">🗓️ Último Mes (≤30 días)</option>
+                                        <option value="todos">♾️ Todo el Histórico</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-emerald-400 mb-1">
+                                        <i class="fa-solid fa-store mr-1"></i>Sucursal de Salida
+                                    </label>
+                                    <select id="filtroMatSelectSucursal" onchange="ejecutarFiltroClientesMaterial()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 font-semibold cursor-pointer">
+                                        <option value="todos">Todas las Sucursales</option>
+                                        <option value="FG MATRIZ">FG MATRIZ</option>
+                                        <option value="FG HIERROGAR">FG HIERROGAR</option>
+                                        <option value="FG VIÑEDO">FG VIÑEDO</option>
+                                        <option value="FG COMALAPA">FG COMALAPA</option>
+                                        <option value="CONSTRUGAR AGUILA">CONSTRUGAR AGUILA</option>
+                                        <option value="CONSTRUGAR AUTOPISTA">CONSTRUGAR AUTOPISTA</option>
+                                        <option value="Local L6">Local L6</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                        <i class="fa-solid fa-magnifying-glass mr-1"></i>Buscar en resultados
+                                    </label>
+                                    <input type="text" id="filtroMatSearchInput" oninput="ejecutarFiltroClientesMaterial()" placeholder="Buscar cliente por nombre o tel..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400">
+                                </div>
+                            </div>
+
+                            <!-- CONTENEDOR DE RESULTADOS DEL FILTRO -->
+                            <div id="contenedorResultadosClientesMaterial" class="space-y-3 pt-1">
+                                <!-- Generado dinámicamente por ejecutarFiltroClientesMaterial() -->
+                            </div>
+                        </div>
+
+                        <!-- SECCIÓN 3: LO QUE MÁS LLEVAN LOS CLIENTES (ESTUDIO DE DEMANDA) -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
                             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
                                 <div class="border-b border-slate-800 pb-3">
-                                    <h4 class="font-bold text-sm text-amber-300 flex items-center gap-2">
-                                        <i class="fa-solid fa-dolly text-amber-400"></i>
-                                        <span>Lo que Más Llevan los Clientes (Demanda de Materiales)</span>
-                                    </h4>
-                                    <p class="text-xs text-slate-400 mt-0.5">Productos y tipos de carga más solicitados en los pedidos comerciales.</p>
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="font-bold text-sm text-amber-300 flex items-center gap-2">
+                                            <i class="fa-solid fa-dolly text-amber-400"></i>
+                                            <span>Lo que Más Llevan los Clientes (Demanda de Materiales)</span>
+                                        </h4>
+                                        <span class="text-[10px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">Interactivo</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-hand-pointer text-amber-400 text-[11px]"></i>
+                                        <span>Toque cualquier material para ver los clientes que lo compraron con su ficha y pedidos.</span>
+                                    </p>
                                 </div>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-xs">
@@ -1649,11 +1761,28 @@
                                 </div>
                                 <select id="seguimientoFiltroSegmento" onchange="renderSeguimientoClientes()" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-medium">
                                     <option value="todos">Todos los Clientes</option>
+                                    <option value="activos_semana">✅ Activos esta semana (≤7 días)</option>
+                                    <option value="activos_2_semanas">⏱️ Activos hace 2 semanas (8 a 14 días)</option>
+                                    <option value="activos_14">📅 Activos últimas 2 semanas (≤14 días)</option>
+                                    <option value="inactivos_15">⚠️ En riesgo (15 a 30 días sin comprar)</option>
                                     <option value="inactivos_30">🚨 Inactivos por reactivar (&gt;30 días)</option>
-                                    <option value="inactivos_15">⚠️ En riesgo (&gt;15 días sin comprar)</option>
                                     <option value="vip">⭐ Clientes VIP / Excelentes (3★)</option>
-                                    <option value="recientes_7">✅ Activos recientes (≤7 días)</option>
                                     <option value="sin_compras">🆕 Prospectos sin compras aún</option>
+                                    <option value="cerrado">💼 Ventas cerradas</option>
+                                    <option value="cotizacion">📋 Cotizaciones en curso</option>
+                                </select>
+                                <select id="seguimientoFiltroMaterial" onchange="renderSeguimientoClientes()" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-medium">
+                                    <option value="todos">Todos los Materiales</option>
+                                    <option value="Cemento">🏗️ Cemento</option>
+                                    <option value="Hierro / Varilla">🔩 Hierro / Varilla</option>
+                                    <option value="Arena / Grava">🏔️ Arena / Grava</option>
+                                    <option value="Bloques">🧱 Bloques</option>
+                                    <option value="Láminas / Techos">🏠 Láminas / Techos</option>
+                                    <option value="Pegamentos / Repello">🧪 Pegamentos / Repello</option>
+                                    <option value="Fontanería / PVC">🚰 Fontanería / PVC</option>
+                                    <option value="Pinturas / Acabados">🎨 Pinturas / Acabados</option>
+                                    <option value="Eléctricos / Iluminación">⚡ Eléctricos / Iluminación</option>
+                                    <option value="Herramientas / Ferretería">🛠️ Ferretería</option>
                                 </select>
                                 <select id="seguimientoFiltroSucursal" onchange="renderSeguimientoClientes()" class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-medium">
                                     <option value="todos">Todas las Sucursales</option>
@@ -1683,23 +1812,118 @@
                             </div>
                         </div>
 
-                        <!-- 4 KPIS DE SEGUIMIENTO COMERCIAL -->
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5">
-                                <span class="text-[10px] uppercase font-semibold text-slate-400 block">Clientes en Lista</span>
-                                <h4 id="seguimientoKpiTotalLista" class="text-xl font-bold text-slate-100 mt-1">0</h4>
+                        <!-- 6 KPIS INTERACTIVOS DE SEGUIMIENTO COMERCIAL & FIDELIZACIÓN (CRM) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                            <!-- KPI 1: Todos los Clientes -->
+                            <div id="cardKpiCrm_todos" onclick="tocarKpiSeguimientoCRM('todos')" title="Haga clic para ver todos los clientes en seguimiento" class="bg-slate-900/80 border border-slate-800 hover:border-blue-500/50 hover:bg-slate-800/60 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-slate-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider">Clientes Total</span>
+                                        <i class="fa-solid fa-users text-blue-400 text-xs group-hover:scale-110 transition-transform"></i>
+                                    </div>
+                                    <h4 id="seguimientoKpiTotalLista" class="text-xl font-black text-slate-100 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-blue-400 transition-colors">
+                                    <span>Directorio</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/80 border border-rose-500/20 rounded-xl p-3.5">
-                                <span class="text-[10px] uppercase font-semibold text-rose-400 block flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Inactivos &gt;30 días</span>
-                                <h4 id="seguimientoKpiInactivos30" class="text-xl font-bold text-rose-400 mt-1">0</h4>
+
+                            <!-- KPI 2: Activos Esta Semana -->
+                            <div id="cardKpiCrm_activos_semana" onclick="tocarKpiSeguimientoCRM('activos_semana')" title="Haga clic para ver clientes que compraron esta semana (≤7 días)" class="bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/60 hover:bg-emerald-950/20 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-emerald-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-calendar-check text-[10px]"></i> Esta Semana</span>
+                                        <span class="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.2 rounded">≤7d</span>
+                                    </div>
+                                    <h4 id="seguimientoKpiActivosSemana" class="text-xl font-black text-emerald-400 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                    <span>Activos Recientes</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/80 border border-cyan-500/20 rounded-xl p-3.5">
-                                <span class="text-[10px] uppercase font-semibold text-cyan-400 block flex items-center gap-1"><i class="fa-solid fa-file-invoice"></i> Cotizaciones en Curso</span>
-                                <h4 id="seguimientoKpiCotizaciones" class="text-xl font-bold text-cyan-300 mt-1">0</h4>
+
+                            <!-- KPI 3: Activos Hace 2 Semanas -->
+                            <div id="cardKpiCrm_activos_2_semanas" onclick="tocarKpiSeguimientoCRM('activos_2_semanas')" title="Haga clic para ver clientes que compraron hace 2 semanas (8 a 14 días)" class="bg-slate-900/80 border border-cyan-500/20 hover:border-cyan-500/60 hover:bg-cyan-950/20 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-cyan-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock-rotate-left text-[10px]"></i> Hace 2 Semanas</span>
+                                        <span class="text-[9px] bg-cyan-500/20 text-cyan-300 font-bold px-1.5 py-0.2 rounded">8-14d</span>
+                                    </div>
+                                    <h4 id="seguimientoKpiActivos2Semanas" class="text-xl font-black text-cyan-300 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-cyan-400 transition-colors">
+                                    <span>Activos 8-14 días</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/80 border border-emerald-500/20 rounded-xl p-3.5">
-                                <span class="text-[10px] uppercase font-semibold text-emerald-400 block flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Ventas Cerradas</span>
-                                <h4 id="seguimientoKpiVentasCerradas" class="text-xl font-bold text-emerald-400 mt-1">0</h4>
+
+                            <!-- KPI 4: En Riesgo (15 a 30 días) -->
+                            <div id="cardKpiCrm_inactivos_15" onclick="tocarKpiSeguimientoCRM('inactivos_15')" title="Haga clic para ver clientes en riesgo (15 a 30 días sin comprar)" class="bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/60 hover:bg-amber-950/20 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-amber-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-bell text-[10px]"></i> En Riesgo</span>
+                                        <span class="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.2 rounded">15-30d</span>
+                                    </div>
+                                    <h4 id="seguimientoKpiInactivos15" class="text-xl font-black text-amber-400 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-amber-400 transition-colors">
+                                    <span>Seguimiento Sugerido</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
+                            </div>
+
+                            <!-- KPI 5: Inactivos >30 días -->
+                            <div id="cardKpiCrm_inactivos_30" onclick="tocarKpiSeguimientoCRM('inactivos_30')" title="Haga clic para ver clientes inactivos por reactivar (>30 días sin comprar)" class="bg-slate-900/80 border border-rose-500/20 hover:border-rose-500/60 hover:bg-rose-950/20 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-rose-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Inactivos &gt;30d</span>
+                                        <span class="text-[9px] bg-rose-500/20 text-rose-300 font-bold px-1.5 py-0.2 rounded">&gt;30d</span>
+                                    </div>
+                                    <h4 id="seguimientoKpiInactivos30" class="text-xl font-black text-rose-400 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-rose-400 transition-colors">
+                                    <span>Por Reactivar</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
+                            </div>
+
+                            <!-- KPI 6: Ventas Cerradas -->
+                            <div id="cardKpiCrm_cerrado" onclick="tocarKpiSeguimientoCRM('cerrado')" title="Haga clic para ver clientes con ventas cerradas" class="bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/60 hover:bg-emerald-950/20 rounded-xl p-3 cursor-pointer group transition-all shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between text-emerald-400">
+                                        <span class="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> Ventas Cerradas</span>
+                                        <i class="fa-solid fa-handshake text-emerald-400 text-xs"></i>
+                                    </div>
+                                    <h4 id="seguimientoKpiVentasCerradas" class="text-xl font-black text-emerald-400 mt-1">0</h4>
+                                </div>
+                                <div class="mt-2 pt-1 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                    <span>Acuerdos Listos</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BANNER DINÁMICO DE FILTRADO ACTIVO POR KPI -->
+                        <div id="seguimientoBannerFiltroActivo" class="hidden p-3 bg-slate-900/90 border border-amber-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 text-sm"><i class="fa-solid fa-filter"></i></span>
+                                <div>
+                                    <span class="text-slate-400 text-[10px] uppercase tracking-wider block font-bold">Filtro Activo por KPI</span>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <strong id="seguimientoTextoFiltroActivo" class="text-amber-300 font-bold text-xs">Todos los Clientes</strong>
+                                        <span id="seguimientoConteoFiltroActivo" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0 clientes</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <button type="button" onclick="abrirModalKpiDetalleCRMActual()" class="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
+                                    <i class="fa-solid fa-up-right-from-square text-[10px]"></i> <span>Ver en Ventana Emergente</span>
+                                </button>
+                                <button type="button" onclick="restablecerFiltroSeguimientoCRM()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-xmark text-rose-400"></i> <span>Quitar Filtro</span>
+                                </button>
                             </div>
                         </div>
 
@@ -9231,9 +9455,11 @@
 
                     const transporteVal = parseFloat((document.getElementById('manInputTransporte')?.value || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
                     const userDesc = (document.getElementById('manInputDescription')?.value || '').trim();
+                    const catManualSel = document.getElementById('manInputCategoria')?.value || 'auto';
+                    const catManualPrefix = (catManualSel && catManualSel !== 'auto') ? `[${catManualSel}] ` : '';
                     const descripcionFinal = desgloseDocsTexto 
-                        ? (userDesc ? `${desgloseDocsTexto} - ${userDesc}` : desgloseDocsTexto)
-                        : (userDesc || 'Entrega Comercial');
+                        ? (userDesc ? `${desgloseDocsTexto} - ${catManualPrefix}${userDesc}` : `${desgloseDocsTexto} - ${catManualPrefix}`)
+                        : (`${catManualPrefix}${userDesc || 'Entrega Comercial'}`);
 
                     const guardadoExitoso = registrarNuevoEnvio(
                         origen, driverKey, camion, facturaFinal, cliente, montoVal, transporteVal,
@@ -9244,6 +9470,9 @@
 
                     if (guardadoExitoso) {
                         document.getElementById('adminManualForm').reset();
+                        if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
+                            actualizarPrevisualizacionCategoriasManual();
+                        }
                         if (cantInput) cantInput.value = "1";
                         cambiarCantidadViajesFactura();
                         const selEsMulti = document.getElementById('manInputEsMultiFactura');
@@ -9517,6 +9746,34 @@
             d.lat = lat;
             d.lng = lng;
 
+            // Segmentación inteligente de materiales / categorías
+            let textoParaCategorias = `${descripcion || ''} ${cantidadMercaderia || ''} ${tipoViaje || ''}`;
+            if (jsonData) {
+                const itemsJ = Array.isArray(jsonData.cuerpoDocumento) ? jsonData.cuerpoDocumento : (Array.isArray(jsonData.items) ? jsonData.items : []);
+                if (itemsJ.length > 0) {
+                    textoParaCategorias += ' ' + itemsJ.map(it => it.descripcion || it.nombre || '').join(' ');
+                }
+            }
+            if (Array.isArray(subFacturas) && subFacturas.length > 0) {
+                subFacturas.forEach(sf => {
+                    if (sf.jsonData) {
+                        const itms = Array.isArray(sf.jsonData.cuerpoDocumento) ? sf.jsonData.cuerpoDocumento : (Array.isArray(sf.jsonData.items) ? sf.jsonData.items : []);
+                        if (itms.length > 0) {
+                            textoParaCategorias += ' ' + itms.map(it => it.descripcion || it.nombre || '').join(' ');
+                        }
+                    }
+                });
+            }
+
+            const catsSegmentadas = typeof categorizarMateriales === 'function' ? categorizarMateriales(textoParaCategorias) : [];
+            const selCatManualEl = document.getElementById('manInputCategoria');
+            const catManualVal = (selCatManualEl && selCatManualEl.value !== 'auto') ? selCatManualEl.value : '';
+            const categoriaPrincipal = catManualVal || (catsSegmentadas.length > 0 ? catsSegmentadas[0] : 'Carga General');
+            const categoriasFinales = catsSegmentadas.length > 0 ? [...catsSegmentadas] : [categoriaPrincipal];
+            if (catManualVal && !categoriasFinales.includes(catManualVal)) {
+                categoriasFinales.unshift(catManualVal);
+            }
+
             const maxOrden = registrosGlobales.reduce((max, r) => Math.max(max, r.ordenAsignacion || 0), 0);
             const nuevoReg = {
                 id: Date.now() + Math.random(),
@@ -9541,6 +9798,8 @@
                 estadoFactura: estadoFactura,
                 tipoViaje: tipoViaje,
                 cantidadMercaderia: cantidadMercaderia,
+                categoriaMaterial: categoriaPrincipal,
+                categorias: categoriasFinales,
                 horarioEntrega: horarioEntrega,
                 fechaProgramada: fechaProgramada,
                 linkUbicacion: linkUbicacion || '',
@@ -9641,6 +9900,9 @@
             renderMonitoreoConductores();
             renderPendientesTable();
             renderClientesTable();
+            if (typeof renderSeguimientoClientes === 'function') {
+                renderSeguimientoClientes();
+            }
             renderHistorialConductoresTable();
             renderCotizacionesTable();
             if (typeof renderModuloFacturasCcf === 'function') {
@@ -10940,6 +11202,98 @@
                 return;
             }
 
+            if (tipo.startsWith('crm_')) {
+                const subTipo = tipo.replace('crm_', '');
+                const todosClientes = (typeof calcularMetricasCompletasClientes === 'function') ? calcularMetricasCompletasClientes() : [];
+                let clientesFiltrados = [];
+                let tituloCRM = 'Detalle de Clientes (CRM)';
+                let subtituloCRM = 'Listado de clientes clasificados por actividad comercial';
+                let iconoCRM = 'fa-solid fa-users';
+                let iconColorCRM = 'bg-blue-500/20 text-accentBlue';
+
+                if (subTipo === 'inactivos_30') {
+                    tituloCRM = 'Clientes Inactivos (>30 días sin comprar)';
+                    subtituloCRM = 'Clientes con más de 30 días de inactividad que requieren reactivación';
+                    iconoCRM = 'fa-solid fa-triangle-exclamation';
+                    iconColorCRM = 'bg-rose-500/20 text-rose-400';
+                    clientesFiltrados = todosClientes.filter(c => c.diasSinComprar > 30 && c.totalViajes > 0);
+                } else if (subTipo === 'activos_semana') {
+                    tituloCRM = 'Clientes Activos de Esta Semana (≤7 días)';
+                    subtituloCRM = 'Clientes con despachos o compras registradas en los últimos 7 días';
+                    iconoCRM = 'fa-solid fa-calendar-check';
+                    iconColorCRM = 'bg-emerald-500/20 text-emerald-400';
+                    clientesFiltrados = todosClientes.filter(c => c.diasSinComprar <= 7 && c.totalViajes > 0);
+                } else if (subTipo === 'activos_2_semanas') {
+                    tituloCRM = 'Clientes Activos de Hace 2 Semanas (8 a 14 días)';
+                    subtituloCRM = 'Clientes que realizaron su última compra hace 2 semanas (entre 8 y 14 días atrás)';
+                    iconoCRM = 'fa-solid fa-clock-rotate-left';
+                    iconColorCRM = 'bg-cyan-500/20 text-cyan-400';
+                    clientesFiltrados = todosClientes.filter(c => c.diasSinComprar > 7 && c.diasSinComprar <= 14 && c.totalViajes > 0);
+                } else if (subTipo === 'inactivos_15') {
+                    tituloCRM = 'Clientes en Riesgo (15 a 30 días sin comprar)';
+                    subtituloCRM = 'Clientes con 2 a 4 semanas sin pedidos que están próximos a inactivarse';
+                    iconoCRM = 'fa-solid fa-bell';
+                    iconColorCRM = 'bg-amber-500/20 text-amber-400';
+                    clientesFiltrados = todosClientes.filter(c => c.diasSinComprar > 15 && c.diasSinComprar <= 30 && c.totalViajes > 0);
+                } else if (subTipo === 'cerrado') {
+                    tituloCRM = 'Clientes con Ventas Cerradas';
+                    subtituloCRM = 'Clientes con acuerdos y ventas exitosas en seguimiento comercial';
+                    iconoCRM = 'fa-solid fa-circle-check';
+                    iconColorCRM = 'bg-emerald-500/20 text-emerald-400';
+                    clientesFiltrados = todosClientes.filter(c => c.estadoSeguimiento === 'cerrado');
+                } else {
+                    tituloCRM = 'Todos los Clientes en Seguimiento (CRM)';
+                    subtituloCRM = 'Directorio completo de clientes comerciales registrados';
+                    iconoCRM = 'fa-solid fa-user-tag';
+                    iconColorCRM = 'bg-blue-500/20 text-accentBlue';
+                    clientesFiltrados = todosClientes;
+                }
+
+                if (iconEl) iconEl.className = iconoCRM;
+                if (iconBox) iconBox.className = `w-10 h-10 rounded-xl ${iconColorCRM} flex items-center justify-center text-lg shrink-0`;
+                if (tituloEl) tituloEl.textContent = tituloCRM;
+                if (subtituloEl) subtituloEl.textContent = subtituloCRM;
+                if (badgeEl) badgeEl.textContent = clientesFiltrados.length;
+
+                kpiModalRegistrosBase = [...clientesFiltrados];
+                renderizarKpiModalClientes(clientesFiltrados);
+                actualizarMetricasKpiModal(clientesFiltrados);
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            if (tipo.startsWith('material_')) {
+                const matNom = decodeURIComponent(tipo.replace('material_', ''));
+                const todosClientes = (typeof calcularMetricasCompletasClientes === 'function') ? calcularMetricasCompletasClientes() : [];
+                
+                let clientesFiltrados = [];
+                if (matNom === 'todos') {
+                    clientesFiltrados = todosClientes.filter(c => c.totalViajes > 0);
+                } else {
+                    clientesFiltrados = todosClientes.filter(c => {
+                        const normNom = c.normNom;
+                        const misViajes = registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado');
+                        return misViajes.some(r => {
+                            const combo = `${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.tipoViaje || ''} ${r.categoriaMaterial || ''}`;
+                            const cats = categorizarMateriales(combo);
+                            return cats.includes(matNom) || (r.categoriaMaterial && r.categoriaMaterial.includes(matNom));
+                        });
+                    });
+                }
+
+                if (iconEl) iconEl.className = 'fa-solid fa-boxes-stacked';
+                if (iconBox) iconBox.className = 'w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0';
+                if (tituloEl) tituloEl.textContent = `Clientes que Compran: ${matNom === 'todos' ? 'Todos los Materiales' : matNom}`;
+                if (subtituloEl) subtituloEl.textContent = `Listado de clientes que llevaron este material con acceso directo a su ficha y pedidos`;
+                if (badgeEl) badgeEl.textContent = clientesFiltrados.length;
+
+                kpiModalRegistrosBase = [...clientesFiltrados];
+                renderizarKpiModalClientes(clientesFiltrados);
+                actualizarMetricasKpiModal(clientesFiltrados);
+                modal.classList.remove('hidden');
+                return;
+            }
+
             let titulo = 'Detalle de Indicador';
             let subtitulo = 'Registros correspondientes';
             let iconClass = 'fa-solid fa-chart-pie';
@@ -11047,6 +11401,21 @@
                 return;
             }
 
+            if (kpiModalTipoActual && (kpiModalTipoActual.startsWith('crm_') || kpiModalTipoActual.startsWith('material_'))) {
+                const total = items.length;
+                const totalFacturado = items.reduce((sum, c) => sum + (Number(c.totalCompras) || 0), 0);
+                const totalPedidos = items.reduce((sum, c) => sum + (Number(c.totalViajes) || 0), 0);
+                box.innerHTML = `
+                    <span class="bg-slate-800 text-slate-200 border border-slate-700 px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-users mr-1 text-cyan-400"></i>${total} Clientes</span>
+                    <span class="bg-slate-800 text-emerald-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono font-bold">Total Facturado: $${totalFacturado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span class="bg-slate-800 text-cyan-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono font-bold">${totalPedidos} Pedidos</span>
+                `;
+                if (footerConteo) {
+                    footerConteo.textContent = `Mostrando ${total} clientes para esta selección`;
+                }
+                return;
+            }
+
             const totalViajes = items.length;
             const totalFletes = items.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
             const totalFact = items.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
@@ -11061,6 +11430,159 @@
             if (footerConteo) {
                 footerConteo.textContent = `Mostrando ${totalViajes} registro${totalViajes !== 1 ? 's' : ''}`;
             }
+        }
+
+        function renderizarKpiModalClientes(clientesLista) {
+            const contenedor = document.getElementById('kpiModalContenido');
+            if (!contenedor) return;
+
+            if (!clientesLista || clientesLista.length === 0) {
+                contenedor.innerHTML = '<div class="p-8 text-center text-slate-500 text-xs">No se encontraron clientes para este indicador comercial.</div>';
+                return;
+            }
+
+            let rowsHtml = '';
+            clientesLista.forEach((c, idx) => {
+                const escNom = encodeURIComponent(c.nombre || '');
+
+                // Teléfono / WhatsApp
+                let telHTML = '<span class="text-slate-500 italic text-[11px]">Sin teléfono</span>';
+                if (c.telefono && String(c.telefono).trim() !== '') {
+                    const cleanTel = (typeof limpiarTelefonoWhatsApp === 'function') ? limpiarTelefonoWhatsApp(c.telefono) : c.telefono;
+                    telHTML = `
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <a href="https://api.whatsapp.com/send?phone=${cleanTel}" target="_blank" class="text-emerald-400 hover:text-emerald-300 font-semibold text-xs inline-flex items-center gap-1">
+                                <i class="fa-brands fa-whatsapp"></i> ${c.telefono}
+                            </a>
+                            <a href="tel:${c.telefono}" class="text-slate-400 hover:text-white text-[11px]" title="Llamar al cliente"><i class="fa-solid fa-phone"></i></a>
+                        </div>
+                    `;
+                }
+
+                // Rango y Sucursales de Compra (Multi-sucursal badge si compró de varias sucursales)
+                const sucsArr = c.sucursalesArr || [];
+                const sucsMap = c.sucursalesMap || {};
+                let sucursalesHTML = '';
+                if (sucsArr.length > 1) {
+                    const badges = sucsArr.map(s => {
+                        const cnt = sucsMap[s] ? sucsMap[s].count : 0;
+                        return `<span class="inline-flex items-center gap-1">${getBadgeSucursalHTML(s)}<span class="text-[10px] text-slate-300 font-mono font-bold">(${cnt})</span></span>`;
+                    }).join(' ');
+                    sucursalesHTML = `
+                        <div class="space-y-1">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                                <i class="fa-solid fa-code-branch text-[9px]"></i> Multi-Sucursal (${sucsArr.length})
+                            </span>
+                            <div class="flex flex-wrap items-center gap-1 justify-center max-w-[220px]">${badges}</div>
+                        </div>
+                    `;
+                } else if (sucsArr.length === 1) {
+                    const s = sucsArr[0];
+                    const cnt = sucsMap[s] ? sucsMap[s].count : c.totalViajes;
+                    sucursalesHTML = `<div class="flex items-center justify-center gap-1">${getBadgeSucursalHTML(s)}<span class="text-[10px] text-slate-400 font-mono font-bold">(${cnt})</span></div>`;
+                } else {
+                    sucursalesHTML = `<div class="text-slate-500 text-xs italic">${c.sucursal || 'Sin compras'}</div>`;
+                }
+
+                // Inactividad badge
+                let inactividadBadge = '';
+                if (c.totalViajes === 0) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">Prospecto Nuevo</span>`;
+                } else if (c.diasSinComprar === 0) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (Hoy)</span>`;
+                } else if (c.diasSinComprar === 1) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (Ayer)</span>`;
+                } else if (c.diasSinComprar <= 7) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (hace ${c.diasSinComprar}d)</span>`;
+                } else if (c.diasSinComprar <= 14) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Hace 2 sem (${c.diasSinComprar}d)</span>`;
+                } else if (c.diasSinComprar <= 30) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⚠️ En riesgo (${c.diasSinComprar}d)</span>`;
+                } else {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">🚨 Inactivo (${c.diasSinComprar >= 9999 ? '+30' : c.diasSinComprar}d)</span>`;
+                }
+
+                // Materiales habituales
+                let matsHTML = '<span class="text-slate-500 italic text-[11px]">Sin historial</span>';
+                if (c.materialesHabituales && c.materialesHabituales.length > 0) {
+                    matsHTML = c.materialesHabituales.map(m => `
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-950/60 text-cyan-300 border border-cyan-800/50 inline-block mr-1 mb-0.5">
+                            ${m}
+                        </span>
+                    `).join('');
+                }
+
+                // Estado de seguimiento
+                const st = c.estadoSeguimiento || 'pendiente';
+                let stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">🟡 Pendiente</span>';
+                if (st === 'llamar_hoy') stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">📞 Llamar hoy</span>';
+                else if (st === 'contactado') stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">💬 Contactado</span>';
+                else if (st === 'cotizacion') stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">📋 Cotización</span>';
+                else if (st === 'cerrado') stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">✅ Venta cerrada</span>';
+                else if (st === 'pausa') stBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">⏸️ En pausa</span>';
+
+                rowsHtml += `
+                    <tr class="hover:bg-slate-900/70 border-b border-slate-800/80 transition-colors">
+                        <td class="py-2.5 px-3 text-center text-slate-500 font-mono text-xs">${idx + 1}</td>
+                        <td class="py-2.5 px-3 text-xs">
+                            <button type="button" onclick="cerrarModalKpiDetalle(); abrirModalExpedienteCliente('${escNom}')" class="font-bold text-slate-100 hover:text-cyan-400 text-left transition-colors cursor-pointer block">
+                                ${c.nombre}
+                            </button>
+                            ${telHTML}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <div class="space-y-1">
+                                <div><span class="text-amber-400 font-bold text-xs">${c.estrellasTxt || '★'}</span> <span class="text-[10px] text-slate-400">(${c.rango || 'Normal'})</span></div>
+                                ${sucursalesHTML}
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 max-w-[180px]">${matsHTML}</td>
+                        <td class="py-2.5 px-3 text-xs whitespace-nowrap">
+                            <div class="font-semibold text-slate-200">${c.ultimaFechaStr}</div>
+                            <div class="mt-1">${inactividadBadge}</div>
+                        </td>
+                        <td class="py-2.5 px-3 text-right text-xs whitespace-nowrap font-mono">
+                            <span class="font-bold text-emerald-400 block">$${(Number(c.totalCompras) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span class="text-[10px] text-slate-400 block">${c.totalViajes} pedido${c.totalViajes === 1 ? '' : 's'}</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            ${stBadge}
+                        </td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" onclick="cerrarModalKpiDetalle(); abrirModalExpedienteCliente('${escNom}')" class="p-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 rounded-lg text-xs transition-colors cursor-pointer" title="Ver Expediente Completo">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                </button>
+                                <button type="button" onclick="contactarClienteSeguimientoWhatsApp('${escNom}')" class="p-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs transition-colors cursor-pointer" title="Contactar por WhatsApp">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            contenedor.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-900/60 sticky top-0 z-10">
+                                <th class="py-2.5 px-3 text-center">#</th>
+                                <th class="py-2.5 px-3">Cliente / Contacto</th>
+                                <th class="py-2.5 px-3 text-center">Rango / Sucursales</th>
+                                <th class="py-2.5 px-3">Materiales Frecuentes</th>
+                                <th class="py-2.5 px-3">Última Compra / Inactividad</th>
+                                <th class="py-2.5 px-3 text-right">Facturado ($) / Pedidos</th>
+                                <th class="py-2.5 px-3 text-center">Estado CRM</th>
+                                <th class="py-2.5 px-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60">
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         function renderizarKpiModalConductores(conductoresLista) {
@@ -11275,6 +11797,18 @@
                     return txt.includes(q);
                 });
                 renderizarKpiModalConductores(filtrados);
+                actualizarMetricasKpiModal(filtrados);
+                return;
+            }
+
+            if (kpiModalTipoActual && (kpiModalTipoActual.startsWith('crm_') || kpiModalTipoActual.startsWith('material_'))) {
+                const filtrados = kpiModalRegistrosBase.filter(c => {
+                    const sucs = (c.sucursalesArr || []).join(' ');
+                    const mats = (c.materialesHabituales || []).join(' ');
+                    const txt = [c.nombre, c.telefono, c.rango, c.sucursalPrincipal, sucs, mats, c.estadoSeguimiento || ''].join(' ').toLowerCase();
+                    return txt.includes(q);
+                });
+                renderizarKpiModalClientes(filtrados);
                 actualizarMetricasKpiModal(filtrados);
                 return;
             }
@@ -11722,6 +12256,9 @@
 
             depurarDuplicadosCatalogo();
             renderClientesTable();
+            if (typeof renderSeguimientoClientes === 'function') {
+                renderSeguimientoClientes();
+            }
             poblarAutocompletadoClientes();
 
             // Sincronizar en Google Sheets en hoja "CLIENTES" (en segundo plano, sin congelar la app)
@@ -11787,6 +12324,9 @@
 
             depurarDuplicadosCatalogo();
             renderClientesTable();
+            if (typeof renderSeguimientoClientes === 'function') {
+                renderSeguimientoClientes();
+            }
             poblarAutocompletadoClientes();
         }
 
@@ -12082,29 +12622,35 @@
             const t = String(texto).toLowerCase();
             const cats = [];
 
-            if (/cemento|argos|holcim|tolteca|canal|concreto/.test(t)) {
+            if (/cemento|argos|holcim|tolteca|canal|concreto|mortero|cemex|pastex|\bcem\b/.test(t)) {
                 cats.push('Cemento');
             }
-            if (/hierro|varilla|malla|alambr|estribo|polin|viga|perfil|canaleta|tubo est/.test(t)) {
+            if (/hierro|varilla|malla|alambr|alambre|estribo|polin|polines|viga|vigas|perfil|perfiles|canaleta|tubo est|tubo estructural|angular|platina|hierro negro|corrugad|electromalla/.test(t)) {
                 cats.push('Hierro / Varilla');
             }
-            if (/arena|grava|arido|balastre|polvillo|tierra/.test(t)) {
+            if (/arena|grava|arido|aridos|áridos|balastre|polvillo|tierra|piedrin|gravilla|selecto/.test(t)) {
                 cats.push('Arena / Grava');
             }
-            if (/bloque|ladrillo|adoquin|bovedilla/.test(t)) {
+            if (/bloque|bloques|ladrillo|ladrillos|adoquin|adoquines|bovedilla|celosia|loseta/.test(t)) {
                 cats.push('Bloques');
             }
-            if (/lamina|lámina|zinc|fibrolit|techo|policarbonato/.test(t)) {
+            if (/lamina|laminas|lámina|láminas|zinc|aluzinc|galvalume|fibrolit|duralita|teja|techo|techos|policarbonato|cumbrera|botagua/.test(t)) {
                 cats.push('Láminas / Techos');
             }
-            if (/pegamix|repello|pega piso|adhesivo|cal |estuco/.test(t)) {
+            if (/pegamix|repello|repellos|pega piso|pega azulejo|adhesivo|boquilla|fragua|\bcal\b|estuco|mezclas|sika/.test(t)) {
                 cats.push('Pegamentos / Repello');
             }
-            if (/tubo|pvc|codo|valvula|fontaner|drenaje/.test(t)) {
+            if (/tubo|tubos|pvc|cpvc|codo|codos|tee|reduccion|valvula|valvulas|fontaner|drenaje|sifon|manguera/.test(t)) {
                 cats.push('Fontanería / PVC');
             }
-            if (/pintura|anticorrosivo|solvente|thinner|brocha|rodillo/.test(t)) {
+            if (/pintura|pinturas|esmalte|latex|anticorrosivo|solvente|thinner|brocha|brochas|rodillo|pasta|lija|sellador/.test(t)) {
                 cats.push('Pinturas / Acabados');
+            }
+            if (/cable|cables|alambre elec|breaker|caja termica|tomacorriente|interruptor|lampara|foco|led|canaleta elec/.test(t)) {
+                cats.push('Eléctricos / Iluminación');
+            }
+            if (/pala|piocha|carretilla|martillo|clavo|clavos|tornillo|tornillos|disco corte|cerradura|candado|cinta metrica|herramient/.test(t)) {
+                cats.push('Herramientas / Ferretería');
             }
 
             if (cats.length === 0) {
@@ -12779,6 +13325,290 @@
         }
 
         // ==========================================
+        // FUNCIONES DE DEMANDA DE MATERIALES Y FILTRADO POR PRODUCTO / TIEMPO
+        // ==========================================
+        function actualizarPrevisualizacionCategoriasManual() {
+            const desc = document.getElementById('manInputDescription')?.value || '';
+            const selCat = document.getElementById('manInputCategoria')?.value || 'auto';
+            const previewEl = document.getElementById('previewCategoriasSegmentadas');
+            if (!previewEl) return;
+
+            let texto = desc;
+            if (selCat && selCat !== 'auto') {
+                texto = `${selCat} ${desc}`;
+            }
+
+            const cats = categorizarMateriales(texto);
+            if (cats.length === 0) {
+                if (!desc.trim() && selCat === 'auto') {
+                    previewEl.innerHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">Esperando descripción...</span>`;
+                } else {
+                    previewEl.innerHTML = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-amber-300 border border-slate-700">📦 Carga General</span>`;
+                }
+                return;
+            }
+
+            const badges = cats.map(c => {
+                let icon = 'fa-cube';
+                let color = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                if (c.includes('Cemento')) { icon = 'fa-trowel'; color = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; }
+                else if (c.includes('Hierro')) { icon = 'fa-bars'; color = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; }
+                else if (c.includes('Arena') || c.includes('Grava')) { icon = 'fa-mountain'; color = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; }
+                else if (c.includes('Bloque')) { icon = 'fa-cubes'; color = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; }
+                else if (c.includes('Lámina')) { icon = 'fa-layer-group'; color = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'; }
+                else if (c.includes('Pegamento')) { icon = 'fa-flask'; color = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; }
+                else if (c.includes('Fontanería')) { icon = 'fa-faucet'; color = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; }
+                else if (c.includes('Pintura')) { icon = 'fa-paint-roller'; color = 'bg-pink-500/20 text-pink-300 border-pink-500/40'; }
+                else if (c.includes('Eléctrico')) { icon = 'fa-bolt'; color = 'bg-amber-400/20 text-amber-300 border-amber-400/40'; }
+                else if (c.includes('Herramienta')) { icon = 'fa-wrench'; color = 'bg-teal-500/20 text-teal-300 border-teal-500/40'; }
+
+                return `<span class="px-2 py-0.5 rounded text-[10px] font-bold border inline-flex items-center gap-1 ${color}"><i class="fa-solid ${icon}"></i> ${c}</span>`;
+            }).join(' ');
+
+            previewEl.innerHTML = badges;
+        }
+
+        function verClientesDeMaterial(matEncoded) {
+            const mat = decodeURIComponent(matEncoded || '').trim();
+            if (!mat) return;
+
+            // Sincronizar el selector del filtro interactivo en pantalla si existe
+            const selMat = document.getElementById('filtroMatSelectMaterial');
+            if (selMat) {
+                let matchFound = false;
+                for (let opt of selMat.options) {
+                    if (opt.value === mat || normalizarTextoClave(opt.value) === normalizarTextoClave(mat)) {
+                        selMat.value = opt.value;
+                        matchFound = true;
+                        break;
+                    }
+                }
+                if (!matchFound) {
+                    const newOpt = document.createElement('option');
+                    newOpt.value = mat;
+                    newOpt.textContent = `📦 ${mat}`;
+                    selMat.appendChild(newOpt);
+                    selMat.value = mat;
+                }
+                ejecutarFiltroClientesMaterial();
+            }
+
+            // Abrir el modal KPI con el detalle completo de clientes de este material
+            if (typeof abrirModalKpiDetalle === 'function') {
+                abrirModalKpiDetalle('material_' + encodeURIComponent(mat));
+            }
+        }
+
+        function obtenerClientesFiltradosPorMaterialYTiempo(material, periodo, sucursal, query) {
+            const ahora = Date.now();
+            const diasFiltro = periodo === 'todos' ? 999999 : (parseInt(periodo, 10) || 14);
+            const maxMs = diasFiltro * 24 * 60 * 60 * 1000;
+            const normMat = material !== 'todos' ? normalizarTextoClave(material) : '';
+            const searchTerms = (query || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+            const todosClientes = typeof calcularMetricasCompletasClientes === 'function' ? calcularMetricasCompletasClientes() : [];
+            const metricasPorCliente = new Map();
+            todosClientes.forEach(c => metricasPorCliente.set(c.normNom, c));
+
+            // Filtrar todos los viajes pertinentes
+            const todosViajes = registrosGlobales.filter(r => {
+                if (!r.cliente || r.cliente === 'N/A' || r.cliente === 'Uso Interno / Movimiento Logístico' || r.estado === 'Cancelado') return false;
+
+                // Filtro por fecha / antigüedad
+                const fObj = parsearFechaRegistro(r);
+                const ts = fObj ? fObj.getTime() : (r.timestampCreacion || 0);
+                if (diasFiltro < 999999) {
+                    if (!ts || (ahora - ts) > maxMs) return false;
+                }
+
+                // Filtro por Sucursal de Origen
+                if (sucursal && sucursal !== 'todos') {
+                    const orig = (r.origen && r.origen !== 'N/A' && r.origen !== 'Sin Asignar') ? String(r.origen).trim() : 'FG MATRIZ';
+                    if (orig !== sucursal) return false;
+                }
+
+                // Filtro por Material
+                if (material && material !== 'todos') {
+                    const combo = `${r.categoriaMaterial || ''} ${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.tipoViaje || ''}`;
+                    const cats = (r.categorias && r.categorias.length > 0) ? r.categorias : categorizarMateriales(combo);
+                    const coincide = cats.some(c => {
+                        const n = normalizarTextoClave(c);
+                        return n === normMat || n.includes(normMat) || normMat.includes(n);
+                    });
+                    if (!coincide) return false;
+                }
+
+                return true;
+            });
+
+            // Agrupar viajes por cliente
+            const clientesMap = {};
+            todosViajes.forEach(r => {
+                const normNom = normalizarTextoClave(r.cliente);
+                if (!clientesMap[normNom]) {
+                    const mc = metricasPorCliente.get(normNom);
+                    clientesMap[normNom] = {
+                        normNom: normNom,
+                        nombre: r.cliente,
+                        telefono: (mc && mc.telefono) ? mc.telefono : (r.telefonoCliente || ''),
+                        rango: mc ? mc.rango : 'Nuevo',
+                        estrellasTxt: mc ? mc.estrellasTxt : '★☆☆',
+                        diasSinComprar: mc ? mc.diasSinComprar : 0,
+                        pedidosPeriodo: 0,
+                        montoPeriodo: 0,
+                        sucursalesSet: new Set(),
+                        materialesSet: new Set(),
+                        ultimosViajes: []
+                    };
+                }
+
+                const cObj = clientesMap[normNom];
+                cObj.pedidosPeriodo++;
+                cObj.montoPeriodo += (Number(r.monto) || 0);
+                const orig = (r.origen && r.origen !== 'N/A') ? String(r.origen).trim() : 'FG MATRIZ';
+                cObj.sucursalesSet.add(orig);
+
+                const combo = `${r.categoriaMaterial || ''} ${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.tipoViaje || ''}`;
+                const cats = (r.categorias && r.categorias.length > 0) ? r.categorias : categorizarMateriales(combo);
+                cats.forEach(c => cObj.materialesSet.add(c));
+
+                if (cObj.ultimosViajes.length < 4) {
+                    cObj.ultimosViajes.push(r);
+                }
+            });
+
+            let listado = Object.values(clientesMap);
+
+            // Filtro por términos de búsqueda
+            if (searchTerms.length > 0) {
+                listado = listado.filter(item => {
+                    const text = `${item.nombre} ${item.telefono} ${Array.from(item.sucursalesSet).join(' ')} ${Array.from(item.materialesSet).join(' ')}`.toLowerCase();
+                    return searchTerms.every(term => text.includes(term));
+                });
+            }
+
+            // Ordenar por cantidad de pedidos en el período y monto
+            listado.sort((a, b) => (b.pedidosPeriodo - a.pedidosPeriodo) || (b.montoPeriodo - a.montoPeriodo));
+
+            return listado;
+        }
+
+        function ejecutarFiltroClientesMaterial() {
+            const container = document.getElementById('contenedorResultadosClientesMaterial');
+            const badge = document.getElementById('badgeConteoFiltroMateriales');
+            if (!container) return;
+
+            const selMaterial = document.getElementById('filtroMatSelectMaterial')?.value || 'todos';
+            const selPeriodo = document.getElementById('filtroMatSelectPeriodo')?.value || '14';
+            const selSucursal = document.getElementById('filtroMatSelectSucursal')?.value || 'todos';
+            const searchVal = document.getElementById('filtroMatSearchInput')?.value || '';
+
+            const resultados = obtenerClientesFiltradosPorMaterialYTiempo(selMaterial, selPeriodo, selSucursal, searchVal);
+
+            if (badge) {
+                badge.innerText = `${resultados.length} cliente${resultados.length !== 1 ? 's' : ''}`;
+            }
+
+            let periodoTxt = 'las últimas 2 semanas (≤14 días)';
+            if (selPeriodo === '7') periodoTxt = 'esta semana (≤7 días)';
+            else if (selPeriodo === '30') periodoTxt = 'el último mes (≤30 días)';
+            else if (selPeriodo === 'todos') periodoTxt = 'todo el histórico';
+
+            const matTxt = selMaterial === 'todos' ? 'cualquier material' : `"${selMaterial}"`;
+
+            if (resultados.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 bg-slate-950/60 border border-slate-800 rounded-2xl text-center space-y-2">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-filter-circle-xmark"></i>
+                        </div>
+                        <h5 class="text-sm font-bold text-slate-200">No se encontraron clientes para ${matTxt} en ${periodoTxt}</h5>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto">
+                            Pruebe ampliando el período a "Último Mes" o "Todo el Histórico", o seleccione "Todas las Sucursales".
+                        </p>
+                        <div class="pt-2">
+                            <button onclick="document.getElementById('filtroMatSelectPeriodo').value='todos'; document.getElementById('filtroMatSelectSucursal').value='todos'; ejecutarFiltroClientesMaterial();" class="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock-rotate-left"></i> <span>Ver todo el histórico</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let cardsHTML = `
+                <div class="flex items-center justify-between text-xs text-slate-400 pb-1">
+                    <span>Mostrando <strong class="text-amber-400 font-bold">${resultados.length}</strong> clientes que compraron <strong class="text-slate-200">${matTxt}</strong> en <strong class="text-cyan-300">${periodoTxt}</strong>:</span>
+                    <span class="text-[11px] text-slate-500 font-mono">Ordenados por volumen de pedidos</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto pr-1">
+            `;
+
+            resultados.forEach((c, idx) => {
+                const sucsArray = Array.from(c.sucursalesSet);
+                let sucsBadges = sucsArray.map(s => getBadgeSucursalHTML(s)).join(' ');
+
+                const cleanTel = c.telefono ? limpiarTelefonoWhatsApp(c.telefono) : '';
+                const btnWhatsApp = cleanTel ? `
+                    <a href="https://api.whatsapp.com/send?phone=${cleanTel}&text=${encodeURIComponent('Hola ' + c.nombre + ', le saludamos de Ferretería Ferrogar. Consultándole sobre sus proyectos de construcción y si requiere más materiales.')}" target="_blank" title="Contactar por WhatsApp" class="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> <span class="hidden sm:inline">WhatsApp</span>
+                    </a>
+                ` : '';
+
+                cardsHTML += `
+                    <div class="bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3.5 flex flex-col justify-between transition-all group space-y-2.5">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-mono text-xs font-bold text-slate-500">#${idx + 1}</span>
+                                        <button onclick="abrirModalExpedienteCliente('${encodeURIComponent(c.nombre)}')" title="Ver Ficha y Expediente Completo" class="font-bold text-sm text-slate-100 hover:text-cyan-400 transition-colors cursor-pointer text-left truncate max-w-[210px] sm:max-w-[260px]">
+                                            ${c.nombre}
+                                        </button>
+                                        <span class="text-xs text-amber-400 font-bold">${c.estrellasTxt}</span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                                        ${c.telefono ? `<span class="inline-flex items-center gap-1 text-slate-300"><i class="fa-solid fa-phone text-[10px] text-emerald-400"></i> ${c.telefono}</span>` : '<span class="text-slate-500 italic">Sin teléfono</span>'}
+                                        <span class="text-slate-600">•</span>
+                                        <span class="text-cyan-400 font-semibold">${c.diasSinComprar === 0 ? 'Compró hoy' : (c.diasSinComprar === 1 ? 'Compró ayer' : 'Hace ' + c.diasSinComprar + ' días')}</span>
+                                    </div>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <div class="text-xs font-bold text-emerald-400 font-mono">$${c.montoPeriodo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div class="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full mt-0.5">
+                                        ${c.pedidosPeriodo} pedido${c.pedidosPeriodo !== 1 ? 's' : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 flex-wrap text-xs">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] text-slate-500 uppercase font-semibold">Sucursal:</span>
+                                    ${sucsBadges || '<span class="text-slate-500 italic text-[11px]">FG MATRIZ</span>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                            <button onclick="abrirModalExpedienteCliente('${encodeURIComponent(c.nombre)}')" title="Ver Ficha y Expediente del Cliente" class="px-2.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 hover:text-cyan-200 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-folder-open text-xs"></i> <span>Ficha de Cliente</span>
+                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="irASeguimientoCliente('${encodeURIComponent(c.nombre)}')" title="Gestionar seguimiento comercial" class="px-2 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-user-tag text-xs"></i> <span class="hidden sm:inline">CRM</span>
+                                </button>
+                                ${btnWhatsApp}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            cardsHTML += `</div>`;
+            container.innerHTML = cardsHTML;
+        }
+
+        // ==========================================
         // SUB-VISTA 2: ESTADÍSTICAS Y ESTUDIO DE MERCADO DE CLIENTES
         // ==========================================
         function renderEstudioMercadoClientes() {
@@ -12826,8 +13656,8 @@
             const matSucursalMap = {};
 
             todosViajes.forEach(r => {
-                const combo = `${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.tipoViaje || ''}`;
-                const cats = categorizarMateriales(combo);
+                const combo = `${r.categoriaMaterial || ''} ${r.descripcion || ''} ${r.cantidadMercaderia || ''} ${r.tipoViaje || ''}`;
+                const cats = (r.categorias && r.categorias.length > 0) ? r.categorias : categorizarMateriales(combo);
                 const orig = (r.origen && r.origen !== 'N/A') ? String(r.origen).trim() : 'FG MATRIZ';
 
                 cats.forEach(cat => {
@@ -12840,6 +13670,24 @@
             const materialesSorted = Object.keys(materialesDemand).sort((a, b) => materialesDemand[b] - materialesDemand[a]);
             const matLiderNom = materialesSorted.length > 0 ? materialesSorted[0] : 'Sin datos';
             const matLiderConteo = materialesSorted.length > 0 ? materialesDemand[matLiderNom] : 0;
+
+            // Sincronizar dinámicamente opciones del selector de productos/materiales si no están
+            const selFiltroMat = document.getElementById('filtroMatSelectMaterial');
+            if (selFiltroMat) {
+                const currentVal = selFiltroMat.value || 'Cemento';
+                const optsExistentes = Array.from(selFiltroMat.options).map(o => o.value);
+                materialesSorted.forEach(m => {
+                    if (!optsExistentes.includes(m)) {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.textContent = `📦 ${m}`;
+                        selFiltroMat.appendChild(opt);
+                    }
+                });
+                if (materialesSorted.includes(currentVal)) {
+                    selFiltroMat.value = currentVal;
+                }
+            }
 
             // 3. Tasa de Fidelización (Clientes con 2 o más pedidos)
             const clientesCompradores = clientes.filter(c => c.totalViajes > 0);
@@ -12934,11 +13782,16 @@
                         else if (mat.includes('Pintura')) matIcon = 'fa-paint-roller';
 
                         matHTML += `
-                            <tr class="hover:bg-slate-900/40 transition-colors">
+                            <tr onclick="verClientesDeMaterial('${encodeURIComponent(mat)}')" class="hover:bg-slate-900/60 transition-all cursor-pointer group border-b border-slate-800/40">
                                 <td class="py-2.5 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
-                                <td class="py-2.5 px-3 font-bold text-slate-100 flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs"><i class="fa-solid ${matIcon}"></i></span>
-                                    <span>${mat}</span>
+                                <td class="py-2.5 px-3 font-bold text-slate-100 flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <span class="w-6 h-6 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/25 text-amber-400 flex items-center justify-center text-xs transition-colors shrink-0"><i class="fa-solid ${matIcon}"></i></span>
+                                        <span class="group-hover:text-amber-300 transition-colors truncate">${mat}</span>
+                                    </div>
+                                    <span class="opacity-0 group-hover:opacity-100 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all shrink-0">
+                                        <i class="fa-solid fa-users mr-1"></i>Ver Clientes
+                                    </span>
                                 </td>
                                 <td class="py-2.5 px-3 text-center whitespace-nowrap">
                                     <span class="text-amber-400 font-bold">${freq}</span>
@@ -12997,11 +13850,49 @@
                     topTbody.innerHTML = topHTML;
                 }
             }
+
+            // 7. Ejecutar Filtro Interactivo de Clientes por Producto y Tiempo
+            if (typeof ejecutarFiltroClientesMaterial === 'function') {
+                ejecutarFiltroClientesMaterial();
+            }
         }
 
         // ==========================================
         // SUB-VISTA 3: LISTA DE SEGUIMIENTO Y FIDELIZACIÓN (CRM)
         // ==========================================
+        function tocarKpiSeguimientoCRM(tipo) {
+            const select = document.getElementById('seguimientoFiltroSegmento');
+            if (select) {
+                select.value = tipo;
+            }
+            renderSeguimientoClientes();
+            if (typeof abrirModalKpiDetalle === 'function') {
+                abrirModalKpiDetalle('crm_' + tipo);
+            }
+        }
+
+        function abrirModalKpiDetalleCRMActual() {
+            const select = document.getElementById('seguimientoFiltroSegmento');
+            const tipo = select ? select.value : 'todos';
+            if (typeof abrirModalKpiDetalle === 'function') {
+                abrirModalKpiDetalle('crm_' + tipo);
+            }
+        }
+
+        function restablecerFiltroSeguimientoCRM() {
+            const selectSeg = document.getElementById('seguimientoFiltroSegmento');
+            const selectSuc = document.getElementById('seguimientoFiltroSucursal');
+            const selectEst = document.getElementById('seguimientoFiltroEstado');
+            const selectMat = document.getElementById('seguimientoFiltroMaterial');
+            const inputBusq = document.getElementById('seguimientoSearchInput');
+            if (selectSeg) selectSeg.value = 'todos';
+            if (selectSuc) selectSuc.value = 'todos';
+            if (selectEst) selectEst.value = 'todos';
+            if (selectMat) selectMat.value = 'todos';
+            if (inputBusq) inputBusq.value = '';
+            renderSeguimientoClientes();
+        }
+
         function renderSeguimientoClientes() {
             const tbody = document.getElementById('seguimientoTableBody');
             if (!tbody) return;
@@ -13013,6 +13904,7 @@
             const filtroSegmento = document.getElementById('seguimientoFiltroSegmento') ? document.getElementById('seguimientoFiltroSegmento').value : 'todos';
             const filtroSucursal = document.getElementById('seguimientoFiltroSucursal') ? document.getElementById('seguimientoFiltroSucursal').value : 'todos';
             const filtroEstado = document.getElementById('seguimientoFiltroEstado') ? document.getElementById('seguimientoFiltroEstado').value : 'todos';
+            const filtroMaterial = document.getElementById('seguimientoFiltroMaterial') ? document.getElementById('seguimientoFiltroMaterial').value : 'todos';
 
             const todosClientes = calcularMetricasCompletasClientes();
 
@@ -13020,9 +13912,13 @@
             let filtrados = todosClientes.filter(c => {
                 if (filtroSegmento === 'inactivos_30') return c.diasSinComprar > 30 && c.totalViajes > 0;
                 if (filtroSegmento === 'inactivos_15') return c.diasSinComprar > 15 && c.diasSinComprar <= 30 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_semana' || filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_2_semanas') return c.diasSinComprar > 7 && c.diasSinComprar <= 14 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_14') return c.diasSinComprar <= 14 && c.totalViajes > 0;
                 if (filtroSegmento === 'vip') return c.rango === 'Excelente';
-                if (filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
                 if (filtroSegmento === 'sin_compras') return c.totalViajes === 0;
+                if (filtroSegmento === 'cerrado') return c.estadoSeguimiento === 'cerrado';
+                if (filtroSegmento === 'cotizacion') return c.estadoSeguimiento === 'cotizacion';
                 return true;
             });
 
@@ -13036,11 +13932,23 @@
                 filtrados = filtrados.filter(c => (c.estadoSeguimiento || 'pendiente') === filtroEstado);
             }
 
+            // Filtrado por Material / Producto Habitual
+            if (filtroMaterial !== 'todos') {
+                const normMat = normalizarTextoClave(filtroMaterial);
+                filtrados = filtrados.filter(c => {
+                    return (c.materialesHabituales || []).some(m => {
+                        const nm = normalizarTextoClave(m);
+                        return nm === normMat || nm.includes(normMat) || normMat.includes(nm);
+                    });
+                });
+            }
+
             // Filtrado por Búsqueda de texto
             if (terms.length > 0) {
                 filtrados = filtrados.filter(c => {
                     const notasAll = (c.historialNotas || []).map(n => n.texto).join(' ');
-                    const rowText = `${c.nombre || ''} ${c.telefono || ''} ${c.direccion || ''} ${c.sucursalPrincipal || ''} ${c.materialesHabituales.join(' ')} ${c.notasSeguimiento || ''} ${notasAll} ${c.estadoSeguimiento || ''}`.toLowerCase();
+                    const sucs = (c.sucursalesArr || []).join(' ');
+                    const rowText = `${c.nombre || ''} ${c.telefono || ''} ${c.direccion || ''} ${c.sucursalPrincipal || ''} ${sucs} ${c.materialesHabituales.join(' ')} ${c.notasSeguimiento || ''} ${notasAll} ${c.estadoSeguimiento || ''}`.toLowerCase();
                     return terms.every(t => rowText.includes(t));
                 });
             }
@@ -13050,16 +13958,72 @@
                 return (b.totalCompras - a.totalCompras) || (b.diasSinComprar - a.diasSinComprar) || (a.nombre || '').localeCompare(b.nombre || '');
             });
 
-            // Actualizar KPIs de Seguimiento
+            // Actualizar 6 KPIs de Seguimiento (CRM)
             const kpiTotal = document.getElementById('seguimientoKpiTotalLista');
+            const kpiActivosSemana = document.getElementById('seguimientoKpiActivosSemana');
+            const kpiActivos2Sem = document.getElementById('seguimientoKpiActivos2Semanas');
+            const kpiInactivos15 = document.getElementById('seguimientoKpiInactivos15');
             const kpiInactivos30 = document.getElementById('seguimientoKpiInactivos30');
-            const kpiCotizaciones = document.getElementById('seguimientoKpiCotizaciones');
             const kpiVentasCerradas = document.getElementById('seguimientoKpiVentasCerradas');
 
-            if (kpiTotal) kpiTotal.innerText = filtrados.length;
+            if (kpiTotal) kpiTotal.innerText = todosClientes.length;
+            if (kpiActivosSemana) kpiActivosSemana.innerText = todosClientes.filter(c => c.diasSinComprar <= 7 && c.totalViajes > 0).length;
+            if (kpiActivos2Sem) kpiActivos2Sem.innerText = todosClientes.filter(c => c.diasSinComprar > 7 && c.diasSinComprar <= 14 && c.totalViajes > 0).length;
+            if (kpiInactivos15) kpiInactivos15.innerText = todosClientes.filter(c => c.diasSinComprar > 15 && c.diasSinComprar <= 30 && c.totalViajes > 0).length;
             if (kpiInactivos30) kpiInactivos30.innerText = todosClientes.filter(c => c.diasSinComprar > 30 && c.totalViajes > 0).length;
-            if (kpiCotizaciones) kpiCotizaciones.innerText = todosClientes.filter(c => c.estadoSeguimiento === 'cotizacion').length;
             if (kpiVentasCerradas) kpiVentasCerradas.innerText = todosClientes.filter(c => c.estadoSeguimiento === 'cerrado').length;
+
+            // Destacar tarjeta de KPI activa si coincide con el filtro
+            const cardsIds = {
+                'todos': 'cardKpiCrm_todos',
+                'activos_semana': 'cardKpiCrm_activos_semana',
+                'activos_2_semanas': 'cardKpiCrm_activos_2_semanas',
+                'inactivos_15': 'cardKpiCrm_inactivos_15',
+                'inactivos_30': 'cardKpiCrm_inactivos_30',
+                'cerrado': 'cardKpiCrm_cerrado'
+            };
+
+            Object.keys(cardsIds).forEach(k => {
+                const el = document.getElementById(cardsIds[k]);
+                if (el) {
+                    if (filtroSegmento === k) {
+                        el.classList.add('ring-2', 'ring-amber-400', 'bg-amber-950/30', 'border-amber-400/80');
+                    } else {
+                        el.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-950/30', 'border-amber-400/80');
+                    }
+                }
+            });
+
+            // Actualizar Banner de Filtro Activo
+            const banner = document.getElementById('seguimientoBannerFiltroActivo');
+            const textoFiltro = document.getElementById('seguimientoTextoFiltroActivo');
+            const conteoFiltro = document.getElementById('seguimientoConteoFiltroActivo');
+
+            if (banner) {
+                if (filtroSegmento !== 'todos' || filtroSucursal !== 'todos' || filtroEstado !== 'todos' || filtroMaterial !== 'todos' || terms.length > 0) {
+                    banner.classList.remove('hidden');
+                    let desc = 'Todos los Clientes';
+                    if (filtroSegmento === 'activos_semana') desc = 'Clientes Activos Esta Semana (≤7 días)';
+                    else if (filtroSegmento === 'activos_2_semanas') desc = 'Clientes Activos Hace 2 Semanas (8 a 14 días)';
+                    else if (filtroSegmento === 'activos_14') desc = 'Clientes Activos Últimas 2 Semanas (≤14 días)';
+                    else if (filtroSegmento === 'inactivos_15') desc = 'Clientes en Riesgo (15 a 30 días sin comprar)';
+                    else if (filtroSegmento === 'inactivos_30') desc = 'Clientes Inactivos (>30 días sin comprar)';
+                    else if (filtroSegmento === 'vip') desc = 'Clientes VIP / Excelentes (3★)';
+                    else if (filtroSegmento === 'sin_compras') desc = 'Prospectos Sin Compras';
+                    else if (filtroSegmento === 'cerrado') desc = 'Clientes con Ventas Cerradas';
+                    else if (filtroSegmento === 'cotizacion') desc = 'Cotizaciones en Curso';
+
+                    if (filtroSucursal !== 'todos') desc += ` | Sucursal: ${filtroSucursal}`;
+                    if (filtroEstado !== 'todos') desc += ` | Estado: ${filtroEstado}`;
+                    if (filtroMaterial !== 'todos') desc += ` | Material: ${filtroMaterial}`;
+                    if (terms.length > 0) desc += ` | Búsqueda: "${searchVal}"`;
+
+                    if (textoFiltro) textoFiltro.textContent = desc;
+                    if (conteoFiltro) conteoFiltro.textContent = `${filtrados.length} cliente${filtrados.length !== 1 ? 's' : ''}`;
+                } else {
+                    banner.classList.add('hidden');
+                }
+            }
 
             if (filtrados.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-500 italic">No hay clientes que coincidan con los filtros de seguimiento comercial.</td></tr>`;
@@ -13105,8 +14069,8 @@
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (Ayer)</span>`;
                 } else if (c.diasSinComprar <= 7) {
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Activo (hace ${c.diasSinComprar}d)</span>`;
-                } else if (c.diasSinComprar <= 15) {
-                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Hace ${c.diasSinComprar} días</span>`;
+                } else if (c.diasSinComprar <= 14) {
+                    inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Hace 2 sem (${c.diasSinComprar}d)</span>`;
                 } else if (c.diasSinComprar <= 30) {
                     inactividadBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">⚠️ En riesgo (${c.diasSinComprar}d)</span>`;
                 } else {
@@ -13131,10 +14095,43 @@
                             </button>
                             ${telHTML}
                         </td>
-                        <td class="py-3 px-3 text-center whitespace-nowrap">
-                            <div class="space-y-1">
-                                <div><span class="text-amber-400 font-bold text-xs">${c.estrellasTxt}</span></div>
-                                <div>${getBadgeSucursalHTML(c.sucursalPrincipal)}</div>
+                        <td class="py-3 px-3 text-center">
+                            <div class="space-y-1.5 flex flex-col items-center">
+                                <div class="flex items-center gap-1 justify-center">
+                                    <span class="text-amber-400 font-bold text-xs">${c.estrellasTxt || '★'}</span>
+                                    <span class="text-[10px] text-slate-400">(${c.rango || 'Normal'})</span>
+                                </div>
+                                ${(() => {
+                                    const sucsArr = c.sucursalesArr || [];
+                                    const sucsMap = c.sucursalesMap || {};
+                                    if (sucsArr.length > 1) {
+                                        const badges = sucsArr.map(s => {
+                                            const cnt = sucsMap[s] ? sucsMap[s].count : 0;
+                                            return `<span class="inline-flex items-center gap-1">${getBadgeSucursalHTML(s)}<span class="text-[10px] text-slate-300 font-mono font-bold">(${cnt})</span></span>`;
+                                        }).join(' ');
+                                        return `
+                                            <div class="space-y-1">
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-xs">
+                                                    <i class="fa-solid fa-code-branch text-[9px]"></i> Multi-Sucursal (${sucsArr.length})
+                                                </span>
+                                                <div class="flex flex-wrap items-center gap-1 justify-center max-w-[220px]">
+                                                    ${badges}
+                                                </div>
+                                            </div>
+                                        `;
+                                    } else if (sucsArr.length === 1) {
+                                        const s = sucsArr[0];
+                                        const cnt = sucsMap[s] ? sucsMap[s].count : c.totalViajes;
+                                        return `
+                                            <div class="flex items-center justify-center gap-1">
+                                                ${getBadgeSucursalHTML(s)}
+                                                <span class="text-[10px] text-slate-400 font-mono font-bold">(${cnt})</span>
+                                            </div>
+                                        `;
+                                    } else {
+                                        return `<span class="text-slate-500 text-xs italic">${c.sucursal || 'Sin compras'}</span>`;
+                                    }
+                                })()}
                             </div>
                         </td>
                         <td class="py-3 px-3 max-w-xs">${matsHTML}</td>
@@ -13203,13 +14200,18 @@
             const filtroSegmento = document.getElementById('seguimientoFiltroSegmento') ? document.getElementById('seguimientoFiltroSegmento').value : 'todos';
             const filtroSucursal = document.getElementById('seguimientoFiltroSucursal') ? document.getElementById('seguimientoFiltroSucursal').value : 'todos';
             const filtroEstado = document.getElementById('seguimientoFiltroEstado') ? document.getElementById('seguimientoFiltroEstado').value : 'todos';
+            const filtroMaterial = document.getElementById('seguimientoFiltroMaterial') ? document.getElementById('seguimientoFiltroMaterial').value : 'todos';
 
             let list = todosClientes.filter(c => {
                 if (filtroSegmento === 'inactivos_30') return c.diasSinComprar > 30 && c.totalViajes > 0;
                 if (filtroSegmento === 'inactivos_15') return c.diasSinComprar > 15 && c.diasSinComprar <= 30 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_semana' || filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_2_semanas') return c.diasSinComprar > 7 && c.diasSinComprar <= 14 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_14') return c.diasSinComprar <= 14 && c.totalViajes > 0;
                 if (filtroSegmento === 'vip') return c.rango === 'Excelente';
-                if (filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
                 if (filtroSegmento === 'sin_compras') return c.totalViajes === 0;
+                if (filtroSegmento === 'cerrado') return c.estadoSeguimiento === 'cerrado';
+                if (filtroSegmento === 'cotizacion') return c.estadoSeguimiento === 'cotizacion';
                 return true;
             });
 
@@ -13219,35 +14221,53 @@
             if (filtroEstado !== 'todos') {
                 list = list.filter(c => (c.estadoSeguimiento || 'pendiente') === filtroEstado);
             }
+            if (filtroMaterial !== 'todos') {
+                const normMat = normalizarTextoClave(filtroMaterial);
+                list = list.filter(c => (c.materialesHabituales || []).some(m => {
+                    const nm = normalizarTextoClave(m);
+                    return nm === normMat || nm.includes(normMat) || normMat.includes(nm);
+                }));
+            }
 
             if (list.length === 0) {
                 showToast('Aviso', 'No hay clientes para exportar en la lista de seguimiento.', 'info');
                 return;
             }
 
-            const rows = list.map((c, idx) => ({
-                "No.": idx + 1,
-                "Cliente": c.nombre,
-                "Clasificación": c.rango,
-                "Sucursal Salida (Origen)": c.sucursalPrincipal,
-                "Teléfono": c.telefono || 'Sin teléfono',
-                "Lo que Suele Llevar": c.materialesHabituales.join(', ') || 'Sin especificar',
-                "Última Compra": c.ultimaFechaStr,
-                "Días Inactivo": c.totalViajes > 0 ? c.diasSinComprar : 'Sin compras',
-                "Total Histórico ($)": Number(c.totalCompras.toFixed(2)),
-                "Total Envíos": c.totalViajes,
-                "Estado Seguimiento": c.estadoSeguimiento || 'pendiente',
-                "Notas Comerciales": (c.historialNotas && c.historialNotas.length > 0)
-                    ? c.historialNotas.map(n => `[${n.tipo || 'Nota'}] ${n.texto}`).join(" // ")
-                    : (c.notasSeguimiento || '')
-            }));
+            const rows = list.map((c, idx) => {
+                const sucsArr = c.sucursalesArr || [];
+                const sucsMap = c.sucursalesMap || {};
+                let sucursalTxt = c.sucursalPrincipal || 'Sin compras';
+                if (sucsArr.length > 1) {
+                    sucursalTxt = `Multi-Sucursal: ${sucsArr.map(s => `${s} (${(sucsMap[s] || {}).count || 0})`).join(', ')}`;
+                } else if (sucsArr.length === 1) {
+                    sucursalTxt = `${sucsArr[0]} (${(sucsMap[sucsArr[0]] || {}).count || c.totalViajes})`;
+                }
+
+                return {
+                    "No.": idx + 1,
+                    "Cliente": c.nombre,
+                    "Clasificación": `${c.rango} (${c.estrellasTxt || '★'})`,
+                    "Sucursales de Compra": sucursalTxt,
+                    "Teléfono": c.telefono || 'Sin teléfono',
+                    "Lo que Suele Llevar": c.materialesHabituales.join(', ') || 'Sin especificar',
+                    "Última Compra": c.ultimaFechaStr,
+                    "Días Inactivo": c.totalViajes > 0 ? c.diasSinComprar : 'Sin compras',
+                    "Total Histórico ($)": Number(c.totalCompras.toFixed(2)),
+                    "Total Envíos": c.totalViajes,
+                    "Estado Seguimiento": c.estadoSeguimiento || 'pendiente',
+                    "Notas Comerciales": (c.historialNotas && c.historialNotas.length > 0)
+                        ? c.historialNotas.map(n => `[${n.tipo || 'Nota'}] ${n.texto}`).join(" // ")
+                        : (c.notasSeguimiento || '')
+                };
+            });
 
             const ws = XLSX.utils.json_to_sheet(rows);
             ws['!cols'] = [
                 { wch: 6 },
                 { wch: 32 },
-                { wch: 14 },
-                { wch: 22 },
+                { wch: 16 },
+                { wch: 32 },
                 { wch: 16 },
                 { wch: 30 },
                 { wch: 16 },
@@ -13275,13 +14295,18 @@
             const filtroSegmento = document.getElementById('seguimientoFiltroSegmento') ? document.getElementById('seguimientoFiltroSegmento').value : 'todos';
             const filtroSucursal = document.getElementById('seguimientoFiltroSucursal') ? document.getElementById('seguimientoFiltroSucursal').value : 'todos';
             const filtroEstado = document.getElementById('seguimientoFiltroEstado') ? document.getElementById('seguimientoFiltroEstado').value : 'todos';
+            const filtroMaterial = document.getElementById('seguimientoFiltroMaterial') ? document.getElementById('seguimientoFiltroMaterial').value : 'todos';
 
             let list = todosClientes.filter(c => {
                 if (filtroSegmento === 'inactivos_30') return c.diasSinComprar > 30 && c.totalViajes > 0;
                 if (filtroSegmento === 'inactivos_15') return c.diasSinComprar > 15 && c.diasSinComprar <= 30 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_semana' || filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_2_semanas') return c.diasSinComprar > 7 && c.diasSinComprar <= 14 && c.totalViajes > 0;
+                if (filtroSegmento === 'activos_14') return c.diasSinComprar <= 14 && c.totalViajes > 0;
                 if (filtroSegmento === 'vip') return c.rango === 'Excelente';
-                if (filtroSegmento === 'recientes_7') return c.diasSinComprar <= 7 && c.totalViajes > 0;
                 if (filtroSegmento === 'sin_compras') return c.totalViajes === 0;
+                if (filtroSegmento === 'cerrado') return c.estadoSeguimiento === 'cerrado';
+                if (filtroSegmento === 'cotizacion') return c.estadoSeguimiento === 'cotizacion';
                 return true;
             });
 
@@ -13290,6 +14315,13 @@
             }
             if (filtroEstado !== 'todos') {
                 list = list.filter(c => (c.estadoSeguimiento || 'pendiente') === filtroEstado);
+            }
+            if (filtroMaterial !== 'todos') {
+                const normMat = normalizarTextoClave(filtroMaterial);
+                list = list.filter(c => (c.materialesHabituales || []).some(m => {
+                    const nm = normalizarTextoClave(m);
+                    return nm === normMat || nm.includes(normMat) || normMat.includes(nm);
+                }));
             }
 
             if (list.length === 0) {
@@ -13314,22 +14346,33 @@
             const fechaHora = new Date().toLocaleString('es-ES');
             doc.text(`Generado: ${fechaHora} | Total clientes listados: ${list.length}`, 40, 47);
 
-            const body = list.map((c, idx) => [
-                idx + 1,
-                c.nombre,
-                c.telefono || 'Sin teléfono',
-                c.sucursalPrincipal,
-                c.materialesHabituales.join(', ') || 'Variados',
-                c.ultimaFechaStr,
-                c.totalViajes > 0 ? `${c.diasSinComprar} días` : 'Sin compras',
-                (c.estadoSeguimiento || 'pendiente').toUpperCase(),
-                (c.historialNotas && c.historialNotas.length > 0)
-                    ? c.historialNotas.map(n => `[${n.tipo || 'Nota'}] ${n.texto}`).join(" // ")
-                    : (c.notasSeguimiento || '-')
-            ]);
+            const body = list.map((c, idx) => {
+                const sucsArr = c.sucursalesArr || [];
+                const sucsMap = c.sucursalesMap || {};
+                let sucursalTxt = c.sucursalPrincipal || 'N/A';
+                if (sucsArr.length > 1) {
+                    sucursalTxt = `Multi (${sucsArr.length}): ${sucsArr.map(s => `${s} (${(sucsMap[s] || {}).count || 0})`).join(', ')}`;
+                } else if (sucsArr.length === 1) {
+                    sucursalTxt = `${sucsArr[0]} (${(sucsMap[sucsArr[0]] || {}).count || c.totalViajes})`;
+                }
+
+                return [
+                    idx + 1,
+                    c.nombre,
+                    c.telefono || 'Sin teléfono',
+                    sucursalTxt,
+                    c.materialesHabituales.join(', ') || 'Variados',
+                    c.ultimaFechaStr,
+                    c.totalViajes > 0 ? `${c.diasSinComprar} días` : 'Sin compras',
+                    (c.estadoSeguimiento || 'pendiente').toUpperCase(),
+                    (c.historialNotas && c.historialNotas.length > 0)
+                        ? c.historialNotas.map(n => `[${n.tipo || 'Nota'}] ${n.texto}`).join(" // ")
+                        : (c.notasSeguimiento || '-')
+                ];
+            });
 
             doc.autoTable({
-                head: [['#', 'Cliente', 'Teléfono', 'Sucursal', 'Lo que Suele Llevar', 'Última Compra', 'Inactividad', 'Estado', 'Notas Comerciales']],
+                head: [['#', 'Cliente', 'Teléfono', 'Sucursal / Multi-Sucursal', 'Lo que Suele Llevar', 'Última Compra', 'Inactividad', 'Estado', 'Notas Comerciales']],
                 body: body,
                 startY: 68,
                 theme: 'striped',
@@ -13345,16 +14388,16 @@
                 },
                 columnStyles: {
                     0: { halign: 'center', cellWidth: 25 },
-                    1: { fontStyle: 'bold', cellWidth: 120 },
-                    2: { cellWidth: 75 },
-                    3: { cellWidth: 85 },
-                    4: { cellWidth: 120 },
-                    5: { cellWidth: 70 },
-                    6: { halign: 'center', cellWidth: 65 },
-                    7: { halign: 'center', fontStyle: 'bold', cellWidth: 70 },
+                    1: { fontStyle: 'bold', cellWidth: 110 },
+                    2: { cellWidth: 70 },
+                    3: { cellWidth: 110 },
+                    4: { cellWidth: 110 },
+                    5: { cellWidth: 65 },
+                    6: { halign: 'center', cellWidth: 60 },
+                    7: { halign: 'center', fontStyle: 'bold', cellWidth: 65 },
                     8: { cellWidth: 'auto' }
                 },
-                margin: { top: 68, left: 30, right: 30, bottom: 30 }
+                margin: { top: 68, left: 25, right: 25, bottom: 25 }
             });
 
             const fechaStr = new Date().toISOString().split('T')[0];
