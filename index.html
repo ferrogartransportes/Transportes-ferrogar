@@ -4601,6 +4601,15 @@
         let registrosGlobales = [];
         let driverFacturaActivaSeleccionada = null;
 
+        function normalizarTextoClave(str) {
+            if (!str) return "";
+            return String(str)
+                .trim()
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, "");
+        }
+
         // Memoria persistente local para entregas confirmadas (evita reversión si Sheets tarda en sincronizar)
         let entregasConfirmadasLocales = {};
         try {
@@ -4610,30 +4619,91 @@
 
         function registrarEntregaConfirmadaLocal(factura, horaEntrega, motivoRetraso = '', fotoComprobante = '', firmaDigital = '', receptorNombre = '') {
             if (!factura) return;
-            const claveFact = String(factura).trim().toLowerCase();
-            const prev = entregasConfirmadasLocales[claveFact] || {};
-            entregasConfirmadasLocales[claveFact] = {
+            let hora = horaEntrega;
+            let motivo = motivoRetraso;
+            let foto = fotoComprobante;
+            let firma = firmaDigital;
+            let receptor = receptorNombre;
+
+            if (horaEntrega && typeof horaEntrega === 'object') {
+                hora = horaEntrega.horaEntrega || '';
+                motivo = horaEntrega.motivoRetraso || '';
+                foto = horaEntrega.fotoComprobante || '';
+                firma = horaEntrega.firmaDigital || '';
+                receptor = horaEntrega.receptorNombre || '';
+            }
+
+            const claveRaw = String(factura).trim().toLowerCase();
+            const claveNorm = normalizarTextoClave(factura);
+            const prev = entregasConfirmadasLocales[claveRaw] || (claveNorm ? entregasConfirmadasLocales[claveNorm] : null) || {};
+            const record = {
                 factura: factura,
                 estado: 'Entregado',
-                horaEntrega: horaEntrega,
-                motivoRetraso: motivoRetraso || prev.motivoRetraso || '',
-                fotoComprobante: fotoComprobante || prev.fotoComprobante || '',
-                firmaDigital: firmaDigital || prev.firmaDigital || '',
-                receptorNombre: receptorNombre || prev.receptorNombre || '',
+                horaEntrega: hora || prev.horaEntrega || new Date().toLocaleString('es-ES'),
+                motivoRetraso: motivo || prev.motivoRetraso || '',
+                fotoComprobante: foto || prev.fotoComprobante || '',
+                firmaDigital: firma || prev.firmaDigital || '',
+                receptorNombre: receptor || prev.receptorNombre || '',
                 timestamp: Date.now()
             };
+            entregasConfirmadasLocales[claveRaw] = record;
+            if (claveNorm) {
+                entregasConfirmadasLocales[claveNorm] = record;
+            }
             try {
                 localStorage.setItem('logiflow_entregas_confirmadas_v1', JSON.stringify(entregasConfirmadasLocales));
             } catch(e) {}
         }
 
-        function normalizarTextoClave(str) {
-            if (!str) return "";
-            return String(str)
-                .trim()
-                .toLowerCase()
-                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                .replace(/[^a-z0-9]/g, "");
+        function buscarEntregaConfirmadaLocal(factura) {
+            if (!factura) return null;
+            const raw = String(factura).trim().toLowerCase();
+            if (entregasConfirmadasLocales[raw]) return entregasConfirmadasLocales[raw];
+            const norm = normalizarTextoClave(factura);
+            if (norm && entregasConfirmadasLocales[norm]) return entregasConfirmadasLocales[norm];
+            for (const [k, v] of Object.entries(entregasConfirmadasLocales)) {
+                if (normalizarTextoClave(k) === norm || (v && normalizarTextoClave(v.factura) === norm)) {
+                    return v;
+                }
+            }
+            return null;
+        }
+
+        function esRegistroEntregado(r) {
+            if (!r) return false;
+            const est = String(r.estado || '').toLowerCase().trim();
+            if (est === 'entregado' || est === 'entregada' || est === 'finalizado' || est === 'completado') {
+                if (r.estado !== 'Entregado') r.estado = 'Entregado';
+                return true;
+            }
+            const fact = String(r.factura || '').trim();
+            if (!fact) return false;
+
+            const localConf = (typeof buscarEntregaConfirmadaLocal === 'function') ? buscarEntregaConfirmadaLocal(fact) : null;
+            if (localConf) {
+                r.estado = 'Entregado';
+                if (!r.horaEntrega && localConf.horaEntrega) r.horaEntrega = localConf.horaEntrega;
+                if (!r.fotoComprobante && localConf.fotoComprobante) r.fotoComprobante = localConf.fotoComprobante;
+                if (!r.firmaDigital && localConf.firmaDigital) r.firmaDigital = localConf.firmaDigital;
+                if (!r.receptorNombre && localConf.receptorNombre) r.receptorNombre = localConf.receptorNombre;
+                return true;
+            }
+
+            const localPod = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(fact) : null;
+            if (localPod) {
+                r.estado = 'Entregado';
+                if (!r.horaEntrega && localPod.fechaHora) r.horaEntrega = localPod.fechaHora;
+                if (!r.fotoComprobante && localPod.fotoComprobante) r.fotoComprobante = localPod.fotoComprobante;
+                if (!r.firmaDigital && localPod.firmaDigital) r.firmaDigital = localPod.firmaDigital;
+                if (!r.receptorNombre && localPod.receptorNombre) r.receptorNombre = localPod.receptorNombre;
+                return true;
+            }
+
+            if (r.fotoComprobante || r.firmaDigital || r.horaEntrega) {
+                r.estado = 'Entregado';
+                return true;
+            }
+            return false;
         }
 
         // ==========================================
@@ -4925,8 +4995,22 @@
                         registrosGlobales = data.registros.map((item, index) => {
                             const estadoLimpio = String(item.estado || '').trim();
                             const cleanFact = String(item.factura || '').trim().toLowerCase();
-                            const localEntrega = entregasConfirmadasLocales[cleanFact];
-                            const esEntregado = (estadoLimpio.toLowerCase() === 'entregado') || Boolean(localEntrega);
+                            const localEntrega = (typeof buscarEntregaConfirmadaLocal === 'function') 
+                                ? buscarEntregaConfirmadaLocal(item.factura) 
+                                : entregasConfirmadasLocales[cleanFact];
+                            const localPod = (typeof obtenerComprobanteLocal === 'function') 
+                                ? obtenerComprobanteLocal(item.factura) 
+                                : null;
+
+                            const esEntregado = (estadoLimpio.toLowerCase() === 'entregado') ||
+                                                (estadoLimpio.toLowerCase() === 'entregada') ||
+                                                (estadoLimpio.toLowerCase() === 'finalizado') ||
+                                                (estadoLimpio.toLowerCase() === 'completado') ||
+                                                Boolean(localEntrega) || 
+                                                Boolean(localPod) ||
+                                                Boolean(item.fotoComprobante) ||
+                                                Boolean(item.firmaDigital) ||
+                                                Boolean(item.horaEntrega);
                             const coords = obtenerCoordenadas(item.destino);
                             const fechaRecuperada = item.fecha || item.fechaHora || fechaActualStr;
 
@@ -4962,23 +5046,37 @@
                                 destino: item.destino || '',
                                 lat: coords.lat,
                                 lng: coords.lng,
-                                estado: esEntregado ? 'Entregado' : 'Pendiente',
+                                estado: esEntregado ? 'Entregado' : (item.estado === 'En Tránsito' ? 'En Tránsito' : 'Pendiente'),
                                 estadoFactura: item.estadoFactura || 'N/A',
                                 tipoViaje: item.tipoViaje || 'N/A',
                                 cantidadMercaderia: item.cantidadMercaderia || '',
                                 horarioEntrega: item.horarioEntrega || 'Cualquier hora',
                                 fechaProgramada: fProg,
-                                horaEntrega: item.horaEntrega || (localEntrega ? localEntrega.horaEntrega : ''),
+                                horaEntrega: item.horaEntrega || (localEntrega ? localEntrega.horaEntrega : '') || (localPod ? localPod.fechaHora : ''),
                                 motivoRetraso: item.motivoRetraso || (localEntrega ? localEntrega.motivoRetraso : ''),
-                                fotoComprobante: item.fotoComprobante || (localEntrega ? localEntrega.fotoComprobante : '') || (obtenerComprobanteLocal(item.factura)?.fotoComprobante || ''),
-                                firmaDigital: item.firmaDigital || (localEntrega ? localEntrega.firmaDigital : '') || (obtenerComprobanteLocal(item.factura)?.firmaDigital || ''),
-                                receptorNombre: item.receptorNombre || (localEntrega ? localEntrega.receptorNombre : '') || (obtenerComprobanteLocal(item.factura)?.receptorNombre || ''),
+                                fotoComprobante: item.fotoComprobante || (localEntrega ? localEntrega.fotoComprobante : '') || (localPod ? localPod.fotoComprobante : ''),
+                                firmaDigital: item.firmaDigital || (localEntrega ? localEntrega.firmaDigital : '') || (localPod ? localPod.firmaDigital : ''),
+                                receptorNombre: item.receptorNombre || (localEntrega ? localEntrega.receptorNombre : '') || (localPod ? localPod.receptorNombre : ''),
                                 linkUbicacion: item.linkUbicacion || (item.destino && /^https?:\/\//i.test(item.destino) ? item.destino : ''),
                                 subFacturas: Array.isArray(item.subFacturas) ? item.subFacturas : [],
                                 jsonData: item.jsonData || null,
                                 jsonRaw: item.jsonRaw || '',
                                 tipoDocumento: item.tipoDocumento || ((String(item.factura || '').toUpperCase().startsWith('CCF') || String(item.factura || '').toUpperCase().includes('CREDITO')) ? 'CCF' : 'FACTURA')
                             };
+                        });
+
+                        // Re-asegurar que cualquier registro entregado mantenga permanentemente su estado 'Entregado'
+                        registrosGlobales.forEach(r => {
+                            if (esRegistroEntregado(r)) {
+                                r.estado = 'Entregado';
+                                registrarEntregaConfirmadaLocal(r.factura, {
+                                    horaEntrega: r.horaEntrega,
+                                    motivoRetraso: r.motivoRetraso,
+                                    fotoComprobante: r.fotoComprobante,
+                                    firmaDigital: r.firmaDigital,
+                                    receptorNombre: r.receptorNombre
+                                });
+                            }
                         });
 
                         // Restaurar en memoria local los JSON sincronizados desde Sheets
@@ -5232,7 +5330,7 @@
             // ==========================================
             // DETECCIÓN DE NUEVOS VIAJES PARA LA ALARMA SONORA
             // ==========================================
-            const pendientesAhora = misViajesAll.filter(r => r.estado === 'Pendiente');
+            const pendientesAhora = misViajesAll.filter(r => !esRegistroEntregado(r));
             if (!driverHaIniciado) {
                 // Primer inicio: registrar facturas actuales como ya conocidas
                 facturasConocidasDriver = new Set(pendientesAhora.map(r => String(r.factura).trim().toLowerCase()));
@@ -5255,7 +5353,7 @@
             let misViajesAtrasados = [];
 
             misViajesAll.forEach(r => {
-                const esEntregado = (r.estado === 'Entregado');
+                const esEntregado = esRegistroEntregado(r);
                 const esHoy = esRegistroDeHoy(r);
                 const esFuturo = esFechaProgramadaFutura(r);
 
@@ -5282,7 +5380,7 @@
             misViajesHoy.sort((a, b) => (a.ordenAsignacion || 0) - (b.ordenAsignacion || 0));
 
             // LISTA GLOBAL DE VIAJES PENDIENTES (Atrasados primero para desahogar pendientes rezagados + pendientes de hoy)
-            const pendientesHoy = misViajesHoy.filter(r => r.estado === 'Pendiente');
+            const pendientesHoy = misViajesHoy.filter(r => !esRegistroEntregado(r));
             const todosMisPendientes = [...misViajesAtrasados, ...pendientesHoy];
 
             let totalTrips = misViajesHoy.length;
@@ -9559,7 +9657,7 @@
             let totalConductores = Object.keys(driversData).length;
             let disponibles = 0;
             for (const key of Object.keys(driversData)) {
-                let pendientesHoy = viajesOperacionHoy.filter(r => r.driverKey === key && r.estado === 'Pendiente').length;
+                let pendientesHoy = viajesOperacionHoy.filter(r => r.driverKey === key && !esRegistroEntregado(r)).length;
                 if (pendientesHoy === 0) disponibles++;
             }
 
@@ -9567,7 +9665,7 @@
             let totalMonto = viajesOperacionHoy.reduce((acc, r) => acc + r.monto, 0);
             let totalFletes = viajesOperacionHoy.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
 
-            let viajesFuturosPendientes = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && r.estado !== 'Entregado').length;
+            let viajesFuturosPendientes = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && !esRegistroEntregado(r)).length;
 
             document.getElementById('kpiActiveDrivers').innerText = `${disponibles} / ${totalConductores}`;
             document.getElementById('kpiTotalTrips').innerText = totalViajes;
@@ -9585,7 +9683,7 @@
 
             const badgeMenu = document.getElementById('badgeContadorPendientes');
             if (badgeMenu) {
-                const totalPend = registrosGlobales.filter(r => r.estado === 'Pendiente').length;
+                const totalPend = registrosGlobales.filter(r => !esRegistroEntregado(r)).length;
                 badgeMenu.innerText = totalPend;
             }
         }
@@ -9617,7 +9715,7 @@
             const searchVal = document.getElementById('pendientesSearchInput') ? String(document.getElementById('pendientesSearchInput').value).toLowerCase().trim() : '';
             const terms = searchVal ? searchVal.split(/\s+/).filter(Boolean) : [];
 
-            let todasPendientes = registrosGlobales.filter(r => r.estado === 'Pendiente');
+            let todasPendientes = registrosGlobales.filter(r => !esRegistroEntregado(r));
 
             const badgeMenu = document.getElementById('badgeContadorPendientes');
             if (badgeMenu) {
@@ -9711,11 +9809,11 @@
                         <td class="py-3 px-4 text-[11px]">${estadoFactText}</td>
                         <td class="py-3 px-4 text-center whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="abrirModalReasignar('${encodeURIComponent(r.factura)}')" title="Reasignar a otro conductor o cambiar camión" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5">
+                                <button onclick="abrirModalReasignar('${encodeURIComponent(r.factura)}')" title="Reasignar a otro conductor o cambiar camión" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
                                     <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
                                     <span>Reasignar</span>
                                 </button>
-                                <button onclick="enviarWhatsAppAction('${encodeURIComponent(r.factura)}')" title="Notificar al chofer por WhatsApp" class="p-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs transition-colors">
+                                <button onclick="enviarWhatsAppAction('${encodeURIComponent(r.factura)}')" title="Notificar al chofer por WhatsApp" class="p-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs transition-colors cursor-pointer">
                                     <i class="fab fa-whatsapp"></i>
                                 </button>
                             </div>
@@ -9952,7 +10050,7 @@
             let html = '';
             for (let i = 0; i < traslados.length; i++) {
                 const r = traslados[i];
-                let badgeEstado = r.estado === 'Entregado' 
+                let badgeEstado = esRegistroEntregado(r) 
                     ? `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-check mr-1"></i> Entregado</span>`
                     : `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-clock mr-1"></i> Pendiente</span>`;
 
@@ -9982,10 +10080,10 @@
 
             for (const [key, d] of Object.entries(driversData)) {
                 let viajesDriverHoy = registrosGlobales.filter(r => (r.driverKey === key || esViajeDeConductor(r, key, d)) && esRegistroDeHoy(r));
-                let viajesDriverAtrasados = registrosGlobales.filter(r => (r.driverKey === key || esViajeDeConductor(r, key, d)) && !esRegistroDeHoy(r) && !esFechaProgramadaFutura(r) && r.estado === 'Pendiente');
+                let viajesDriverAtrasados = registrosGlobales.filter(r => (r.driverKey === key || esViajeDeConductor(r, key, d)) && !esRegistroDeHoy(r) && !esFechaProgramadaFutura(r) && !esRegistroEntregado(r));
 
-                let pendientesHoy = viajesDriverHoy.filter(r => r.estado === 'Pendiente');
-                let entregados = viajesDriverHoy.filter(r => r.estado === 'Entregado');
+                let pendientesHoy = viajesDriverHoy.filter(r => !esRegistroEntregado(r));
+                let entregados = viajesDriverHoy.filter(r => esRegistroEntregado(r));
                 let totalPendientes = pendientesHoy.length + viajesDriverAtrasados.length;
 
                 let estaDisponible = totalPendientes === 0;
@@ -10001,7 +10099,7 @@
                 } else {
                     for (let vIdx = 0; vIdx < todosParaMonitoreo.length; vIdx++) {
                         const v = todosParaMonitoreo[vIdx];
-                        let isDone = v.estado === 'Entregado';
+                        let isDone = esRegistroEntregado(v);
                         let esAtrasado = !esRegistroDeHoy(v);
                         let badgeItem = isDone 
                             ? '<span class="text-emerald-400 font-bold text-[10px]"><i class="fa-solid fa-check-circle"></i> Entregado</span>'
@@ -10431,6 +10529,19 @@
             viaje.firmaDigital = tieneFirma && podCanvas ? podCanvas.toDataURL('image/png') : '';
             viaje.receptorNombre = (document.getElementById('podInputNombreReceptor')?.value || '').trim();
 
+            // Sincronizar de inmediato en todos los viajes coincidentes en registrosGlobales
+            const normViajeFact = normalizarTextoClave(viaje.factura);
+            registrosGlobales.forEach(r => {
+                if (normalizarTextoClave(r.factura) === normViajeFact || String(r.factura).trim().toLowerCase() === String(viaje.factura).trim().toLowerCase()) {
+                    r.estado = 'Entregado';
+                    r.horaEntrega = horaEntregaExacta;
+                    if (viaje.motivoRetraso) r.motivoRetraso = viaje.motivoRetraso;
+                    r.fotoComprobante = viaje.fotoComprobante;
+                    r.firmaDigital = viaje.firmaDigital;
+                    r.receptorNombre = viaje.receptorNombre;
+                }
+            });
+
             registrarEntregaConfirmadaLocal(viaje.factura, horaEntregaExacta, viaje.motivoRetraso || '', viaje.fotoComprobante, viaje.firmaDigital, viaje.receptorNombre);
             guardarComprobanteLocal(viaje.factura, viaje.fotoComprobante, viaje.firmaDigital, viaje.receptorNombre);
             detenerAlarmaContinua();
@@ -10457,7 +10568,13 @@
                 btn.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Confirmar y Finalizar Entrega</span>';
             }
 
-            initDriverDashboard();
+            // Actualizar vistas completas de Admin y Conductor de forma inmediata
+            if (typeof actualizarTodoAdmin === 'function') {
+                actualizarTodoAdmin();
+            }
+            if (typeof initDriverDashboard === 'function') {
+                initDriverDashboard();
+            }
         }
 
         function normalizarUrlImagenParaVisualizar(url) {
@@ -10527,10 +10644,35 @@
                 req.onsuccess = () => {
                     if (Array.isArray(req.result)) {
                         req.result.forEach(item => {
-                            if (item && item.key) {
-                                comprobantesEnMemoria.set(item.key, item);
+                            if (item) {
+                                if (item.key) comprobantesEnMemoria.set(item.key, item);
+                                if (item.factura) {
+                                    const factL = String(item.factura).trim().toLowerCase();
+                                    comprobantesEnMemoria.set(`comprobante_${factL}`, item);
+                                    if (typeof normalizarTextoClave === 'function') {
+                                        comprobantesEnMemoria.set(`comprobante_norm_${normalizarTextoClave(item.factura)}`, item);
+                                    }
+                                }
                             }
                         });
+                        // Si ya habían registros cargados en memoria, sincronizar estado 'Entregado'
+                        if (Array.isArray(registrosGlobales) && registrosGlobales.length > 0) {
+                            let huboCambio = false;
+                            registrosGlobales.forEach(r => {
+                                if (r.estado !== 'Entregado' && esRegistroEntregado(r)) {
+                                    r.estado = 'Entregado';
+                                    huboCambio = true;
+                                }
+                            });
+                            if (huboCambio) {
+                                if (typeof actualizarTodoAdmin === 'function' && typeof currentRole !== 'undefined' && currentRole === 'admin') {
+                                    actualizarTodoAdmin();
+                                }
+                                if (typeof initDriverDashboard === 'function' && typeof currentRole !== 'undefined' && currentRole === 'driver') {
+                                    initDriverDashboard();
+                                }
+                            }
+                        }
                     }
                 };
             } catch(e) {}
@@ -10538,7 +10680,10 @@
 
         async function guardarComprobanteLocal(factura, foto, firma, receptor) {
             if (!factura) return;
-            const key = `comprobante_${String(factura).trim().toLowerCase()}`;
+            const factLimpia = String(factura).trim().toLowerCase();
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(factura) : factLimpia;
+            const key = `comprobante_${factLimpia}`;
+            const keyNorm = `comprobante_norm_${factNorm}`;
             const data = {
                 key: key,
                 factura: factura,
@@ -10549,14 +10694,20 @@
             };
 
             comprobantesEnMemoria.set(key, data);
+            if (factNorm) {
+                comprobantesEnMemoria.set(keyNorm, data);
+            }
 
             try {
                 const dataStr = JSON.stringify(data);
                 if (dataStr.length < 500000) {
                     localStorage.setItem(key, dataStr);
+                    if (factNorm) localStorage.setItem(keyNorm, dataStr);
                 } else {
                     const lightweight = { ...data, fotoComprobante: (foto && foto.startsWith('http')) ? foto : '' };
-                    localStorage.setItem(key, JSON.stringify(lightweight));
+                    const lwStr = JSON.stringify(lightweight);
+                    localStorage.setItem(key, lwStr);
+                    if (factNorm) localStorage.setItem(keyNorm, lwStr);
                 }
             } catch (e) {
                 console.warn('localStorage al límite, usando IndexedDB:', e);
@@ -10575,15 +10726,43 @@
 
         function obtenerComprobanteLocal(factura) {
             if (!factura) return null;
-            const key = `comprobante_${String(factura).trim().toLowerCase()}`;
-            if (comprobantesEnMemoria.has(key)) {
-                return comprobantesEnMemoria.get(key);
+            const factLimpia = String(factura).trim().toLowerCase();
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(factura) : factLimpia;
+            const key = `comprobante_${factLimpia}`;
+            const keyNorm = `comprobante_norm_${factNorm}`;
+
+            if (comprobantesEnMemoria.has(key)) return comprobantesEnMemoria.get(key);
+            if (factNorm && comprobantesEnMemoria.has(keyNorm)) return comprobantesEnMemoria.get(keyNorm);
+
+            // Búsqueda en memoria por normalización
+            if (factNorm) {
+                for (const [k, v] of comprobantesEnMemoria.entries()) {
+                    if (v && v.factura && (typeof normalizarTextoClave === 'function') && normalizarTextoClave(v.factura) === factNorm) {
+                        return v;
+                    }
+                }
             }
+
             try {
-                const raw = localStorage.getItem(key);
+                let raw = localStorage.getItem(key) || (factNorm ? localStorage.getItem(keyNorm) : null);
+                if (!raw && factNorm) {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const lk = localStorage.key(i);
+                        if (lk && lk.startsWith('comprobante_')) {
+                            try {
+                                const itemObj = JSON.parse(localStorage.getItem(lk));
+                                if (itemObj && itemObj.factura && (typeof normalizarTextoClave === 'function') && normalizarTextoClave(itemObj.factura) === factNorm) {
+                                    raw = localStorage.getItem(lk);
+                                    break;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     comprobantesEnMemoria.set(key, parsed);
+                    if (factNorm) comprobantesEnMemoria.set(keyNorm, parsed);
                     return parsed;
                 }
             } catch(e) {}
@@ -10592,7 +10771,8 @@
 
         function abrirModalVerComprobante(facturaEncoded) {
             const factura = decodeURIComponent(facturaEncoded);
-            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(factura).trim().toLowerCase());
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(factura) : String(factura).trim().toLowerCase();
+            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(factura).trim().toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(x.factura) === factNorm));
             const localData = obtenerComprobanteLocal(factura);
 
             const modal = document.getElementById('modalVerComprobanteEntrega');
@@ -10789,7 +10969,7 @@
                 subtitulo = 'Entregas calendarizadas para días posteriores';
                 iconClass = 'fa-solid fa-calendar-plus';
                 iconColorClass = 'bg-amber-500/20 text-amber-400';
-                registros = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && r.estado !== 'Entregado');
+                registros = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && !esRegistroEntregado(r));
             } else if (tipo === 'conductor_individual') {
                 const d = driversData[parametro] || { name: parametro, unit: 'Unidad N/A' };
                 titulo = `Viajes de ${d.name} (${d.unit}) - Hoy`;
@@ -10809,7 +10989,7 @@
                 subtitulo = 'Entregas que tienes a tu cargo en tu ruta';
                 iconClass = 'fa-solid fa-route';
                 iconColorClass = 'bg-blue-500/20 text-accentBlue';
-                registros = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, d) && (esRegistroDeHoy(r) || (!esFechaProgramadaFutura(r) && r.estado !== 'Entregado')));
+                registros = registrosGlobales.filter(r => esViajeDeConductor(r, currentDriverKey, d) && (esRegistroDeHoy(r) || (!esFechaProgramadaFutura(r) && !esRegistroEntregado(r))));
             } else if (tipo === 'driver_fletes_hoy') {
                 const d = driversData[currentDriverKey] || { name: 'Conductor', unit: 'Mi Unidad' };
                 titulo = 'Mi Total en Transporte / Fletes (Hoy)';
@@ -10856,7 +11036,7 @@
                 const total = items.length;
                 let disponibles = 0;
                 items.forEach(d => {
-                    const pend = registrosGlobales.filter(r => (r.driverKey === d.key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r) && r.estado !== 'Entregado').length;
+                    const pend = registrosGlobales.filter(r => (r.driverKey === d.key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r) && !esRegistroEntregado(r)).length;
                     if (pend === 0) disponibles++;
                 });
                 box.innerHTML = `
@@ -10870,7 +11050,7 @@
             const totalViajes = items.length;
             const totalFletes = items.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
             const totalFact = items.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
-            const entregados = items.filter(r => r.estado === 'Entregado').length;
+            const entregados = items.filter(r => esRegistroEntregado(r)).length;
 
             box.innerHTML = `
                 <span class="bg-slate-800 text-cyan-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono font-bold">Fletes: $${totalFletes.toFixed(2)}</span>
@@ -10897,8 +11077,8 @@
             conductoresLista.forEach(d => {
                 const key = d.key;
                 const viajesHoy = registrosGlobales.filter(r => (r.driverKey === key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r));
-                const entregados = viajesHoy.filter(r => r.estado === 'Entregado');
-                const pendientes = viajesHoy.filter(r => r.estado !== 'Entregado');
+                const entregados = viajesHoy.filter(r => esRegistroEntregado(r));
+                const pendientes = viajesHoy.filter(r => !esRegistroEntregado(r));
                 const totalFlete = viajesHoy.reduce((a, b) => a + (parseFloat(b.transporte) || 0), 0);
                 const totalMonto = viajesHoy.reduce((a, b) => a + (parseFloat(b.monto) || 0), 0);
 
@@ -10993,7 +11173,7 @@
             registros.forEach(r => {
                 const cleanFact = String(r.factura || '').trim();
                 const escFact = encodeURIComponent(cleanFact);
-                const esEntregado = (r.estado === 'Entregado');
+                const esEntregado = esRegistroEntregado(r);
                 const tieneDocJson = !!(r.jsonData || r.jsonRaw || (typeof obtenerJsonFacturaLocal === 'function' && obtenerJsonFacturaLocal(cleanFact)));
                 const localPod = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(cleanFact) : null;
                 const tieneFotoFirma = !!((r.fotoComprobante || (localPod && localPod.fotoComprobante)) || (r.firmaDigital || (localPod && localPod.firmaDigital)));
@@ -11169,7 +11349,8 @@
 
         function abrirModalComprobanteDirectoPorFactura(facturaEncoded) {
             const factura = decodeURIComponent(facturaEncoded);
-            const viaje = registrosGlobales.find(r => String(r.factura).trim().toLowerCase() === String(factura).trim().toLowerCase());
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(factura) : String(factura).trim().toLowerCase();
+            const viaje = registrosGlobales.find(r => String(r.factura).trim().toLowerCase() === String(factura).trim().toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(r.factura) === factNorm));
             if (!viaje) {
                 showToast('Error', 'No se encontró el viaje especificado.', 'error');
                 return;
@@ -11180,7 +11361,8 @@
 
         function abrirModalEntregaAtrasada(facturaEncoded) {
             const factura = decodeURIComponent(facturaEncoded);
-            const viaje = registrosGlobales.find(r => String(r.factura).trim().toLowerCase() === String(factura).trim().toLowerCase());
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(factura) : String(factura).trim().toLowerCase();
+            const viaje = registrosGlobales.find(r => String(r.factura).trim().toLowerCase() === String(factura).trim().toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(r.factura) === factNorm));
             if (!viaje) return;
 
             document.getElementById('atrasadoFacturaId').value = viaje.factura;
@@ -14339,13 +14521,17 @@
             if (!facturaId) return;
 
             // 1. Buscar en registrosGlobales
-            let r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === facturaId.toLowerCase());
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(facturaId) : facturaId.toLowerCase();
+            let r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === facturaId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(x.factura) === factNorm));
             
             // 2. Si no es registro principal, buscar en viajes agrupados / multi-facturas
             if (!r) {
                 for (const reg of registrosGlobales) {
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
-                        const sub = reg.subFacturas.find(s => String(s.numero || s.factura).trim().toLowerCase() === facturaId.toLowerCase());
+                        const sub = reg.subFacturas.find(s => {
+                            const subFact = String(s.numero || s.factura).trim().toLowerCase();
+                            return subFact === facturaId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm);
+                        });
                         if (sub) {
                             r = {
                                 ...reg,
@@ -14459,7 +14645,8 @@
             // Estado Despacho
             const estadoDespachoEl = document.getElementById('prevDocEstadoDespacho');
             if (estadoDespachoEl) {
-                const isDone = r.estado === 'Entregado';
+                const isDone = esRegistroEntregado(r);
+                if (isDone) r.estado = 'Entregado';
                 estadoDespachoEl.textContent = isDone ? 'Entregado' : (r.estado || 'Pendiente');
                 estadoDespachoEl.className = isDone 
                     ? 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300'
@@ -14654,7 +14841,9 @@
             const btnComprobanteSheet = document.getElementById('btnVerComprobanteEntregaSheet');
 
             const cleanFactClave = String(r.factura || '').trim().toLowerCase();
-            const localEntrega = (typeof entregasConfirmadasLocales !== 'undefined') ? entregasConfirmadasLocales[cleanFactClave] : null;
+            const localEntrega = (typeof buscarEntregaConfirmadaLocal === 'function') 
+                ? buscarEntregaConfirmadaLocal(r.factura) 
+                : ((typeof entregasConfirmadasLocales !== 'undefined') ? entregasConfirmadasLocales[cleanFactClave] : null);
             const localPod = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(r.factura) : null;
 
             const rawFotoSrc = (r && r.fotoComprobante) || (localEntrega && localEntrega.fotoComprobante) || (localPod && localPod.fotoComprobante) || '';
@@ -14662,13 +14851,13 @@
             const fotoSrc = normalizarUrlImagenParaVisualizar(rawFotoSrc);
             const firmaSrc = normalizarUrlImagenParaVisualizar(rawFirmaSrc);
             const receptorNom = (r && r.receptorNombre) || (localEntrega && localEntrega.receptorNombre) || (localPod && localPod.receptorNombre) || 'Cliente / Receptor';
-            const horaEntregaVal = r.horaEntrega || (localEntrega && localEntrega.horaEntrega) || r.hora || 'Registrada';
+            const horaEntregaVal = r.horaEntrega || (localEntrega && localEntrega.horaEntrega) || (localPod && localPod.fechaHora) || r.hora || 'Registrada';
             const motivoRetrasoVal = r.motivoRetraso || (localEntrega && localEntrega.motivoRetraso) || '';
 
-            const estadoLimpio = String(r.estado || '').toLowerCase().trim();
-            const esEntregado = (estadoLimpio === 'entregado') || Boolean(localEntrega) || Boolean(localPod);
+            const esEntregado = esRegistroEntregado(r);
 
             if (esEntregado) {
+                r.estado = 'Entregado';
                 if (seccionRealizada) seccionRealizada.classList.remove('hidden');
                 if (seccionPendiente) seccionPendiente.classList.add('hidden');
                 if (btnComprobanteSheet) btnComprobanteSheet.classList.remove('hidden');
