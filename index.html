@@ -1689,27 +1689,36 @@
 
                         <!-- SECCIÓN 3: LO QUE MÁS LLEVAN LOS CLIENTES (ESTUDIO DE DEMANDA) -->
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3.5">
                                 <div class="border-b border-slate-800 pb-3">
-                                    <div class="flex items-center justify-between">
-                                        <h4 class="font-bold text-sm text-amber-300 flex items-center gap-2">
-                                            <i class="fa-solid fa-dolly text-amber-400"></i>
-                                            <span>Lo que Más Llevan los Clientes (Demanda de Materiales)</span>
-                                        </h4>
-                                        <span class="text-[10px] text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold">Interactivo</span>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 text-xs border border-amber-500/30">
+                                                <i class="fa-solid fa-dolly"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <h4 class="font-bold text-xs sm:text-sm text-slate-100 flex items-center gap-1.5 flex-wrap">
+                                                    <span>Lo que Más Llevan los Clientes</span>
+                                                    <span class="text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/25">Demanda de Materiales</span>
+                                                </h4>
+                                            </div>
+                                        </div>
+                                        <span class="self-start sm:self-auto text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold shrink-0 inline-flex items-center gap-1 shadow-sm">
+                                            <i class="fa-solid fa-hand-pointer text-[9px]"></i> Tocar para ver clientes
+                                        </span>
                                     </div>
-                                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-hand-pointer text-amber-400 text-[11px]"></i>
-                                        <span>Toque cualquier material para ver los clientes que lo compraron con su ficha y pedidos.</span>
+                                    <p class="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-circle-info text-amber-400/80 text-[10px]"></i>
+                                        <span>Toque cualquier material para ver los clientes compradores, pedidos y su ficha.</span>
                                     </p>
                                 </div>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-left text-xs">
                                         <thead class="text-slate-400 uppercase text-[10px] border-b border-slate-800">
                                             <tr>
-                                                <th class="py-2 px-3">#</th>
+                                                <th class="py-2 px-3 text-center">#</th>
                                                 <th class="py-2 px-3">Material / Categoría</th>
-                                                <th class="py-2 px-3 text-center">Frecuencia</th>
+                                                <th class="py-2 px-3 text-center">Pedidos Realizados</th>
                                                 <th class="py-2 px-3 text-right">Sucursal Principal</th>
                                             </tr>
                                         </thead>
@@ -13794,8 +13803,11 @@
                                     </span>
                                 </td>
                                 <td class="py-2.5 px-3 text-center whitespace-nowrap">
-                                    <span class="text-amber-400 font-bold">${freq}</span>
-                                    <span class="text-[10px] text-slate-400 ml-1">(${pct}%)</span>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 group-hover:bg-amber-500/20 group-hover:border-amber-500/40 transition-colors">
+                                        <i class="fa-solid fa-box-archive text-amber-400 text-[10px]"></i>
+                                        <strong class="font-mono font-bold text-xs">${freq} pedido${freq === 1 ? '' : 's'}</strong>
+                                        <span class="text-[10px] text-slate-400 font-normal">(${pct}%)</span>
+                                    </span>
                                 </td>
                                 <td class="py-2.5 px-3 text-right whitespace-nowrap">
                                     ${getBadgeSucursalHTML(topSuc)}
