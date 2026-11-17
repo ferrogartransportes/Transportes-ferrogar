@@ -612,8 +612,21 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label id="lblManInputFactura" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Nº de Crédito Fiscal (CCF)</label>
-                                        <input type="text" id="manInputFactura" autocomplete="off" placeholder="Ej. CCF-00428" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <label id="lblManInputFactura" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Nº de Crédito Fiscal (CCF)</label>
+                                            <button type="button" onclick="buscarDocumentoEnGoogleDrive()" id="btnBuscarDriveSimple" class="text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 px-2 py-0.5 rounded-lg transition-all inline-flex items-center gap-1 cursor-pointer shadow-sm" title="Buscar archivo JSON o PDF en Google Drive">
+                                                <i class="fa-brands fa-google-drive text-amber-400"></i>
+                                                <span>Buscar en Drive</span>
+                                            </button>
+                                        </div>
+                                        <div class="relative">
+                                            <input type="text" id="manInputFactura" onkeydown="if(event.key==='Enter'){event.preventDefault(); buscarDocumentoEnGoogleDrive();}" autocomplete="off" placeholder="Ej. CCF-00428 o 428..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue pr-24">
+                                            <button type="button" onclick="buscarDocumentoEnGoogleDrive()" title="Buscar archivo en carpeta de Google Drive" class="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer">
+                                                <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+                                                <span class="hidden sm:inline">Drive</span>
+                                            </button>
+                                        </div>
+                                        <div id="driveDocStatusSimple" class="mt-1.5 text-[11px] hidden"></div>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía Total ($)</label>
@@ -3029,6 +3042,9 @@
                         <button id="btnAdjuntarJsonFacturaEnSheet" type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer" title="Adjuntar o actualizar el archivo JSON (DTE) de esta factura ya creada">
                             <i class="fa-solid fa-file-arrow-up text-cyan-200"></i> <span id="labelBtnAdjuntarJsonSheet">Adjuntar JSON</span>
                         </button>
+                        <a id="btnVerDrivePdfSheet" href="#" target="_blank" class="hidden px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px] shadow-sm" title="Ver archivo PDF oficial en Google Drive">
+                            <i class="fa-solid fa-file-pdf text-red-400 text-sm"></i> <span>PDF Drive</span>
+                        </a>
                         <button onclick="imprimirHojaFactura()" class="flex-1 sm:flex-none justify-center px-3.5 py-2 bg-accentBlue hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer min-h-[38px]">
                             <i class="fa-solid fa-print"></i> <span>Imprimir</span>
                         </button>
@@ -5294,7 +5310,8 @@
                                 subFacturas: Array.isArray(item.subFacturas) ? item.subFacturas : [],
                                 jsonData: item.jsonData || null,
                                 jsonRaw: item.jsonRaw || '',
-                                tipoDocumento: item.tipoDocumento || ((String(item.factura || '').toUpperCase().startsWith('CCF') || String(item.factura || '').toUpperCase().includes('CREDITO')) ? 'CCF' : 'FACTURA')
+                                tipoDocumento: item.tipoDocumento || ((String(item.factura || '').toUpperCase().startsWith('CCF') || String(item.factura || '').toUpperCase().includes('CREDITO')) ? 'CCF' : 'FACTURA'),
+                                drivePdfUrl: item.drivePdfUrl || ''
                             };
                         });
 
@@ -7228,6 +7245,7 @@
             let html = '';
             filasFacturasAgrupadas.forEach((fila, index) => {
                 const tieneJson = Boolean(fila.jsonData || fila.jsonRaw);
+                const tienePdf = Boolean(fila.drivePdfUrl);
                 const btnJsonHtml = tieneJson
                     ? `<button type="button" onclick="abrirModalJsonFilaFactura(${fila.id})" class="w-full px-2 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer" title="Ver / modificar JSON adjunto">
                         <i class="fa-solid fa-code text-cyan-400"></i> <span class="truncate">JSON ✓</span>
@@ -7236,26 +7254,39 @@
                         <i class="fa-solid fa-file-code text-cyan-400"></i> <span class="truncate">+ JSON</span>
                        </button>`;
 
-                const previewSubJson = tieneJson
+                let subBadgeDrive = '';
+                if (tienePdf) {
+                    subBadgeDrive = `
+                        <a href="${fila.drivePdfUrl}" target="_blank" class="text-amber-300 hover:text-amber-200 font-bold text-[11px] inline-flex items-center gap-1 hover:underline">
+                            <i class="fa-solid fa-file-pdf text-red-400"></i> Ver PDF Drive
+                        </a>
+                        <span class="text-slate-600">|</span>
+                    `;
+                }
+
+                const previewSubJson = (tieneJson || tienePdf)
                     ? `<div class="flex items-center justify-between text-[11px] bg-cyan-950/40 border border-cyan-500/30 px-3 py-1.5 rounded-lg text-cyan-200 mt-1.5">
                         <div class="flex items-center gap-2 truncate">
-                            <span class="font-bold text-cyan-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-circle-check text-emerald-400"></i> JSON Vinculado:</span>
-                            <span class="truncate text-slate-300">${fila.jsonNombreCliente ? `${fila.jsonNombreCliente} • ` : ''}${fila.jsonItemCount ? `${fila.jsonItemCount} productos/ítems` : 'Datos fiscales cargados'}</span>
+                            <span class="font-bold text-cyan-400 flex items-center gap-1 shrink-0"><i class="fa-solid fa-circle-check text-emerald-400"></i> ${tieneJson ? 'JSON' : ''}${tieneJson && tienePdf ? ' + ' : ''}${tienePdf ? 'PDF' : ''} Vinculado:</span>
+                            <span class="truncate text-slate-300">${fila.jsonNombreCliente ? `${fila.jsonNombreCliente} • ` : ''}${fila.jsonItemCount ? `${fila.jsonItemCount} productos/ítems` : (tienePdf ? 'Archivo PDF de Drive' : 'Datos fiscales cargados')}</span>
                         </div>
                         <div class="flex items-center gap-2.5 shrink-0">
-                            <button type="button" onclick="abrirModalJsonFilaFactura(${fila.id})" class="text-cyan-300 hover:text-cyan-200 hover:underline cursor-pointer font-bold text-[11px] inline-flex items-center gap-1">
-                                <i class="fa-solid fa-pen-to-square"></i> Ver / Editar
-                            </button>
-                            <span class="text-slate-600">|</span>
-                            <button type="button" onclick="quitarJsonDeFilaFactura(${fila.id})" class="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer text-[11px] inline-flex items-center gap-1">
-                                <i class="fa-solid fa-trash"></i> Quitar
-                            </button>
+                            ${subBadgeDrive}
+                            ${tieneJson ? `
+                                <button type="button" onclick="abrirModalJsonFilaFactura(${fila.id})" class="text-cyan-300 hover:text-cyan-200 hover:underline cursor-pointer font-bold text-[11px] inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-pen-to-square"></i> Ver / Editar
+                                </button>
+                                <span class="text-slate-600">|</span>
+                                <button type="button" onclick="quitarJsonDeFilaFactura(${fila.id})" class="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer text-[11px] inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-trash"></i> Quitar
+                                </button>
+                            ` : ''}
                         </div>
                        </div>`
                     : '';
 
                 html += `
-                    <div class="bg-slate-900/90 p-2.5 rounded-xl border ${tieneJson ? 'border-cyan-500/50 shadow-md shadow-cyan-950/30' : 'border-slate-700/80'}">
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border ${tieneJson || tienePdf ? 'border-cyan-500/50 shadow-md shadow-cyan-950/30' : 'border-slate-700/80'}">
                         <div class="grid grid-cols-12 gap-2 sm:gap-2.5 items-center">
                             <div class="col-span-1 text-center font-bold text-slate-400 text-xs">
                                 #${index + 1}
@@ -7272,8 +7303,11 @@
                             <div class="col-span-4 sm:col-span-2">
                                 <input type="text" autocomplete="off" value="${fila.monto || ''}" oninput="actualizarFilaFacturaAgrupada(${fila.id}, 'monto', this.value)" placeholder="Monto $" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue font-mono">
                             </div>
-                            <div class="col-span-8 sm:col-span-2">
-                                ${btnJsonHtml}
+                            <div class="col-span-8 sm:col-span-2 flex items-center gap-1">
+                                <div class="flex-1">${btnJsonHtml}</div>
+                                <button type="button" onclick="buscarFilaFacturaEnGoogleDrive(${fila.id})" class="px-2 py-1.5 bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/35 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0" title="Buscar este número en Google Drive">
+                                    <i class="fa-brands fa-google-drive text-amber-400"></i>
+                                </button>
                             </div>
                             <div class="col-span-4 sm:col-span-1 text-right">
                                 <button type="button" onclick="eliminarFilaFacturaAgrupada(${fila.id})" title="Eliminar fila" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer">
@@ -8230,6 +8264,311 @@
                 return { raw: raw, parsed: JSON.parse(raw) };
             } catch(e) {
                 return null;
+            }
+        }
+
+        // ==========================================
+        // INTEGRACIÓN CON GOOGLE DRIVE (PDFs Y JSONs)
+        // ==========================================
+        function guardarDrivePdfFacturaLocal(facturaId, pdfData) {
+            if (!facturaId || !pdfData) return;
+            try {
+                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
+                localStorage.setItem(key, typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData));
+            } catch(e) {
+                console.warn('Almacenamiento local lleno al guardar PDF Drive:', e);
+            }
+        }
+
+        function obtenerDrivePdfFacturaLocal(facturaId) {
+            if (!facturaId) return null;
+            try {
+                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                try {
+                    return JSON.parse(raw);
+                } catch(e) {
+                    return { viewUrl: raw, previewUrl: raw, fileName: 'Documento.pdf' };
+                }
+            } catch(e) {
+                return null;
+            }
+        }
+
+        let ultimoDrivePdfUrlAsignacion = '';
+        let ultimoDrivePdfNameAsignacion = '';
+
+        async function buscarDocumentoEnGoogleDrive(optNumero) {
+            const inpFactura = document.getElementById('manInputFactura');
+            const num = (optNumero || (inpFactura ? inpFactura.value : '') || '').trim();
+            if (!num) {
+                showToast('Número Requerido', 'Por favor ingrese el número de factura o CCF para buscar en Google Drive.', 'warning');
+                inpFactura?.focus();
+                return;
+            }
+
+            if (!scriptEndpoint) {
+                showToast('Configuración Requerida', 'El enlace de Google Apps Script no está configurado.', 'error');
+                return;
+            }
+
+            const btnDrive = document.getElementById('btnBuscarDriveSimple');
+            const statusEl = document.getElementById('driveDocStatusSimple');
+            const originalBtnText = btnDrive ? btnDrive.innerHTML : '';
+
+            if (btnDrive) {
+                btnDrive.disabled = true;
+                btnDrive.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Buscando...</span>`;
+            }
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-amber-400"></i><span>Buscando archivos para <strong>#${num}</strong> en Google Drive y subcarpetas...</span></div>`;
+            }
+
+            try {
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data && data.encontrado) {
+                    let infoDetalles = [];
+                    let docIdAsignado = num;
+
+                    // 1. Si encontró JSON
+                    if (data.json) {
+                        let parsedJson = data.json.parsed;
+                        if (!parsedJson && data.json.raw) {
+                            try { parsedJson = JSON.parse(data.json.raw); } catch(e) {}
+                        }
+
+                        if (parsedJson) {
+                            const datos = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJson) : null;
+                            if (datos) {
+                                docIdAsignado = datos.numero || datos.numeroCorto || num;
+
+                                const inpCli = document.getElementById('manInputCliente');
+                                if (inpCli && datos.cliente && datos.cliente !== 'Consumidor Final') {
+                                    inpCli.value = datos.cliente;
+                                    if (typeof autoCompletarDatosClienteSeleccionado === 'function') {
+                                        autoCompletarDatosClienteSeleccionado();
+                                    }
+                                }
+
+                                const inpTel = document.getElementById('manInputTelefonoCliente');
+                                if (inpTel && datos.telefono) inpTel.value = datos.telefono;
+
+                                const inpDest = document.getElementById('manInputDestino');
+                                if (inpDest && datos.destino) inpDest.value = datos.destino;
+
+                                const inpMonto = document.getElementById('manInputMonto');
+                                if (inpMonto && datos.monto > 0) inpMonto.value = `$${datos.monto.toFixed(2)}`;
+
+                                const selTipo = document.getElementById('manInputTipoDocumento');
+                                if (selTipo && datos.tipo) {
+                                    selTipo.value = datos.tipo;
+                                    if (typeof cambiarTipoDocumentoFiscal === 'function') cambiarTipoDocumentoFiscal();
+                                }
+
+                                const inpDesc = document.getElementById('manInputDescription');
+                                if (inpDesc && datos.items && datos.items.length > 0) {
+                                    inpDesc.value = datos.items.map(it => `${it.cantidad ? it.cantidad + ' ' : ''}${it.descripcion || ''}`).slice(0, 8).join(', ');
+                                    if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
+                                        actualizarPrevisualizacionCategoriasManual();
+                                    }
+                                }
+
+                                window.ultimoJsonImportadoAsignacion = parsedJson;
+                                window.ultimoJsonImportadoAsignacionRaw = data.json.raw || JSON.stringify(parsedJson);
+
+                                guardarJsonFacturaLocal(docIdAsignado, window.ultimoJsonImportadoAsignacionRaw);
+                                guardarJsonFacturaLocal(num, window.ultimoJsonImportadoAsignacionRaw);
+
+                                infoDetalles.push(`JSON (${datos.itemsCount || 0} ítems)`);
+                            }
+                        }
+                    }
+
+                    // 2. Si encontró PDF
+                    if (data.pdf) {
+                        ultimoDrivePdfUrlAsignacion = data.pdf.previewUrl || data.pdf.viewUrl || '';
+                        ultimoDrivePdfNameAsignacion = data.pdf.fileName || '';
+                        window.ultimoDrivePdfUrlAsignacion = ultimoDrivePdfUrlAsignacion;
+                        window.ultimoDrivePdfNameAsignacion = ultimoDrivePdfNameAsignacion;
+                        guardarDrivePdfFacturaLocal(docIdAsignado, data.pdf);
+                        guardarDrivePdfFacturaLocal(num, data.pdf);
+                        infoDetalles.push(`PDF (${data.pdf.fileName})`);
+                    }
+
+                    if (inpFactura && docIdAsignado && !inpFactura.value.includes(docIdAsignado)) {
+                        inpFactura.value = docIdAsignado;
+                    }
+
+                    const carpTxt = data.carpeta ? `Subcarpeta: <strong>${data.carpeta}</strong>` : 'Google Drive';
+                    const btnVerPdf = (data.pdf && (data.pdf.previewUrl || data.pdf.viewUrl)) ? `
+                        <a href="${data.pdf.previewUrl || data.pdf.viewUrl}" target="_blank" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all">
+                            <i class="fa-solid fa-file-pdf text-red-400"></i> <span>Ver PDF en Drive</span>
+                        </a>
+                    ` : '';
+
+                    if (statusEl) {
+                        statusEl.innerHTML = `
+                            <div class="p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/50 text-xs text-emerald-200 flex flex-wrap items-center justify-between gap-2 shadow-md">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-circle-check"></i></span>
+                                    <div>
+                                        <span class="font-bold text-emerald-300">¡Documento encontrado y vinculado desde Drive!</span>
+                                        <span class="block text-[11px] text-slate-300">${infoDetalles.join(' + ')} • ${carpTxt}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${btnVerPdf}
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    showToast('Documento en Drive', `Se vinculó ${infoDetalles.join(' y ')} desde Google Drive con éxito.`, 'success');
+                } else {
+                    if (statusEl) {
+                        statusEl.innerHTML = `
+                            <div class="p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 text-xs text-amber-200 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-circle-exclamation"></i></span>
+                                    <div>
+                                        <span class="font-bold text-amber-300">No encontrado en Google Drive</span>
+                                        <span class="block text-[11px] text-slate-300">${data?.mensaje || ('No se localizó archivo .json o .pdf con el número #' + num + ' en Drive ni sus subcarpetas.')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    showToast('No Encontrado', `No se encontró la factura #${num} en Google Drive.`, 'warning');
+                }
+            } catch(err) {
+                console.error('Error al buscar en Google Drive:', err);
+                if (statusEl) {
+                    statusEl.innerHTML = `
+                        <div class="p-2.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-xs text-rose-300 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-xmark text-rose-400"></i>
+                            <span>Error al consultar Google Drive: ${err.message}. Asegúrese de haber actualizado el script en Apps Script.</span>
+                        </div>
+                    `;
+                }
+                showToast('Error de Conexión', 'No se pudo consultar Google Drive: ' + err.message, 'error');
+            } finally {
+                if (btnDrive) {
+                    btnDrive.disabled = false;
+                    btnDrive.innerHTML = originalBtnText || `<i class="fa-brands fa-google-drive text-amber-400"></i> <span>Buscar en Drive</span>`;
+                }
+            }
+        }
+
+        async function buscarFilaFacturaEnGoogleDrive(filaId) {
+            const fila = filasFacturasAgrupadas.find(f => f.id === filaId);
+            if (!fila) return;
+
+            const num = String(fila.numero || '').trim();
+            if (!num) {
+                showToast('Número Requerido', 'Por favor ingrese el número de factura/CCF en la fila antes de buscar en Drive.', 'warning');
+                return;
+            }
+
+            if (!scriptEndpoint) {
+                showToast('Error', 'Google Apps Script no está configurado.', 'error');
+                return;
+            }
+
+            showToast('Buscando en Drive', `Buscando documento #${num} en Google Drive...`, 'info');
+
+            try {
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data && data.encontrado) {
+                    if (data.json) {
+                        let parsed = data.json.parsed;
+                        if (!parsed && data.json.raw) {
+                            try { parsed = JSON.parse(data.json.raw); } catch(e) {}
+                        }
+                        if (parsed) {
+                            const d = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsed) : null;
+                            if (d) {
+                                fila.jsonData = parsed;
+                                fila.jsonRaw = data.json.raw || JSON.stringify(parsed);
+                                fila.jsonNombreCliente = d.cliente || '';
+                                fila.jsonItemCount = d.itemsCount || 0;
+                                if (d.tipo) fila.tipo = d.tipo;
+                                if (d.numeroCorto || d.numero) fila.numero = d.numeroCorto || d.numero;
+                                if (d.monto > 0) fila.monto = `$${d.monto.toFixed(2)}`;
+
+                                const inpCli = document.getElementById('manInputCliente');
+                                if (inpCli && (!inpCli.value || inpCli.value.trim() === '') && d.cliente && d.cliente !== 'Consumidor Final') {
+                                    inpCli.value = d.cliente;
+                                    if (typeof autoCompletarDatosClienteSeleccionado === 'function') autoCompletarDatosClienteSeleccionado();
+                                }
+
+                                guardarJsonFacturaLocal(fila.numero, fila.jsonRaw);
+                            }
+                        }
+                    }
+
+                    if (data.pdf) {
+                        fila.drivePdfUrl = data.pdf.previewUrl || data.pdf.viewUrl;
+                        fila.drivePdfName = data.pdf.fileName;
+                        guardarDrivePdfFacturaLocal(fila.numero, data.pdf);
+                    }
+
+                    renderizarFilasFacturasAgrupadas();
+                    recalcularTotalFacturasAgrupadas();
+                    showToast('Documento Vinculado', `Factura #${num} encontrada y vinculada desde Google Drive (${data.carpeta || 'Drive'}).`, 'success');
+                } else {
+                    showToast('No Encontrado', `No se encontró la factura #${num} en Google Drive.`, 'warning');
+                }
+            } catch(err) {
+                showToast('Error', 'Error al consultar Drive: ' + err.message, 'error');
+            }
+        }
+
+        async function buscarDrivePdfParaFacturaExistente(facturaId) {
+            const decId = decodeURIComponent(facturaId || '').trim();
+            if (!decId || !scriptEndpoint) return;
+
+            showToast('Buscando en Drive', `Buscando PDF para #${decId} en Google Drive...`, 'info');
+            try {
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(decId)}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                if (data && data.encontrado && data.pdf) {
+                    guardarDrivePdfFacturaLocal(decId, data.pdf);
+                    const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === decId.toLowerCase());
+                    if (r) {
+                        r.drivePdfUrl = data.pdf.previewUrl || data.pdf.viewUrl;
+                        r.drivePdfName = data.pdf.fileName;
+                    }
+                    if (scriptEndpoint) {
+                        fetch(scriptEndpoint, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({
+                                action: 'attachDrivePdf',
+                                factura: decId,
+                                drivePdfUrl: data.pdf.previewUrl || data.pdf.viewUrl
+                            })
+                        }).catch(() => {});
+                    }
+                    showToast('PDF Encontrado', `Se vinculó el PDF de ${data.pdf.fileName} desde Drive.`, 'success');
+                    if (typeof abrirModalPrevisualizarFactura === 'function') {
+                        abrirModalPrevisualizarFactura(decId);
+                    }
+                } else {
+                    showToast('No Encontrado', `No se encontró archivo PDF para #${decId} en Google Drive.`, 'warning');
+                }
+            } catch(e) {
+                showToast('Error', 'No se pudo consultar Google Drive: ' + e.message, 'error');
             }
         }
 
@@ -9376,6 +9715,8 @@
                             docCompleto: docCompleto,
                             monto: mVal,
                             cliente: f.jsonNombreCliente || cliente,
+                            drivePdfUrl: f.drivePdfUrl || '',
+                            drivePdfName: f.drivePdfName || '',
                             jsonData: f.jsonData || null,
                             jsonRaw: rawIndividual
                         });
@@ -9384,6 +9725,10 @@
                         if (f.jsonData || rawIndividual) {
                             guardarJsonFacturaLocal(docCompleto, rawIndividual);
                             guardarJsonFacturaLocal(numLimpio, rawIndividual);
+                        }
+                        if (f.drivePdfUrl) {
+                            guardarDrivePdfFacturaLocal(docCompleto, { viewUrl: f.drivePdfUrl, previewUrl: f.drivePdfUrl, fileName: f.drivePdfName });
+                            guardarDrivePdfFacturaLocal(numLimpio, { viewUrl: f.drivePdfUrl, previewUrl: f.drivePdfUrl, fileName: f.drivePdfName });
                         }
                     });
 
@@ -9482,6 +9827,10 @@
                         if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
                             actualizarPrevisualizacionCategoriasManual();
                         }
+                        const stSimple = document.getElementById('driveDocStatusSimple');
+                        if (stSimple) { stSimple.innerHTML = ''; stSimple.classList.add('hidden'); }
+                        window.ultimoDrivePdfUrlAsignacion = '';
+                        window.ultimoDrivePdfNameAsignacion = '';
                         if (cantInput) cantInput.value = "1";
                         cambiarCantidadViajesFactura();
                         const selEsMulti = document.getElementById('manInputEsMultiFactura');
@@ -9591,6 +9940,10 @@
                     showToast('Asignación Registrada', `Se asignaron con éxito los ${cantidadViajes} viajes para ${facturaFinal}.`, 'success');
 
                     document.getElementById('adminManualForm').reset();
+                    const stSimple = document.getElementById('driveDocStatusSimple');
+                    if (stSimple) { stSimple.innerHTML = ''; stSimple.classList.add('hidden'); }
+                    window.ultimoDrivePdfUrlAsignacion = '';
+                    window.ultimoDrivePdfNameAsignacion = '';
                     if (cantInput) cantInput.value = "1";
                     cambiarCantidadViajesFactura();
                     const selEsMulti = document.getElementById('manInputEsMultiFactura');
@@ -9817,10 +10170,24 @@
                 fotoComprobante: '',
                 firmaDigital: '',
                 receptorNombre: '',
+                drivePdfUrl: window.ultimoDrivePdfUrlAsignacion || (obtenerDrivePdfFacturaLocal(factura)?.previewUrl || obtenerDrivePdfFacturaLocal(factura)?.viewUrl || ''),
+                drivePdfName: window.ultimoDrivePdfNameAsignacion || (obtenerDrivePdfFacturaLocal(factura)?.fileName || ''),
                 subFacturas: Array.isArray(subFacturas) ? subFacturas : [],
                 jsonData: jsonData || null,
                 jsonRaw: jsonRaw || (jsonData ? JSON.stringify(jsonData) : '')
             };
+
+            // Asegurar persistencia local de PDF oficial de Google Drive si existe
+            if (nuevoReg.drivePdfUrl) {
+                guardarDrivePdfFacturaLocal(factura, { viewUrl: nuevoReg.drivePdfUrl, previewUrl: nuevoReg.drivePdfUrl, fileName: nuevoReg.drivePdfName });
+            }
+            if (nuevoReg.subFacturas && nuevoReg.subFacturas.length > 0) {
+                nuevoReg.subFacturas.forEach(sf => {
+                    if (sf.drivePdfUrl) {
+                        guardarDrivePdfFacturaLocal(sf.numero || sf.factura || sf.docCompleto, { viewUrl: sf.drivePdfUrl, previewUrl: sf.drivePdfUrl, fileName: sf.drivePdfName });
+                    }
+                });
+            }
 
             // Asegurar persistencia local de los archivos JSON asociados al viaje o a sus subFacturas
             if (nuevoReg.jsonData || nuevoReg.jsonRaw) {
@@ -15659,6 +16026,19 @@
                 }
             }
 
+            // Gestión de enlace al PDF oficial de Google Drive
+            const localDrivePdf = (typeof obtenerDrivePdfFacturaLocal === 'function') ? obtenerDrivePdfFacturaLocal(r.factura) : null;
+            const drivePdfUrl = r.drivePdfUrl || (localDrivePdf ? (localDrivePdf.previewUrl || localDrivePdf.viewUrl) : null);
+            const btnVerDrivePdf = document.getElementById('btnVerDrivePdfSheet');
+            if (btnVerDrivePdf) {
+                if (drivePdfUrl) {
+                    btnVerDrivePdf.href = drivePdfUrl;
+                    btnVerDrivePdf.classList.remove('hidden');
+                } else {
+                    btnVerDrivePdf.classList.add('hidden');
+                }
+            }
+
             const modal = document.getElementById('modalPrevisualizarFactura');
             if (!modal) return;
 
@@ -15754,7 +16134,7 @@
                                ((docJsonData && Array.isArray(docJsonData.productos)) ? docJsonData.productos :
                                ((docJsonData && Array.isArray(docJsonData.lineas)) ? docJsonData.lineas : null)));
 
-            // Renderizar Banner Informativo de JSON en la Hoja (Solo para Administrador)
+            // Renderizar Banner Informativo de JSON y Drive en la Hoja (Solo para Administrador)
             const bannerJson = document.getElementById('prevDocBannerJson');
             if (bannerJson) {
                 if (esConductor) {
@@ -15762,6 +16142,7 @@
                     bannerJson.classList.add('hidden');
                 } else {
                     bannerJson.classList.remove('hidden');
+                    const escapedFactura = String(r.factura || '').replace(/'/g, "\\'");
                     if (tieneJsonVinculado) {
                         const cantProds = (itemsArray && itemsArray.length > 0) ? itemsArray.length : (r.subFacturas ? r.subFacturas.length : 0);
                         bannerJson.innerHTML = `
@@ -15777,6 +16158,15 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5 ml-auto">
+                                    ${drivePdfUrl ? `
+                                    <a href="${drivePdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Ver archivo PDF en Google Drive">
+                                        <i class="fa-solid fa-file-pdf"></i> <span>PDF Drive</span>
+                                    </a>
+                                    ` : `
+                                    <button type="button" onclick="buscarDrivePdfParaFacturaExistente('${escapedFactura}')" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Buscar PDF en Google Drive">
+                                        <i class="fa-brands fa-google-drive text-amber-500"></i> <span>Buscar PDF Drive</span>
+                                    </button>
+                                    `}
                                     <button type="button" onclick="abrirModalVerJsonFacturaActual()" class="px-2.5 py-1.5 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm">
                                         <i class="fa-solid fa-code"></i> <span>Ver JSON</span>
                                     </button>
@@ -15799,9 +16189,20 @@
                                         <span class="text-[11px] text-slate-500">Vincule el JSON oficial para extraer sus artículos, cliente y montos oficiales.</span>
                                     </div>
                                 </div>
-                                <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all ml-auto">
-                                    <i class="fa-solid fa-file-circle-plus"></i> <span>Adjuntar JSON (DTE)</span>
-                                </button>
+                                <div class="flex items-center gap-1.5 ml-auto">
+                                    ${drivePdfUrl ? `
+                                    <a href="${drivePdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Ver archivo PDF en Google Drive">
+                                        <i class="fa-solid fa-file-pdf"></i> <span>PDF Drive</span>
+                                    </a>
+                                    ` : `
+                                    <button type="button" onclick="buscarDrivePdfParaFacturaExistente('${escapedFactura}')" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Buscar documento en Google Drive">
+                                        <i class="fa-brands fa-google-drive text-amber-500"></i> <span>Buscar en Drive</span>
+                                    </button>
+                                    `}
+                                    <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-all">
+                                        <i class="fa-solid fa-file-circle-plus"></i> <span>Adjuntar JSON (DTE)</span>
+                                    </button>
+                                </div>
                             </div>
                         `;
                     }
