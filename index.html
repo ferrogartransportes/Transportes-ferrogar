@@ -3154,6 +3154,66 @@
                         <!-- Banner Informativo de JSON Adjunto (Visible en pantalla, oculto en impresión) -->
                         <div id="prevDocBannerJson" class="print:hidden"></div>
 
+                        <!-- Datos Oficiales de Transmisión Electrónica y Control (DTE) -->
+                        <div id="prevDocSeccionDte" class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
+                            <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                                <div class="font-bold text-slate-900 flex items-center gap-1.5 uppercase text-[11px] tracking-wider text-blue-800">
+                                    <i class="fa-solid fa-file-shield text-blue-700"></i> Control & Transmisión Electrónica (DTE)
+                                </div>
+                                <span id="prevDocDteEstadoBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300">
+                                    Documento Registrado
+                                </span>
+                            </div>
+
+                            <!-- Fila 1: Códigos de Hacienda (Código de Generación, Número de Control, Sello de Recepción) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-white p-3 rounded-lg border border-slate-200">
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Código de Generación:</span>
+                                    <span id="prevDocCodigoGeneracion" class="font-mono font-bold text-slate-900 text-[11px] break-all select-all">---</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Número de Control:</span>
+                                    <span id="prevDocNumeroControl" class="font-mono font-bold text-blue-700 text-[11px] break-all select-all">---</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Sello de Recepción MH:</span>
+                                    <span id="prevDocSelloRecepcion" class="font-mono font-bold text-slate-800 text-[11px] break-all select-all">---</span>
+                                </div>
+                            </div>
+
+                            <!-- Fila 2: Metadatos Operativos y Emisión -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-[11px]">
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Fecha y Hora de Emisión:</span>
+                                    <span id="prevDocFechaHoraEmision" class="font-semibold text-slate-800 font-mono">--/--/---- --:--:--</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Tipo de Establecimiento:</span>
+                                    <span id="prevDocTipoEstablecimiento" class="font-medium text-slate-800">FG MATRIZ</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">N° Control Interno:</span>
+                                    <span id="prevDocControlInterno" class="font-semibold text-slate-800 font-mono">---</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Forma de Pago:</span>
+                                    <span id="prevDocFormaPago" class="font-semibold text-slate-800">Contado</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Caja / Punto de Venta:</span>
+                                    <span id="prevDocCaja" class="font-medium text-slate-800">Caja 01</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Vendedor:</span>
+                                    <span id="prevDocVendedor" class="font-medium text-slate-800">---</span>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">N° de Devolución / Doc. Relacionado:</span>
+                                    <span id="prevDocNumeroDevolucion" class="font-medium text-slate-800 font-mono">No aplica</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Tabla de Mercadería / Ítems -->
                         <div>
                             <div class="font-bold text-slate-900 mb-2 flex items-center gap-1.5 uppercase text-[11px] tracking-wider text-blue-800">
@@ -7368,7 +7428,11 @@
                                 <button type="button" onclick="quitarJsonDeFilaFactura(${fila.id})" class="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer text-[11px] inline-flex items-center gap-1">
                                     <i class="fa-solid fa-trash"></i> Quitar
                                 </button>
-                            ` : ''}
+                            ` : (tienePdf ? `
+                                <button type="button" onclick="quitarPdfDeFilaFactura(${fila.id})" class="text-rose-400 hover:text-rose-300 hover:underline cursor-pointer text-[11px] inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-trash"></i> Quitar PDF
+                                </button>
+                            ` : '')}
                         </div>
                        </div>`
                     : '';
@@ -7492,12 +7556,13 @@
             if (!rawObj || typeof rawObj !== 'object') return null;
 
             // Desempaquetar si viene envuelto en { "dteJson": { ... } }, { "DTE": { ... } } o { "documento": { ... } }
+            let dteRoot = rawObj;
             if (rawObj.dteJson && typeof rawObj.dteJson === 'object') {
-                rawObj = rawObj.dteJson;
+                dteRoot = rawObj.dteJson;
             } else if (rawObj.DTE && typeof rawObj.DTE === 'object') {
-                rawObj = rawObj.DTE;
+                dteRoot = rawObj.DTE;
             } else if (rawObj.documento && typeof rawObj.documento === 'object') {
-                rawObj = rawObj.documento;
+                dteRoot = rawObj.documento;
             }
 
             let tipo = 'CCF';
@@ -7507,8 +7572,14 @@
             let numeroCorto = '';
             let codigoGeneracion = '';
             let selloRecibido = '';
+            let tipoEstablecimiento = '';
             let fecEmi = '';
             let horEmi = '';
+            let controlInterno = '';
+            let formaPago = '';
+            let caja = '';
+            let vendedor = '';
+            let numeroDevolucion = '';
             let monto = 0;
             let subTotal = 0;
             let totalIva = 0;
@@ -7520,11 +7591,14 @@
             let esDte = false;
 
             // CASO 1: Formato Oficial DTE El Salvador (Ministerio de Hacienda)
-            if (rawObj.identificacion || rawObj.resumen || rawObj.receptor || rawObj.cuerpoDocumento) {
+            if (dteRoot.identificacion || dteRoot.resumen || dteRoot.receptor || dteRoot.cuerpoDocumento) {
                 esDte = true;
-                const ident = rawObj.identificacion || {};
-                const resumen = rawObj.resumen || {};
-                const recep = rawObj.receptor || null;
+                const ident = dteRoot.identificacion || {};
+                const emisor = dteRoot.emisor || {};
+                const resumen = dteRoot.resumen || {};
+                const recep = dteRoot.receptor || null;
+                const docRel = dteRoot.documentoRelacionado || rawObj.documentoRelacionado || null;
+                const apendice = dteRoot.apendice || rawObj.apendice || [];
 
                 // Tipo DTE: "03" = CCF, "01" = FACTURA, "14" = Sujeto Excluido
                 tipoDte = String(ident.tipoDte || '').trim();
@@ -7532,7 +7606,7 @@
                 else if (tipoDte === '01') tipo = 'FACTURA';
                 else if (tipoDte === '14') tipo = 'FACTURA';
 
-                // Número de Control y Código de Generación
+                // 1. Número de Control
                 if (ident.numeroControl) {
                     numeroControl = String(ident.numeroControl).trim();
                     numero = numeroControl;
@@ -7542,22 +7616,96 @@
                     }
                 }
 
+                // 2. Código de Generación
                 if (ident.codigoGeneracion) {
                     codigoGeneracion = String(ident.codigoGeneracion).trim();
                     if (!numero) numero = codigoGeneracion;
                 }
 
-                if (rawObj.selloRecibido) {
-                    selloRecibido = String(rawObj.selloRecibido).trim();
-                }
+                // 3. Sello de Recepción
+                selloRecibido = String(rawObj.selloRecibido || dteRoot.selloRecibido || ident.selloRecibido || rawObj.respuestaMH?.selloRecibido || '').trim();
 
+                // 4. Tipo de Establecimiento
+                const rawTipoEst = String(emisor.tipoEstablecimiento || ident.tipoEstablecimiento || rawObj.tipoEstablecimiento || '').trim();
+                if (rawTipoEst === '01') tipoEstablecimiento = 'Casa Matriz (01)';
+                else if (rawTipoEst === '02') tipoEstablecimiento = 'Sucursal (02)';
+                else if (rawTipoEst === '04') tipoEstablecimiento = 'Bodega (04)';
+                else if (rawTipoEst === '07') tipoEstablecimiento = 'Predio / Patio (07)';
+                else if (rawTipoEst) tipoEstablecimiento = rawTipoEst;
+                else if (emisor.codEstable) tipoEstablecimiento = `Establecimiento ${emisor.codEstable}`;
+
+                // 5. Fecha y Hora de Emisión
                 if (ident.fecEmi) fecEmi = String(ident.fecEmi).trim();
                 if (ident.horEmi) horEmi = String(ident.horEmi).trim();
+
+                // 6. N° de Control Interno
+                if (ident.motivoContin) controlInterno = String(ident.motivoContin).trim();
+                else if (emisor.codEstable && emisor.codPuntoVenta) controlInterno = `${emisor.codEstable}-${emisor.codPuntoVenta}`;
+                else if (ident.correlativoInterno) controlInterno = String(ident.correlativoInterno).trim();
+                else if (rawObj.controlInterno) controlInterno = String(rawObj.controlInterno).trim();
+
+                // 7. Forma de Pago
+                if (resumen.condicionOperacion !== undefined) {
+                    const cond = Number(resumen.condicionOperacion);
+                    if (cond === 1) formaPago = 'Contado';
+                    else if (cond === 2) {
+                        const primerPago = Array.isArray(resumen.pagos) && resumen.pagos[0] ? resumen.pagos[0] : null;
+                        const plazo = primerPago && primerPago.plazo ? primerPago.plazo : '';
+                        const periodo = primerPago && primerPago.periodo ? primerPago.periodo : 'días';
+                        formaPago = plazo ? `Crédito (${plazo} ${periodo})` : 'Crédito';
+                    } else if (cond === 3) formaPago = 'Otro';
+                }
+                if (!formaPago && Array.isArray(resumen.pagos) && resumen.pagos.length > 0) {
+                    const codP = String(resumen.pagos[0].codigo || '');
+                    if (codP === '01') formaPago = 'Efectivo';
+                    else if (codP === '02') formaPago = 'Tarjeta Débito';
+                    else if (codP === '03') formaPago = 'Tarjeta Crédito';
+                    else if (codP === '04') formaPago = 'Cheque';
+                    else if (codP === '05') formaPago = 'Transferencia';
+                    else if (codP === '99') formaPago = 'Otros';
+                }
+
+                // 8. Caja / Punto de Venta
+                if (emisor.codPuntoVenta) caja = `Caja / Punto ${emisor.codPuntoVenta}`;
+                else if (ident.puntoVenta) caja = `Punto ${ident.puntoVenta}`;
+                else if (rawObj.caja) caja = String(rawObj.caja).trim();
+
+                // 9. Vendedor
+                if (rawObj.vendedor) vendedor = String(rawObj.vendedor).trim();
+                else if (resumen.vendedor) vendedor = String(resumen.vendedor).trim();
+                else if (dteRoot.vendedor) vendedor = String(dteRoot.vendedor).trim();
+                else if (rawObj.datosAdicionales && rawObj.datosAdicionales.vendedor) vendedor = String(rawObj.datosAdicionales.vendedor).trim();
+
+                // 10. Número de Devolución
+                if (docRel) {
+                    if (Array.isArray(docRel) && docRel.length > 0) {
+                        numeroDevolucion = docRel.map(d => d.numeroDocumento || d.numDoc || '').filter(Boolean).join(', ');
+                    } else if (typeof docRel === 'object') {
+                        numeroDevolucion = String(docRel.numeroDocumento || docRel.numDoc || '').trim();
+                    }
+                } else if (rawObj.numeroDevolucion || rawObj.numDevolucion) {
+                    numeroDevolucion = String(rawObj.numeroDevolucion || rawObj.numDevolucion).trim();
+                }
+
+                // Búsqueda en Apéndice DTE (array de campos personalizados)
+                if (Array.isArray(apendice)) {
+                    apendice.forEach(ap => {
+                        const c = String(ap.campo || ap.etiqueta || '').toUpperCase();
+                        const v = String(ap.valor || '').trim();
+                        if (!v) return;
+                        if (!vendedor && (c.includes('VEND') || c.includes('ASESOR') || c.includes('CAJERO'))) vendedor = v;
+                        if (!caja && (c.includes('CAJA') || c.includes('POS') || c.includes('TERMINAL'))) caja = v;
+                        if (!controlInterno && (c.includes('CONTROL') || c.includes('INTERNO') || c.includes('CORRELATIVO'))) controlInterno = v;
+                        if (!numeroDevolucion && (c.includes('DEVOL') || c.includes('NC') || c.includes('NOTA'))) numeroDevolucion = v;
+                        if (!formaPago && (c.includes('PAGO') || c.includes('FORMA') || c.includes('CONDICION'))) formaPago = v;
+                        if (!tipoEstablecimiento && (c.includes('ESTABLECIMIENTO') || c.includes('SUCURSAL'))) tipoEstablecimiento = v;
+                    });
+                }
 
                 // Monto Total y Subtotal
                 const mVal = resumen.totalPagar !== undefined ? resumen.totalPagar : 
                             (resumen.montoTotalOperacion !== undefined ? resumen.montoTotalOperacion : 
-                            (resumen.totalGravada !== undefined ? resumen.totalGravada : (rawObj.monto || rawObj.total || 0)));
+                            (resumen.totalGravada !== undefined ? resumen.totalGravada : (dteRoot.monto || dteRoot.total || 0)));
                 monto = parseFloat(mVal) || 0;
 
                 subTotal = parseFloat(resumen.subTotal !== undefined ? resumen.subTotal : resumen.subTotalVentas || 0) || 0;
@@ -7585,10 +7733,10 @@
                     cliente = (tipoDte === '01') ? 'Consumidor Final' : 'Cliente General';
                 }
 
-                if (!destino && rawObj.destino) destino = String(rawObj.destino).trim();
+                if (!destino && dteRoot.destino) destino = String(dteRoot.destino).trim();
 
                 // Items / Cuerpo de Documento
-                const rawItems = Array.isArray(rawObj.cuerpoDocumento) ? rawObj.cuerpoDocumento : (Array.isArray(rawObj.items) ? rawObj.items : []);
+                const rawItems = Array.isArray(dteRoot.cuerpoDocumento) ? dteRoot.cuerpoDocumento : (Array.isArray(dteRoot.items) ? dteRoot.items : []);
                 items = rawItems.map((it, idx) => ({
                     numItem: it.numItem || (idx + 1),
                     tipoItem: it.tipoItem || 1,
@@ -7632,6 +7780,18 @@
                     }
                 }
 
+                if (!codigoGeneracion) codigoGeneracion = String(getVal('codigoGeneracion', 'codigo_generacion', 'codGeneracion', 'uuid', 'cuf') || '').trim();
+                if (!numeroControl) numeroControl = String(getVal('numeroControl', 'numero_control', 'numControl', 'control') || '').trim();
+                if (!selloRecibido) selloRecibido = String(getVal('selloRecibido', 'selloRecepcion', 'sello_recepcion', 'sello', 'selloMH', 'firmaElectronica') || '').trim();
+                if (!tipoEstablecimiento) tipoEstablecimiento = String(getVal('tipoEstablecimiento', 'tipo_establecimiento', 'establecimiento', 'sucursalEmisor') || '').trim();
+                if (!fecEmi) fecEmi = String(getVal('fecEmi', 'fechaEmision', 'fecha_emision', 'fecha') || '').trim();
+                if (!horEmi) horEmi = String(getVal('horEmi', 'horaEmision', 'hora_emision', 'hora') || '').trim();
+                if (!controlInterno) controlInterno = String(getVal('controlInterno', 'nControlInterno', 'numControlInterno', 'numeroControlInterno', 'correlativoInterno', 'docInterno') || '').trim();
+                if (!formaPago) formaPago = String(getVal('formaPago', 'forma_pago', 'metodoPago', 'condicionPago', 'condicionOperacion', 'terminosPago') || '').trim();
+                if (!caja) caja = String(getVal('caja', 'puntoVenta', 'punto_venta', 'terminal', 'pos') || '').trim();
+                if (!vendedor) vendedor = String(getVal('vendedor', 'nombreVendedor', 'cajero', 'usuario', 'asesor') || '').trim();
+                if (!numeroDevolucion) numeroDevolucion = String(getVal('numeroDevolucion', 'numDevolucion', 'devolucion', 'documentoRelacionado', 'docRelacionado', 'notaCredito') || '').trim();
+
                 const rawMonto = getVal('monto', 'total', 'totalPagar', 'amount', 'valor', 'montoTotal', 'subTotal');
                 if (rawMonto !== null && rawMonto !== undefined) {
                     if (typeof rawMonto === 'number') monto = rawMonto;
@@ -7664,8 +7824,15 @@
                 numeroCorto: numeroCorto || numero,
                 codigoGeneracion,
                 selloRecibido,
+                tipoEstablecimiento: tipoEstablecimiento || 'FG MATRIZ',
                 fecEmi,
                 horEmi,
+                fechaHoraEmision: (fecEmi && horEmi) ? `${fecEmi} ${horEmi}` : (fecEmi || horEmi || ''),
+                controlInterno: controlInterno || '---',
+                formaPago: formaPago || 'Contado',
+                caja: caja || 'Caja Principal',
+                vendedor: vendedor || '---',
+                numeroDevolucion: numeroDevolucion || 'No aplica',
                 monto,
                 montoFormateado: `$${monto.toFixed(2)}`,
                 subTotal,
@@ -8234,8 +8401,26 @@
             fila.jsonRaw = '';
             fila.jsonNombreCliente = '';
             fila.jsonItemCount = 0;
+            fila.drivePdfUrl = '';
+            fila.drivePdfName = '';
+            if (fila.numero) {
+                removerJsonFacturaLocal(fila.numero);
+                removerDrivePdfFacturaLocal(fila.numero);
+            }
             renderizarFilasFacturasAgrupadas();
-            showToast('JSON Desvinculado', 'Se quitó el JSON de este documento.', 'info');
+            showToast('Documento Desvinculado', 'Se quitó el documento de esta fila.', 'info');
+        }
+
+        function quitarPdfDeFilaFactura(filaId) {
+            const fila = filasFacturasAgrupadas.find(f => f.id === filaId);
+            if (!fila) return;
+            fila.drivePdfUrl = '';
+            fila.drivePdfName = '';
+            if (fila.numero) {
+                removerDrivePdfFacturaLocal(fila.numero);
+            }
+            renderizarFilasFacturasAgrupadas();
+            showToast('PDF Desvinculado', 'Se quitó el PDF de esta fila.', 'info');
         }
 
         function cargarMultiplesArchivosJsonDocs(event) {
@@ -8384,6 +8569,14 @@
             }
         }
 
+        function removerDrivePdfFacturaLocal(facturaId) {
+            if (!facturaId) return;
+            try {
+                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
+                localStorage.removeItem(key);
+            } catch(e) {}
+        }
+
         let ultimoDrivePdfUrlAsignacion = '';
         let ultimoDrivePdfNameAsignacion = '';
 
@@ -8422,81 +8615,72 @@
                 if (data && data.encontrado) {
                     let infoDetalles = [];
                     let docIdAsignado = num;
+                    let pdfUrl = '';
+                    let tieneJsonParaVincular = false;
 
-                    // 1. Si encontró JSON
+                    // 1. Si encontró PDF: vincular y abrir automáticamente de inmediato
+                    if (data.pdf) {
+                        pdfUrl = data.pdf.previewUrl || data.pdf.viewUrl || '';
+                        ultimoDrivePdfUrlAsignacion = pdfUrl;
+                        ultimoDrivePdfNameAsignacion = data.pdf.fileName || '';
+                        window.ultimoDrivePdfUrlAsignacion = ultimoDrivePdfUrlAsignacion;
+                        window.ultimoDrivePdfNameAsignacion = ultimoDrivePdfNameAsignacion;
+                        guardarDrivePdfFacturaLocal(num, data.pdf);
+                        infoDetalles.push(`PDF (${data.pdf.fileName})`);
+
+                        // Abrir el PDF de inmediato para revisión visual del usuario
+                        try {
+                            if (pdfUrl) {
+                                window.open(pdfUrl, '_blank');
+                            }
+                        } catch(eWin) {
+                            console.warn('El navegador bloqueó la apertura automática del PDF:', eWin);
+                        }
+                    }
+
+                    // 2. Si encontró JSON: preparar opción para que el usuario pulse "Vincular JSON"
                     if (data.json) {
                         let parsedJson = data.json.parsed;
-                        if (!parsedJson && data.json.raw) {
-                            try { parsedJson = JSON.parse(data.json.raw); } catch(e) {}
+                        let rawJson = data.json.raw || '';
+                        if (!parsedJson && rawJson) {
+                            try { parsedJson = JSON.parse(rawJson); } catch(e) {}
+                        }
+                        if (!rawJson && parsedJson) {
+                            try { rawJson = JSON.stringify(parsedJson); } catch(e) {}
                         }
 
                         if (parsedJson) {
                             const datos = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJson) : null;
                             if (datos) {
                                 docIdAsignado = datos.numero || datos.numeroCorto || num;
-
-                                const inpCli = document.getElementById('manInputCliente');
-                                if (inpCli && datos.cliente && datos.cliente !== 'Consumidor Final') {
-                                    inpCli.value = datos.cliente;
-                                    if (typeof autoCompletarDatosClienteSeleccionado === 'function') {
-                                        autoCompletarDatosClienteSeleccionado();
-                                    }
+                                if (data.pdf) {
+                                    guardarDrivePdfFacturaLocal(docIdAsignado, data.pdf);
                                 }
-
-                                const inpTel = document.getElementById('manInputTelefonoCliente');
-                                if (inpTel && datos.telefono) inpTel.value = datos.telefono;
-
-                                const inpDest = document.getElementById('manInputDestino');
-                                if (inpDest && datos.destino) inpDest.value = datos.destino;
-
-                                const inpMonto = document.getElementById('manInputMonto');
-                                if (inpMonto && datos.monto > 0) inpMonto.value = `$${datos.monto.toFixed(2)}`;
-
-                                const selTipo = document.getElementById('manInputTipoDocumento');
-                                if (selTipo && datos.tipo) {
-                                    selTipo.value = datos.tipo;
-                                    if (typeof cambiarTipoDocumentoFiscal === 'function') cambiarTipoDocumentoFiscal();
-                                }
-
-                                const inpDesc = document.getElementById('manInputDescription');
-                                if (inpDesc && datos.items && datos.items.length > 0) {
-                                    inpDesc.value = datos.items.map(it => `${it.cantidad ? it.cantidad + ' ' : ''}${it.descripcion || ''}`).slice(0, 8).join(', ');
-                                    if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
-                                        actualizarPrevisualizacionCategoriasManual();
-                                    }
-                                }
-
-                                window.ultimoJsonImportadoAsignacion = parsedJson;
-                                window.ultimoJsonImportadoAsignacionRaw = data.json.raw || JSON.stringify(parsedJson);
-
-                                guardarJsonFacturaLocal(docIdAsignado, window.ultimoJsonImportadoAsignacionRaw);
-                                guardarJsonFacturaLocal(num, window.ultimoJsonImportadoAsignacionRaw);
-
+                                window._datosDriveJsonPendiente = {
+                                    dataJson: data.json,
+                                    parsedJson: parsedJson,
+                                    rawJson: rawJson,
+                                    datosDte: datos,
+                                    num: num,
+                                    docId: docIdAsignado
+                                };
+                                tieneJsonParaVincular = true;
                                 infoDetalles.push(`JSON (${datos.itemsCount || 0} ítems)`);
                             }
                         }
                     }
 
-                    // 2. Si encontró PDF
-                    if (data.pdf) {
-                        ultimoDrivePdfUrlAsignacion = data.pdf.previewUrl || data.pdf.viewUrl || '';
-                        ultimoDrivePdfNameAsignacion = data.pdf.fileName || '';
-                        window.ultimoDrivePdfUrlAsignacion = ultimoDrivePdfUrlAsignacion;
-                        window.ultimoDrivePdfNameAsignacion = ultimoDrivePdfNameAsignacion;
-                        guardarDrivePdfFacturaLocal(docIdAsignado, data.pdf);
-                        guardarDrivePdfFacturaLocal(num, data.pdf);
-                        infoDetalles.push(`PDF (${data.pdf.fileName})`);
-                    }
-
-                    if (inpFactura && docIdAsignado && !inpFactura.value.includes(docIdAsignado)) {
-                        inpFactura.value = docIdAsignado;
-                    }
-
                     const carpTxt = data.carpeta ? `Subcarpeta: <strong>${data.carpeta}</strong>` : 'Google Drive';
-                    const btnVerPdf = (data.pdf && (data.pdf.previewUrl || data.pdf.viewUrl)) ? `
-                        <a href="${data.pdf.previewUrl || data.pdf.viewUrl}" target="_blank" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all">
-                            <i class="fa-solid fa-file-pdf text-red-400"></i> <span>Ver PDF en Drive</span>
+                    const btnVerPdf = pdfUrl ? `
+                        <a href="${pdfUrl}" target="_blank" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all" title="Ver PDF en Google Drive">
+                            <i class="fa-solid fa-file-pdf text-red-400"></i> <span>Ver PDF</span>
                         </a>
+                    ` : '';
+
+                    const btnVincularJson = tieneJsonParaVincular ? `
+                        <button type="button" onclick="aplicarVinculacionJsonAsignacion()" id="btnVincularJsonAsignacion" class="px-3 py-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer" title="Cargar montos y detalle de mercadería del JSON">
+                            <i class="fa-solid fa-file-code"></i> <span>Vincular JSON</span>
+                        </button>
                     ` : '';
 
                     if (statusEl) {
@@ -8505,12 +8689,13 @@
                                 <div class="flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-circle-check"></i></span>
                                     <div>
-                                        <span class="font-bold text-emerald-300">¡Documento encontrado y vinculado desde Drive!</span>
+                                        <span class="font-bold text-emerald-300">¡Factura encontrada en Google Drive!</span>
                                         <span class="block text-[11px] text-slate-300">${infoDetalles.join(' + ')} • ${carpTxt}</span>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
                                     ${btnVerPdf}
+                                    ${btnVincularJson}
                                     <button type="button" onclick="quitarDocumentoDriveAsignacion()" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer" title="Desvincular archivo de Drive">
                                         <i class="fa-solid fa-xmark text-rose-400"></i> <span>Quitar</span>
                                     </button>
@@ -8519,7 +8704,7 @@
                         `;
                     }
 
-                    showToast('Documento en Drive', `Se vinculó ${infoDetalles.join(' y ')} desde Google Drive con éxito.`, 'success');
+                    showToast('Documento en Drive', `Documento #${num} encontrado. Se abrió el PDF y puedes pulsar "Vincular JSON" para completar los datos necesarios.`, 'success');
                 } else {
                     if (statusEl) {
                         statusEl.innerHTML = `
@@ -8555,6 +8740,8 @@
             }
         }
 
+        window._datosDriveJsonPendiente = null;
+
         function quitarDocumentoDriveAsignacion() {
             ultimoDrivePdfUrlAsignacion = '';
             ultimoDrivePdfNameAsignacion = '';
@@ -8562,6 +8749,7 @@
             window.ultimoDrivePdfNameAsignacion = '';
             window.ultimoJsonImportadoAsignacion = null;
             window.ultimoJsonImportadoAsignacionRaw = '';
+            window._datosDriveJsonPendiente = null;
 
             const statusEl = document.getElementById('driveDocStatusSimple');
             if (statusEl) {
@@ -8570,6 +8758,56 @@
             }
 
             showToast('Documento Quitado', 'Se desvinculó el documento de Drive de este nuevo envío.', 'info');
+        }
+
+        function aplicarVinculacionJsonAsignacion() {
+            if (!window._datosDriveJsonPendiente) {
+                showToast('Información', 'No hay datos de JSON pendientes para vincular.', 'info');
+                return;
+            }
+
+            const p = window._datosDriveJsonPendiente;
+            const datos = p.datosDte;
+            const parsedJson = p.parsedJson;
+            const rawJson = p.rawJson;
+            const docId = p.docId;
+
+            // 1. Completar Monto
+            const inpMonto = document.getElementById('manInputMonto');
+            if (inpMonto && datos && datos.monto > 0) {
+                inpMonto.value = `$${datos.monto.toFixed(2)}`;
+            }
+
+            // 2. Completar Detalle de Mercadería
+            const inpDesc = document.getElementById('manInputDescription');
+            if (inpDesc && datos && datos.items && datos.items.length > 0) {
+                inpDesc.value = datos.items.map(it => `${it.cantidad ? it.cantidad + ' ' : ''}${it.descripcion || ''}`).slice(0, 8).join(', ');
+                if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
+                    actualizarPrevisualizacionCategoriasManual();
+                }
+            }
+
+            // 3. Guardar el JSON oficialmente
+            window.ultimoJsonImportadoAsignacion = parsedJson;
+            window.ultimoJsonImportadoAsignacionRaw = rawJson;
+            if (docId) {
+                guardarJsonFacturaLocal(docId, rawJson);
+            }
+            if (p.num) {
+                guardarJsonFacturaLocal(p.num, rawJson);
+            }
+
+            // 4. Actualizar el botón a estado vinculado
+            const btnVinc = document.getElementById('btnVincularJsonAsignacion');
+            if (btnVinc) {
+                btnVinc.outerHTML = `
+                    <span class="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm">
+                        <i class="fa-solid fa-check text-cyan-400"></i> <span>JSON Vinculado (${datos?.itemsCount || 0} ítems)</span>
+                    </span>
+                `;
+            }
+
+            showToast('JSON Vinculado', `Se completaron el monto ($${(datos?.monto || 0).toFixed(2)}) y ${datos?.itemsCount || 0} artículos del JSON con éxito.`, 'success');
         }
 
         async function buscarFilaFacturaEnGoogleDrive(filaId) {
@@ -8607,15 +8845,8 @@
                                 fila.jsonRaw = data.json.raw || JSON.stringify(parsed);
                                 fila.jsonNombreCliente = d.cliente || '';
                                 fila.jsonItemCount = d.itemsCount || 0;
-                                if (d.tipo) fila.tipo = d.tipo;
                                 if (d.numeroCorto || d.numero) fila.numero = d.numeroCorto || d.numero;
                                 if (d.monto > 0) fila.monto = `$${d.monto.toFixed(2)}`;
-
-                                const inpCli = document.getElementById('manInputCliente');
-                                if (inpCli && (!inpCli.value || inpCli.value.trim() === '') && d.cliente && d.cliente !== 'Consumidor Final') {
-                                    inpCli.value = d.cliente;
-                                    if (typeof autoCompletarDatosClienteSeleccionado === 'function') autoCompletarDatosClienteSeleccionado();
-                                }
 
                                 guardarJsonFacturaLocal(fila.numero, fila.jsonRaw);
                             }
@@ -8626,6 +8857,11 @@
                         fila.drivePdfUrl = data.pdf.previewUrl || data.pdf.viewUrl;
                         fila.drivePdfName = data.pdf.fileName;
                         guardarDrivePdfFacturaLocal(fila.numero, data.pdf);
+                        try {
+                            if (fila.drivePdfUrl) {
+                                window.open(fila.drivePdfUrl, '_blank');
+                            }
+                        } catch(eWin) {}
                     }
 
                     renderizarFilasFacturasAgrupadas();
@@ -8806,16 +9042,57 @@
             const decId = driveMatchPendiente.facturaId;
             const data = driveMatchPendiente.data;
 
-            const r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === decId.toLowerCase());
+            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(decId) : decId.toLowerCase();
+            let r = (typeof registrosGlobales !== 'undefined') ? registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === decId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(x.factura) === factNorm)) : null;
+
+            let esSubFactura = false;
+            let subObj = null;
+            let regPadre = null;
+
+            if (!r && typeof registrosGlobales !== 'undefined') {
+                for (const reg of registrosGlobales) {
+                    if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
+                        const sub = reg.subFacturas.find(s => {
+                            const subFact = String(s.numero || s.factura).trim().toLowerCase();
+                            return subFact === decId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm);
+                        });
+                        if (sub) {
+                            r = reg;
+                            esSubFactura = true;
+                            subObj = sub;
+                            regPadre = reg;
+                            break;
+                        }
+                    }
+                }
+            }
+
             let vinculadosTxt = [];
+            let drivePdfUrlFinal = '';
 
             // 1. Vincular PDF si existe
             if (data.pdf) {
+                drivePdfUrlFinal = data.pdf.previewUrl || data.pdf.viewUrl || '';
                 guardarDrivePdfFacturaLocal(decId, data.pdf);
-                if (r) {
-                    r.drivePdfUrl = data.pdf.previewUrl || data.pdf.viewUrl;
-                    r.drivePdfName = data.pdf.fileName;
+                if (r && r.factura && r.factura !== decId) {
+                    guardarDrivePdfFacturaLocal(r.factura, data.pdf);
                 }
+
+                if (r) {
+                    if (esSubFactura && subObj) {
+                        subObj.drivePdfUrl = drivePdfUrlFinal;
+                        subObj.drivePdfName = data.pdf.fileName;
+                    } else {
+                        r.drivePdfUrl = drivePdfUrlFinal;
+                        r.drivePdfName = data.pdf.fileName;
+                    }
+                }
+
+                if (facturaActualPrevisualizada) {
+                    facturaActualPrevisualizada.drivePdfUrl = drivePdfUrlFinal;
+                    facturaActualPrevisualizada.drivePdfName = data.pdf.fileName;
+                }
+
                 if (scriptEndpoint) {
                     fetch(scriptEndpoint, {
                         method: 'POST',
@@ -8824,14 +9101,14 @@
                         body: JSON.stringify({
                             action: 'attachDrivePdf',
                             factura: decId,
-                            drivePdfUrl: data.pdf.previewUrl || data.pdf.viewUrl
+                            drivePdfUrl: drivePdfUrlFinal
                         })
                     }).catch(() => {});
                 }
                 vinculadosTxt.push('PDF oficial');
             }
 
-            // 2. Vincular JSON si existe
+            // 2. Vincular JSON si existe (cargar mercadería, productos y montos)
             if (data.json) {
                 let parsedJ = data.json.parsed;
                 let rawJ = data.json.raw || '';
@@ -8843,17 +9120,60 @@
                 }
 
                 if (parsedJ) {
+                    const dDte = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJ) : null;
+
+                    // Guardar en localStorage bajo múltiples claves
                     guardarJsonFacturaLocal(decId, rawJ);
+                    if (r && r.factura && r.factura !== decId) {
+                        guardarJsonFacturaLocal(r.factura, rawJ);
+                    }
+                    if (dDte && dDte.numeroCorto) {
+                        guardarJsonFacturaLocal(dDte.numeroCorto, rawJ);
+                    }
+                    if (dDte && dDte.numero && dDte.numero !== decId) {
+                        guardarJsonFacturaLocal(dDte.numero, rawJ);
+                    }
+
+                    // Construir resumen de mercadería
+                    let descItems = '';
+                    if (dDte && dDte.items && dDte.items.length > 0) {
+                        descItems = dDte.items.slice(0, 3).map(it => `${it.cantidad} ${it.descripcion}`).join(', ');
+                        if (dDte.items.length > 3) descItems += ` y ${dDte.items.length - 3} artículos más`;
+                    }
+
+                    // Actualizar registro en memoria (conservando cliente, teléfono, destino y tipo originales)
                     if (r) {
-                        r.jsonData = parsedJ;
-                        r.jsonRaw = rawJ;
-                        const dDte = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJ) : null;
-                        if (dDte) {
-                            if (dDte.cliente && dDte.cliente !== 'Consumidor Final') r.cliente = dDte.cliente;
-                            if (dDte.monto > 0) r.monto = dDte.monto;
-                            if (dDte.tipo) r.tipoDocumento = dDte.tipo;
+                        if (esSubFactura && subObj) {
+                            subObj.jsonData = parsedJ;
+                            subObj.jsonRaw = rawJ;
+                            if (dDte) {
+                                if (dDte.monto > 0) subObj.monto = dDte.monto;
+                                if (descItems) subObj.descripcion = descItems;
+                                if (drivePdfUrlFinal) subObj.drivePdfUrl = drivePdfUrlFinal;
+                            }
+                        } else {
+                            r.jsonData = parsedJ;
+                            r.jsonRaw = rawJ;
+                            if (dDte) {
+                                if (dDte.monto > 0) r.monto = dDte.monto;
+                                if (descItems) r.descripcion = descItems;
+                                if (drivePdfUrlFinal) r.drivePdfUrl = drivePdfUrlFinal;
+                            }
                         }
                     }
+
+                    // Actualizar la previsualización activa en vivo
+                    if (facturaActualPrevisualizada) {
+                        facturaActualPrevisualizada.jsonData = parsedJ;
+                        facturaActualPrevisualizada.jsonRaw = rawJ;
+                        if (dDte) {
+                            if (dDte.monto > 0) facturaActualPrevisualizada.monto = dDte.monto;
+                            if (descItems) facturaActualPrevisualizada.descripcion = descItems;
+                            if (drivePdfUrlFinal) facturaActualPrevisualizada.drivePdfUrl = drivePdfUrlFinal;
+                        }
+                    }
+
+                    // Sincronizar con Google Sheets en segundo plano sin alterar cliente ni tipo
                     if (scriptEndpoint) {
                         fetch(scriptEndpoint, {
                             method: 'POST',
@@ -8864,19 +9184,22 @@
                                 factura: decId,
                                 jsonData: parsedJ,
                                 jsonRaw: rawJ,
-                                cliente: r?.cliente,
-                                monto: r?.monto,
-                                tipoDocumento: r?.tipoDocumento
+                                monto: dDte?.monto || r?.monto,
+                                descripcion: descItems || r?.descripcion,
+                                drivePdfUrl: drivePdfUrlFinal,
+                                subFacturas: r?.subFacturas || null
                             })
                         }).catch(() => {});
                     }
-                    vinculadosTxt.push('JSON (DTE)');
+
+                    vinculadosTxt.push('JSON con Detalle de Mercadería');
                 }
             }
 
             cerrarModalConfirmarVinculacionDrive();
             showToast('Documento Vinculado', `Se vinculó ${vinculadosTxt.join(' y ')} a la factura #${decId} exitosamente.`, 'success');
 
+            // Refrescar inmediatamente la hoja formal para reflejar todos los datos y la tabla de mercadería
             if (typeof abrirModalPrevisualizarFactura === 'function') {
                 abrirModalPrevisualizarFactura(decId);
             }
@@ -9461,6 +9784,8 @@
                     if (String(reg.factura || '').trim().toLowerCase() === decId.toLowerCase()) {
                         reg.jsonData = null;
                         reg.jsonRaw = '';
+                        reg.drivePdfUrl = '';
+                        reg.drivePdfName = '';
                         regActualizado = reg;
                         break;
                     }
@@ -9471,6 +9796,8 @@
                         if (sub) {
                             sub.jsonData = null;
                             sub.jsonRaw = '';
+                            sub.drivePdfUrl = '';
+                            sub.drivePdfName = '';
                             regActualizado = reg;
                             break;
                         }
@@ -9478,7 +9805,15 @@
                 }
             }
 
+            if (facturaActualPrevisualizada) {
+                facturaActualPrevisualizada.jsonData = null;
+                facturaActualPrevisualizada.jsonRaw = '';
+                facturaActualPrevisualizada.drivePdfUrl = '';
+                facturaActualPrevisualizada.drivePdfName = '';
+            }
+
             removerJsonFacturaLocal(decId);
+            removerDrivePdfFacturaLocal(decId);
 
             if (regActualizado && typeof enviarDatosAGoogleSheets === 'function') {
                 enviarDatosAGoogleSheets({
@@ -9498,7 +9833,7 @@
                 abrirModalPrevisualizarFactura(decId);
             }
 
-            showToast('JSON Desvinculado', `Se quitó el archivo JSON del documento ${decId}.`, 'info');
+            showToast('Documento Desvinculado', `Se desvinculó el archivo JSON y PDF de ${decId}.`, 'info');
         }
 
         function quitarJsonFacturaExistenteActualModal() {
@@ -16303,8 +16638,11 @@
 
             facturaActualPrevisualizada = r;
             const localData = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(r.factura) : null;
-            const localJsonObj = (typeof obtenerJsonFacturaLocal === 'function') ? obtenerJsonFacturaLocal(r.factura) : null;
+            const localJsonObj = (typeof obtenerJsonFacturaLocal === 'function') ? (obtenerJsonFacturaLocal(r.factura) || obtenerJsonFacturaLocal(facturaId)) : null;
             let docJsonData = r.jsonData || (localJsonObj ? localJsonObj.parsed : null);
+            if (typeof docJsonData === 'string') {
+                try { docJsonData = JSON.parse(docJsonData); } catch(e) {}
+            }
             if (docJsonData && docJsonData.dteJson && typeof docJsonData.dteJson === 'object') {
                 docJsonData = docJsonData.dteJson;
             } else if (docJsonData && docJsonData.DTE && typeof docJsonData.DTE === 'object') {
@@ -16314,7 +16652,19 @@
             }
             const docJsonRaw = r.jsonRaw || (localJsonObj ? localJsonObj.raw : '');
 
-            const tieneJsonVinculado = !!(docJsonData || docJsonRaw || (r.subFacturas && r.subFacturas.some(s => s.jsonData || s.jsonRaw)));
+            // Extraer estructura oficial DTE / Comercial si está disponible
+            let datosDte = (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(docJsonData) : null;
+            if (!datosDte && r.subFacturas && Array.isArray(r.subFacturas)) {
+                for (const sub of r.subFacturas) {
+                    const subJ = sub.jsonData || (typeof obtenerJsonFacturaLocal === 'function' ? (obtenerJsonFacturaLocal(sub.numero || sub.factura)?.parsed) : null);
+                    if (subJ && typeof extraerDatosDocumentoIndividualJson === 'function') {
+                        datosDte = extraerDatosDocumentoIndividualJson(subJ);
+                        if (datosDte) break;
+                    }
+                }
+            }
+
+            const tieneJsonVinculado = !!(docJsonData || docJsonRaw || datosDte || (r.subFacturas && r.subFacturas.some(s => s.jsonData || s.jsonRaw)));
 
             const esConductor = (typeof currentRole !== 'undefined' && currentRole === 'driver');
             const btnAdjuntarJson = document.getElementById('btnAdjuntarJsonFacturaEnSheet');
@@ -16341,7 +16691,7 @@
             }
 
             // Gestión de enlace al PDF oficial de Google Drive
-            const localDrivePdf = (typeof obtenerDrivePdfFacturaLocal === 'function') ? obtenerDrivePdfFacturaLocal(r.factura) : null;
+            const localDrivePdf = (typeof obtenerDrivePdfFacturaLocal === 'function') ? (obtenerDrivePdfFacturaLocal(r.factura) || obtenerDrivePdfFacturaLocal(facturaId)) : null;
             const drivePdfUrl = r.drivePdfUrl || (localDrivePdf ? (localDrivePdf.previewUrl || localDrivePdf.viewUrl) : null);
             const btnVerDrivePdf = document.getElementById('btnVerDrivePdfSheet');
             if (btnVerDrivePdf) {
@@ -16410,16 +16760,12 @@
                     : 'px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-300';
             }
 
-            // Datos del Cliente (enriquecer con JSON si está disponible)
-            const cliJson = docJsonData?.receptor?.nombre || docJsonData?.cliente || docJsonData?.nombreCliente;
-            const clienteFinal = (r.cliente && r.cliente !== 'Consumidor / Cliente' && r.cliente !== 'Consumidor Final') ? r.cliente : (cliJson || r.cliente || 'Consumidor Final');
+            // Datos del Cliente (mantener exactamente los de la hoja/registro)
             const cliEl = document.getElementById('prevDocCliente');
-            if (cliEl) cliEl.textContent = clienteFinal;
+            if (cliEl) cliEl.textContent = r.cliente || 'Consumidor / Cliente';
 
-            const telJson = docJsonData?.receptor?.telefono || docJsonData?.telefono;
-            const telFinal = (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') ? r.telefonoCliente : (telJson || 'Sin registrar');
             const telEl = document.getElementById('prevDocTelefono');
-            if (telEl) telEl.textContent = telFinal;
+            if (telEl) telEl.textContent = (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') ? r.telefonoCliente : 'Sin registrar';
 
             const destEl = document.getElementById('prevDocDestino');
             if (destEl) destEl.textContent = r.destino || 'Destino no especificado';
@@ -16445,16 +16791,65 @@
             const tipoCargaEl = document.getElementById('prevDocTipoCarga');
             if (tipoCargaEl) tipoCargaEl.textContent = r.tipoViaje || (r.cantidadMercaderia ? r.cantidadMercaderia : 'Flete Estándar');
 
+            // 10 Datos Oficiales DTE / JSON en la Hoja de Factura/CCF
+            const codGenEl = document.getElementById('prevDocCodigoGeneracion');
+            if (codGenEl) codGenEl.textContent = datosDte?.codigoGeneracion || '---';
+
+            const numCtrlEl = document.getElementById('prevDocNumeroControl');
+            if (numCtrlEl) numCtrlEl.textContent = datosDte?.numeroControl || (datosDte?.numero || '---');
+
+            const selloEl = document.getElementById('prevDocSelloRecepcion');
+            if (selloEl) selloEl.textContent = datosDte?.selloRecibido || 'Sin Sello de Recepción';
+
+            const tipoEstEl = document.getElementById('prevDocTipoEstablecimiento');
+            if (tipoEstEl) tipoEstEl.textContent = datosDte?.tipoEstablecimiento || (r.origen && r.origen !== 'N/A' ? r.origen : 'FG MATRIZ');
+
+            const fecHorEl = document.getElementById('prevDocFechaHoraEmision');
+            if (fecHorEl) {
+                fecHorEl.textContent = datosDte?.fechaHoraEmision || ((r.fechaProgramada || r.fecha) ? `${formatearFechaDisplay(r.fechaProgramada || r.fecha)} ${r.hora || ''}`.trim() : '--/--/---- --:--:--');
+            }
+
+            const ctrlIntEl = document.getElementById('prevDocControlInterno');
+            if (ctrlIntEl) ctrlIntEl.textContent = datosDte?.controlInterno || '---';
+
+            const formaPagoEl = document.getElementById('prevDocFormaPago');
+            if (formaPagoEl) {
+                formaPagoEl.textContent = datosDte?.formaPago || (r.estadoFactura ? r.estadoFactura.replace(/\(.*\)/, '').trim() : 'Contado');
+            }
+
+            const cajaEl = document.getElementById('prevDocCaja');
+            if (cajaEl) cajaEl.textContent = datosDte?.caja || 'Caja 01';
+
+            const vendedorEl = document.getElementById('prevDocVendedor');
+            if (vendedorEl) vendedorEl.textContent = datosDte?.vendedor || '---';
+
+            const numDevEl = document.getElementById('prevDocNumeroDevolucion');
+            if (numDevEl) numDevEl.textContent = datosDte?.numeroDevolucion || 'No aplica';
+
+            const badgeDte = document.getElementById('prevDocDteEstadoBadge');
+            if (badgeDte) {
+                if (datosDte && (datosDte.codigoGeneracion || datosDte.selloRecibido || datosDte.esDte)) {
+                    badgeDte.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> DTE Transmitido y Certificado';
+                    badgeDte.className = 'text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+                } else {
+                    badgeDte.textContent = 'Documento Interno / Sin DTE';
+                    badgeDte.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300';
+                }
+            }
+
             // Tabla de Items (extraer items detallados de JSON DTE/Comercial si existen)
             const itemsBody = document.getElementById('prevDocTablaItemsBody');
             let itemsHtml = '';
-            const montoNum = Number(r.monto) || 0;
+            const montoDocFinal = (datosDte && datosDte.monto > 0) ? datosDte.monto : (Number(r.monto) || 0);
+            const subtotalDocFinal = (datosDte && datosDte.subTotal > 0) ? datosDte.subTotal : montoDocFinal;
             const fleteNum = Number(r.transporte) || 0;
 
-            const itemsArray = (docJsonData && Array.isArray(docJsonData.cuerpoDocumento)) ? docJsonData.cuerpoDocumento :
-                               ((docJsonData && Array.isArray(docJsonData.items)) ? docJsonData.items :
-                               ((docJsonData && Array.isArray(docJsonData.productos)) ? docJsonData.productos :
-                               ((docJsonData && Array.isArray(docJsonData.lineas)) ? docJsonData.lineas : null)));
+            const itemsArray = (datosDte && Array.isArray(datosDte.items) && datosDte.items.length > 0)
+                ? datosDte.items
+                : ((docJsonData && Array.isArray(docJsonData.cuerpoDocumento)) ? docJsonData.cuerpoDocumento :
+                  ((docJsonData && Array.isArray(docJsonData.items)) ? docJsonData.items :
+                  ((docJsonData && Array.isArray(docJsonData.productos)) ? docJsonData.productos :
+                  ((docJsonData && Array.isArray(docJsonData.lineas)) ? docJsonData.lineas : null))));
 
             // Renderizar Banner Informativo de JSON y Drive en la Hoja (Solo para Administrador)
             const bannerJson = document.getElementById('prevDocBannerJson');
@@ -16539,12 +16934,12 @@
                     const pu = Number(it.precioUni || it.precio || it.precioUnitario || 0);
                     const tot = Number(it.ventaGravada || it.ventaExenta || it.ventaNoSuj || it.total || it.monto || (cant * pu) || 0);
                     const extraParts = [];
-                    if (cant > 0 && pu > 0) extraParts.push(`Cant: ${cant} x $${pu.toFixed(2)}`);
+                    if (cant > 0 && pu > 0) extraParts.push(`P. Unit: $${pu.toFixed(2)}`);
                     if (it.codigo) extraParts.push(`Cód: ${it.codigo}`);
                     if (it.uniMedida || it.unidadMedida) extraParts.push(`UM: ${it.uniMedida || it.unidadMedida}`);
                     itemsHtml += `
                         <tr class="hover:bg-slate-50 border-b border-slate-100">
-                            <td class="py-2 px-3 text-center font-mono text-xs text-slate-500">${num}</td>
+                            <td class="py-2 px-3 text-center font-bold font-mono text-xs text-slate-700">${cant > 0 ? cant : num}</td>
                             <td class="py-2 px-3 font-medium text-slate-800 text-xs">
                                 <span class="font-bold text-slate-900">${desc}</span>
                                 ${extraParts.length > 0 ? `<span class="text-[11px] text-slate-500 block">${extraParts.join(' • ')}</span>` : ''}
@@ -16587,20 +16982,20 @@
                             <span class="font-bold text-slate-900">${r.descripcion && r.descripcion !== 'N/A' ? r.descripcion : 'Venta y despacho de materiales'}</span>
                             ${r.cantidadMercaderia && r.cantidadMercaderia !== 'N/A' ? `<span class="text-[11px] text-slate-500 block">Carga: ${r.cantidadMercaderia}</span>` : ''}
                         </td>
-                        <td class="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">$${montoNum.toFixed(2)}</td>
+                        <td class="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">$${montoDocFinal.toFixed(2)}</td>
                     </tr>
                 `;
             }
             if (itemsBody) itemsBody.innerHTML = itemsHtml;
 
             const subtotalEl = document.getElementById('prevDocSubtotal');
-            if (subtotalEl) subtotalEl.textContent = `$${montoNum.toFixed(2)}`;
+            if (subtotalEl) subtotalEl.textContent = `$${subtotalDocFinal.toFixed(2)}`;
 
             const fleteEl = document.getElementById('prevDocFlete');
             if (fleteEl) fleteEl.textContent = `$${fleteNum.toFixed(2)}`;
 
             const totalEl = document.getElementById('prevDocTotal');
-            if (totalEl) totalEl.textContent = `$${(montoNum + fleteNum).toFixed(2)}`;
+            if (totalEl) totalEl.textContent = `$${(montoDocFinal + fleteNum).toFixed(2)}`;
 
             // Comprobante de Entrega y Firma
             const seccionRealizada = document.getElementById('prevDocEntregaRealizada');
