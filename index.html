@@ -7555,6 +7555,11 @@
         function extraerDatosDocumentoIndividualJson(rawObj) {
             if (!rawObj || typeof rawObj !== 'object') return null;
 
+            // Descartar si el archivo es únicamente un acuse de respuesta de Hacienda (respuesta.json)
+            if (rawObj.estado && !rawObj.dteJson && !rawObj.cuerpoDocumento && !rawObj.items && !rawObj.resumen && !rawObj.identificacion) {
+                throw new Error('El archivo corresponde al acuse de Hacienda (respuesta.json). Debe usar el archivo oficial de la factura que contiene los productos y montos (con el número de factura).');
+            }
+
             // Desempaquetar si viene envuelto en { "dteJson": { ... } }, { "DTE": { ... } } o { "documento": { ... } }
             let dteRoot = rawObj;
             if (rawObj.dteJson && typeof rawObj.dteJson === 'object') {
@@ -9480,6 +9485,11 @@
         function cargarArchivoJsonExistente(event) {
             const file = event.target.files ? event.target.files[0] : null;
             if (!file) return;
+
+            const fnLower = file.name.toLowerCase();
+            if (fnLower.includes('respuesta') || fnLower.includes('acuse') || fnLower.includes('respuestamh')) {
+                showToast('Archivo de Respuesta (No Válido)', `"${file.name}" es el acuse de Hacienda, no la factura. Por favor elija el archivo con el número de factura (${facturaExistenteParaJsonId || 'ej. 12142'}).json.json.`, 'warning');
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
