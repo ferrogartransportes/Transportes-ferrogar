@@ -7553,22 +7553,23 @@
         let filaActivaParaJsonId = null;
 
         function extraerDatosDocumentoIndividualJson(rawObj) {
-            if (!rawObj || typeof rawObj !== 'object') return null;
+            try {
+                if (!rawObj || typeof rawObj !== 'object') return null;
 
-            // Descartar si el archivo es únicamente un acuse de respuesta de Hacienda (respuesta.json)
-            if (rawObj.estado && !rawObj.dteJson && !rawObj.cuerpoDocumento && !rawObj.items && !rawObj.resumen && !rawObj.identificacion) {
-                throw new Error('El archivo corresponde al acuse de Hacienda (respuesta.json). Debe usar el archivo oficial de la factura que contiene los productos y montos (con el número de factura).');
-            }
+                // Descartar si el archivo es únicamente un acuse de respuesta de Hacienda (respuesta.json)
+                if (rawObj.estado && !rawObj.dteJson && !rawObj.cuerpoDocumento && !rawObj.items && !rawObj.resumen && !rawObj.identificacion) {
+                    return null;
+                }
 
-            // Desempaquetar si viene envuelto en { "dteJson": { ... } }, { "DTE": { ... } } o { "documento": { ... } }
-            let dteRoot = rawObj;
-            if (rawObj.dteJson && typeof rawObj.dteJson === 'object') {
-                dteRoot = rawObj.dteJson;
-            } else if (rawObj.DTE && typeof rawObj.DTE === 'object') {
-                dteRoot = rawObj.DTE;
-            } else if (rawObj.documento && typeof rawObj.documento === 'object') {
-                dteRoot = rawObj.documento;
-            }
+                // Desempaquetar si viene envuelto en { "dteJson": { ... } }, { "DTE": { ... } } o { "documento": { ... } }
+                let dteRoot = rawObj;
+                if (rawObj.dteJson && typeof rawObj.dteJson === 'object') {
+                    dteRoot = rawObj.dteJson;
+                } else if (rawObj.DTE && typeof rawObj.DTE === 'object') {
+                    dteRoot = rawObj.DTE;
+                } else if (rawObj.documento && typeof rawObj.documento === 'object') {
+                    dteRoot = rawObj.documento;
+                }
 
             let tipo = 'CCF';
             let tipoDte = '';
@@ -7849,7 +7850,11 @@
                 itemsCount: items.length,
                 items
             };
+        } catch(eExt) {
+            console.warn('Error al extraer datos de JSON:', eExt);
+            return null;
         }
+    }
 
         // ==========================================
         // BUSCADOR Y ASOCIADOR DE FACTURAS EXISTENTES POR SIMILITUD (DTE / JSON)
@@ -16598,8 +16603,10 @@
         let facturaActualPrevisualizada = null;
 
         function abrirModalPrevisualizarFactura(facturaEncoded) {
-            const facturaId = decodeURIComponent(facturaEncoded || '').trim();
-            if (!facturaId) return;
+            const modal = document.getElementById('modalPrevisualizarFactura');
+            try {
+                const facturaId = decodeURIComponent(facturaEncoded || '').trim();
+                if (!facturaId) return;
 
             // 1. Buscar en registrosGlobales
             const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(facturaId) : facturaId.toLowerCase();
@@ -17113,8 +17120,11 @@
                 if (seccionPendiente) seccionPendiente.classList.remove('hidden');
                 if (btnComprobanteSheet) btnComprobanteSheet.classList.add('hidden');
             }
-
-            modal.classList.remove('hidden');
+            } catch(errModal) {
+                console.error('Error al procesar modal previsualizar factura:', errModal);
+            } finally {
+                if (modal) modal.classList.remove('hidden');
+            }
         }
 
         function cerrarModalPrevisualizarFactura() {
