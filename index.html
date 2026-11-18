@@ -4974,54 +4974,88 @@
 
         function parsearFechaRegistro(r) {
             if (!r) return null;
+            if (r._fechaObjCache !== undefined) return r._fechaObjCache;
 
             // 1. Si ya es objeto Date válido
-            if (r.fecha instanceof Date && !isNaN(r.fecha.getTime())) return r.fecha;
-            if (r.fechaHora instanceof Date && !isNaN(r.fechaHora.getTime())) return r.fechaHora;
+            if (r.fecha instanceof Date && !isNaN(r.fecha.getTime())) {
+                r._fechaObjCache = r.fecha;
+                return r.fecha;
+            }
+            if (r.fechaHora instanceof Date && !isNaN(r.fechaHora.getTime())) {
+                r._fechaObjCache = r.fechaHora;
+                return r.fechaHora;
+            }
 
             // 2. Probar fechaProgramada, fecha o fechaHora con parsearCualquierFecha
             const campos = [r.fechaProgramada, r.fecha, r.fechaHora];
             for (const c of campos) {
                 if (c) {
                     const parsed = parsearCualquierFecha(c);
-                    if (parsed && !isNaN(parsed.getTime())) return parsed;
+                    if (parsed && !isNaN(parsed.getTime())) {
+                        r._fechaObjCache = parsed;
+                        return parsed;
+                    }
                 }
             }
 
             // 3. Probar timestampCreacion si existe
             if (r.timestampCreacion) {
                 const ts = Number(r.timestampCreacion);
-                if (!isNaN(ts) && ts > 0) return new Date(ts);
+                if (!isNaN(ts) && ts > 0) {
+                    const parsed = new Date(ts);
+                    r._fechaObjCache = parsed;
+                    return parsed;
+                }
             }
 
+            r._fechaObjCache = null;
             return null;
         }
 
-        function clasificarPeriodoFecha(r) {
+        let _refPeriodoFechaHoy = null;
+        let _refPeriodoFechaTimestamp = 0;
+        function obtenerReferenciaPeriodosFecha() {
+            const ahoraMs = Date.now();
+            if (_refPeriodoFechaHoy && (ahoraMs - _refPeriodoFechaTimestamp < 8000)) {
+                return _refPeriodoFechaHoy;
+            }
             const ahora = new Date();
             const hoyY = ahora.getFullYear();
             const hoyM = ahora.getMonth();
             const hoyD = ahora.getDate();
-
-            // Semana actual: Lunes a Domingo
             const diaSem = ahora.getDay();
             const diffLunes = (diaSem === 0 ? -6 : 1) - diaSem;
             const inicioSemana = new Date(hoyY, hoyM, hoyD + diffLunes, 0, 0, 0, 0);
             const finSemana = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + 6, 23, 59, 59, 999);
+            const hoyISO = `${hoyY}-${String(hoyM + 1).padStart(2, '0')}-${String(hoyD).padStart(2, '0')}`;
+            _refPeriodoFechaHoy = {
+                hoyY, hoyM, hoyD,
+                inicioSemanaTime: inicioSemana.getTime(),
+                finSemanaTime: finSemana.getTime(),
+                hoyTime0: new Date(hoyY, hoyM, hoyD).getTime(),
+                hoyISO
+            };
+            _refPeriodoFechaTimestamp = ahoraMs;
+            return _refPeriodoFechaHoy;
+        }
 
+        function clasificarPeriodoFecha(r) {
+            if (!r) return { esHoy: false, esSemana: false, esMes: false, esAnio: false, fechaObj: null };
             const fObj = parsearFechaRegistro(r);
             if (!fObj || isNaN(fObj.getTime())) {
                 return { esHoy: false, esSemana: false, esMes: false, esAnio: false, fechaObj: null };
             }
 
+            const ref = obtenerReferenciaPeriodosFecha();
             const regY = fObj.getFullYear();
             const regM = fObj.getMonth();
             const regD = fObj.getDate();
+            const fTime = fObj.getTime();
 
-            const esHoy = (regY === hoyY && regM === hoyM && regD === hoyD);
-            const esSemana = (fObj.getTime() >= inicioSemana.getTime() && fObj.getTime() <= finSemana.getTime());
-            const esMes = (regY === hoyY && regM === hoyM);
-            const esAnio = (regY === hoyY);
+            const esHoy = (regY === ref.hoyY && regM === ref.hoyM && regD === ref.hoyD);
+            const esSemana = (fTime >= ref.inicioSemanaTime && fTime <= ref.finSemanaTime);
+            const esMes = (regY === ref.hoyY && regM === ref.hoyM);
+            const esAnio = (regY === ref.hoyY);
 
             return { esHoy, esSemana, esMes, esAnio, fechaObj: fObj };
         }
@@ -5034,14 +5068,14 @@
 
         function esFechaProgramadaFutura(r) {
             if (!r || !r.fechaProgramada) return false;
-            const fProg = parsearCualquierFecha(r.fechaProgramada);
+            const fProgStr = String(r.fechaProgramada).trim();
+            const ref = obtenerReferenciaPeriodosFecha();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(fProgStr)) {
+                return fProgStr > ref.hoyISO;
+            }
+            const fProg = parsearCualquierFecha(fProgStr);
             if (!fProg || isNaN(fProg.getTime())) return false;
-            
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            const fTarget = new Date(fProg.getFullYear(), fProg.getMonth(), fProg.getDate());
-            return fTarget.getTime() > hoy.getTime();
+            return fProg.getTime() > (ref.hoyTime0 + 86400000 - 1);
         }
 
         function esViajeDeConductor(r, driverKey, driverObj) {
@@ -6706,7 +6740,10 @@
             tbody.innerHTML = html;
         }
 
+        let pestanaAdminActivaActual = 'diario';
+
         function switchAdminTab(tab) {
+            pestanaAdminActivaActual = tab;
             const btnDiario = document.getElementById('adminTabDiarioBtn');
             const btnPendientes = document.getElementById('adminTabPendientesBtn');
             const btnAsignacion = document.getElementById('adminTabAsignacionBtn');
@@ -6766,6 +6803,7 @@
             if (tab === 'diario') {
                 if (btnDiario) { btnDiario.className = activeClass; targetActiveBtn = btnDiario; }
                 if (viewDiario) viewDiario.classList.remove('hidden');
+                renderAdminTableDiario();
             } else if (tab === 'pendientes') {
                 if (btnPendientes) { btnPendientes.className = "px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-lg transition-all flex items-center gap-2"; targetActiveBtn = btnPendientes; }
                 if (viewPendientes) viewPendientes.classList.remove('hidden');
@@ -9505,29 +9543,51 @@
             const decId = driveMatchPendiente.facturaId;
             const data = driveMatchPendiente.data;
 
-            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(decId) : decId.toLowerCase();
-            let r = (typeof registrosGlobales !== 'undefined') ? registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === decId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(x.factura) === factNorm)) : null;
+            function sonFacturasCoincidentes(f1, f2) {
+                if (!f1 || !f2) return false;
+                const s1 = String(f1).trim().toLowerCase();
+                const s2 = String(f2).trim().toLowerCase();
+                if (s1 === s2) return true;
+                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
+                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                if (n1 && n2 && n1 === n2) return true;
+                return false;
+            }
 
+            let r = null;
             let esSubFactura = false;
             let subObj = null;
             let regPadre = null;
 
-            if (!r && typeof registrosGlobales !== 'undefined') {
-                for (const reg of registrosGlobales) {
-                    if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
-                        const sub = reg.subFacturas.find(s => {
-                            const subFact = String(s.numero || s.factura).trim().toLowerCase();
-                            return subFact === decId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm);
-                        });
-                        if (sub) {
-                            r = reg;
-                            esSubFactura = true;
-                            subObj = sub;
-                            regPadre = reg;
-                            break;
+            // 1. Buscar primero en la factura actualmente abierta en previsualización
+            if (facturaActualPrevisualizada && sonFacturasCoincidentes(facturaActualPrevisualizada.factura, decId)) {
+                r = facturaActualPrevisualizada;
+            }
+
+            // 2. Buscar en registrosGlobales
+            if (typeof registrosGlobales !== 'undefined') {
+                const regEncontrado = registrosGlobales.find(x => sonFacturasCoincidentes(x.factura, decId));
+                if (regEncontrado) {
+                    r = regEncontrado;
+                } else {
+                    for (const reg of registrosGlobales) {
+                        if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
+                            const sub = reg.subFacturas.find(s => sonFacturasCoincidentes(s.numero || s.factura || s.docCompleto, decId));
+                            if (sub) {
+                                r = reg;
+                                esSubFactura = true;
+                                subObj = sub;
+                                regPadre = reg;
+                                break;
+                            }
                         }
                     }
                 }
+            }
+
+            if (!r && facturaActualPrevisualizada) {
+                r = facturaActualPrevisualizada;
             }
 
             let vinculadosTxt = [];
@@ -9539,6 +9599,9 @@
                 guardarDrivePdfFacturaLocal(decId, data.pdf);
                 if (r && r.factura && r.factura !== decId) {
                     guardarDrivePdfFacturaLocal(r.factura, data.pdf);
+                }
+                if (facturaActualPrevisualizada && facturaActualPrevisualizada.factura) {
+                    guardarDrivePdfFacturaLocal(facturaActualPrevisualizada.factura, data.pdf);
                 }
 
                 if (r) {
@@ -9563,7 +9626,7 @@
                         headers: { 'Content-Type': 'text/plain' },
                         body: JSON.stringify({
                             action: 'attachDrivePdf',
-                            factura: decId,
+                            factura: (r && r.factura) ? r.factura : decId,
                             drivePdfUrl: drivePdfUrlFinal
                         })
                     }).catch(() => {});
@@ -9571,7 +9634,7 @@
                 vinculadosTxt.push('PDF oficial');
             }
 
-            // 2. Vincular JSON si existe (cargar mercadería, productos y montos)
+            // 2. Vincular JSON si existe (cargar mercadería, productos, montos y 10 campos oficiales DTE)
             if (data.json) {
                 let parsedJ = data.json.parsed;
                 let rawJ = data.json.raw || '';
@@ -9585,16 +9648,25 @@
                 if (parsedJ) {
                     const dDte = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJ) : null;
 
-                    // Guardar en localStorage bajo múltiples claves
+                    // Guardar en localStorage bajo múltiples claves y alias
                     guardarJsonFacturaLocal(decId, rawJ);
                     if (r && r.factura && r.factura !== decId) {
                         guardarJsonFacturaLocal(r.factura, rawJ);
+                    }
+                    if (facturaActualPrevisualizada && facturaActualPrevisualizada.factura) {
+                        guardarJsonFacturaLocal(facturaActualPrevisualizada.factura, rawJ);
                     }
                     if (dDte && dDte.numeroCorto) {
                         guardarJsonFacturaLocal(dDte.numeroCorto, rawJ);
                     }
                     if (dDte && dDte.numero && dDte.numero !== decId) {
                         guardarJsonFacturaLocal(dDte.numero, rawJ);
+                    }
+                    if (dDte && dDte.numeroControl) {
+                        guardarJsonFacturaLocal(dDte.numeroControl, rawJ);
+                    }
+                    if (dDte && dDte.codigoGeneracion) {
+                        guardarJsonFacturaLocal(dDte.codigoGeneracion, rawJ);
                     }
 
                     // Construir resumen de mercadería
@@ -9604,11 +9676,12 @@
                         if (dDte.items.length > 3) descItems += ` y ${dDte.items.length - 3} artículos más`;
                     }
 
-                    // Actualizar registro en memoria (conservando cliente, teléfono, destino y tipo originales)
+                    // Actualizar registro en memoria y guardar datosDte para la hoja oficial
                     if (r) {
                         if (esSubFactura && subObj) {
                             subObj.jsonData = parsedJ;
                             subObj.jsonRaw = rawJ;
+                            subObj.datosDte = dDte;
                             if (dDte) {
                                 if (dDte.monto > 0) subObj.monto = dDte.monto;
                                 if (descItems) subObj.descripcion = descItems;
@@ -9617,10 +9690,21 @@
                         } else {
                             r.jsonData = parsedJ;
                             r.jsonRaw = rawJ;
+                            r.datosDte = dDte;
                             if (dDte) {
                                 if (dDte.monto > 0) r.monto = dDte.monto;
+                                if (dDte.subTotal > 0) r.subTotal = dDte.subTotal;
                                 if (descItems) r.descripcion = descItems;
                                 if (drivePdfUrlFinal) r.drivePdfUrl = drivePdfUrlFinal;
+                                if (dDte.clienteValidoDte && (!r.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(r.cliente))) {
+                                    r.cliente = dDte.clienteValidoDte;
+                                }
+                                if (dDte.telefono && (!r.telefonoCliente || r.telefonoCliente === 'Sin registrar')) {
+                                    r.telefonoCliente = dDte.telefono;
+                                }
+                                if (dDte.destinoValidoDte && (!r.destino || /destino\s*no\s*especificado|sin\s*direccion/i.test(r.destino))) {
+                                    r.destino = dDte.destinoValidoDte;
+                                }
                             }
                         }
                     }
@@ -9629,14 +9713,25 @@
                     if (facturaActualPrevisualizada) {
                         facturaActualPrevisualizada.jsonData = parsedJ;
                         facturaActualPrevisualizada.jsonRaw = rawJ;
+                        facturaActualPrevisualizada.datosDte = dDte;
                         if (dDte) {
                             if (dDte.monto > 0) facturaActualPrevisualizada.monto = dDte.monto;
+                            if (dDte.subTotal > 0) facturaActualPrevisualizada.subTotal = dDte.subTotal;
                             if (descItems) facturaActualPrevisualizada.descripcion = descItems;
                             if (drivePdfUrlFinal) facturaActualPrevisualizada.drivePdfUrl = drivePdfUrlFinal;
+                            if (dDte.clienteValidoDte && (!facturaActualPrevisualizada.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(facturaActualPrevisualizada.cliente))) {
+                                facturaActualPrevisualizada.cliente = dDte.clienteValidoDte;
+                            }
+                            if (dDte.telefono && (!facturaActualPrevisualizada.telefonoCliente || facturaActualPrevisualizada.telefonoCliente === 'Sin registrar')) {
+                                facturaActualPrevisualizada.telefonoCliente = dDte.telefono;
+                            }
+                            if (dDte.destinoValidoDte && (!facturaActualPrevisualizada.destino || /destino\s*no\s*especificado|sin\s*direccion/i.test(facturaActualPrevisualizada.destino))) {
+                                facturaActualPrevisualizada.destino = dDte.destinoValidoDte;
+                            }
                         }
                     }
 
-                    // Sincronizar con Google Sheets en segundo plano sin alterar cliente ni tipo
+                    // Sincronizar con Google Sheets en segundo plano
                     if (scriptEndpoint) {
                         fetch(scriptEndpoint, {
                             method: 'POST',
@@ -9644,7 +9739,7 @@
                             headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify({
                                 action: 'updateTripJson',
-                                factura: decId,
+                                factura: (r && r.factura) ? r.factura : decId,
                                 jsonData: parsedJ,
                                 jsonRaw: rawJ,
                                 monto: dDte?.monto || r?.monto,
@@ -9660,11 +9755,12 @@
             }
 
             cerrarModalConfirmarVinculacionDrive();
-            showToast('Documento Vinculado', `Se vinculó ${vinculadosTxt.join(' y ')} a la factura #${decId} exitosamente.`, 'success');
+            showToast('Documento Vinculado', `Se vinculó ${vinculadosTxt.join(' y ')} a la factura exitosamente.`, 'success');
 
+            const targetFacturaId = (r && r.factura) ? r.factura : (facturaActualPrevisualizada?.factura || decId);
             // Refrescar inmediatamente la hoja formal para reflejar todos los datos y la tabla de mercadería
             if (typeof abrirModalPrevisualizarFactura === 'function') {
-                abrirModalPrevisualizarFactura(decId);
+                abrirModalPrevisualizarFactura(targetFacturaId);
             }
         }
 
@@ -10533,31 +10629,52 @@
             let subActualizada = null;
 
             // 1. Actualizar en registrosGlobales
+            function sonFacturasCoincidentes(f1, f2) {
+                if (!f1 || !f2) return false;
+                const s1 = String(f1).trim().toLowerCase();
+                const s2 = String(f2).trim().toLowerCase();
+                if (s1 === s2) return true;
+                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
+                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                if (n1 && n2 && n1 === n2) return true;
+                return false;
+            }
+
             if (typeof registrosGlobales !== 'undefined') {
                 for (const reg of registrosGlobales) {
-                    if (String(reg.factura || '').trim().toLowerCase() === decId) {
+                    if (sonFacturasCoincidentes(reg.factura, docTargetId)) {
                         reg.jsonData = parsed;
                         reg.jsonRaw = cleanVal;
+                        reg.datosDte = datos;
                         regActualizado = reg;
                         break;
                     }
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
                         const sub = reg.subFacturas.find(s => 
-                            String(s.numero || s.factura || s.docCompleto || '').trim().toLowerCase() === decId
+                            sonFacturasCoincidentes(s.numero || s.factura || s.docCompleto, docTargetId)
                         );
                         if (sub) {
                             sub.jsonData = parsed;
                             sub.jsonRaw = cleanVal;
+                            sub.datosDte = datos;
                             subActualizada = sub;
                             regActualizado = reg;
                             if (!reg.jsonData) {
                                 reg.jsonData = parsed;
                                 reg.jsonRaw = cleanVal;
+                                reg.datosDte = datos;
                             }
                             break;
                         }
                     }
                 }
+            }
+
+            if (facturaActualPrevisualizada && sonFacturasCoincidentes(facturaActualPrevisualizada.factura, docTargetId)) {
+                facturaActualPrevisualizada.jsonData = parsed;
+                facturaActualPrevisualizada.jsonRaw = cleanVal;
+                facturaActualPrevisualizada.datosDte = datos;
             }
 
             // 2. Si el usuario marcó actualizar también cliente y monto:
@@ -11758,49 +11875,127 @@
                 });
         }
 
+        let _cacheViajesOperacionHoy = null;
+        let _cacheTimestampOperacionHoy = 0;
+
+        function invalidarCacheOperacionHoy() {
+            _cacheViajesOperacionHoy = null;
+            _cacheTimestampOperacionHoy = 0;
+        }
+
+        function obtenerViajesOperacionHoy(forzarRecalculo = false) {
+            const ahoraMs = Date.now();
+            if (!forzarRecalculo && _cacheViajesOperacionHoy && (ahoraMs - _cacheTimestampOperacionHoy < 8000)) {
+                return _cacheViajesOperacionHoy;
+            }
+            const res = [];
+            if (Array.isArray(registrosGlobales)) {
+                for (let i = 0; i < registrosGlobales.length; i++) {
+                    const r = registrosGlobales[i];
+                    if (esRegistroDeHoy(r)) {
+                        res.push(r);
+                    }
+                }
+            }
+            _cacheViajesOperacionHoy = res;
+            _cacheTimestampOperacionHoy = ahoraMs;
+            return res;
+        }
+
         function actualizarTodoAdmin() {
+            invalidarCacheOperacionHoy();
             renderAdminKPIs();
             renderDriversKPIs();
             renderSucursalesKPIs();
-            renderAdminTableDiario();
-            renderAdminTableProgramados();
-            renderTrasladosTable();
-            renderHistoricoTable();
-            renderMonitoreoConductores();
-            renderPendientesTable();
-            renderClientesTable();
-            if (typeof renderSeguimientoClientes === 'function') {
-                renderSeguimientoClientes();
+
+            // Solo renderizar la pestaña que está visible en pantalla para máxima fluidez y velocidad
+            const tab = (typeof pestanaAdminActivaActual !== 'undefined') ? pestanaAdminActivaActual : 'diario';
+            if (tab === 'diario') {
+                renderAdminTableDiario();
+            } else if (tab === 'pendientes') {
+                renderPendientesTable();
+            } else if (tab === 'programados') {
+                renderAdminTableProgramados();
+            } else if (tab === 'traslados') {
+                renderTrasladosTable();
+            } else if (tab === 'historico') {
+                renderHistoricoTable();
+            } else if (tab === 'monitoreo') {
+                renderMonitoreoConductores();
+            } else if (tab === 'clientes') {
+                if (typeof actualizarModuloClientesCompleto === 'function') {
+                    actualizarModuloClientesCompleto();
+                } else {
+                    renderClientesTable();
+                    if (typeof renderSeguimientoClientes === 'function') renderSeguimientoClientes();
+                }
+            } else if (tab === 'facturas') {
+                if (typeof renderModuloFacturasCcf === 'function') renderModuloFacturasCcf();
+            } else if (tab === 'cotizaciones') {
+                renderCotizacionesTable();
+            } else if (tab === 'conductores') {
+                renderConductoresGestionTable();
+            } else if (tab === 'historial_conductores') {
+                renderHistorialConductoresTable();
             }
-            renderHistorialConductoresTable();
-            renderCotizacionesTable();
-            if (typeof renderModuloFacturasCcf === 'function') {
-                renderModuloFacturasCcf();
+
+            // Actualizar siempre el badge del menú de pendientes
+            const badgeMenu = document.getElementById('badgeContadorPendientes');
+            if (badgeMenu) {
+                let totalPend = 0;
+                if (Array.isArray(registrosGlobales)) {
+                    for (let i = 0; i < registrosGlobales.length; i++) {
+                        if (!esRegistroEntregado(registrosGlobales[i])) totalPend++;
+                    }
+                }
+                badgeMenu.innerText = totalPend;
             }
         }
 
         function renderAdminKPIs() {
-            const hoyISO = new Date().toISOString().split('T')[0];
-            
-            // FILTRO ESTRICTO: Solo datos del día actual (Hoy)
-            let viajesOperacionHoy = registrosGlobales.filter(r => esRegistroDeHoy(r));
-
-            let totalConductores = Object.keys(driversData).length;
-            let disponibles = 0;
-            for (const key of Object.keys(driversData)) {
-                let pendientesHoy = viajesOperacionHoy.filter(r => r.driverKey === key && !esRegistroEntregado(r)).length;
-                if (pendientesHoy === 0) disponibles++;
-            }
+            const viajesOperacionHoy = obtenerViajesOperacionHoy(true);
+            const ref = obtenerReferenciaPeriodosFecha();
+            const hoyISO = ref.hoyISO;
 
             let totalViajes = viajesOperacionHoy.length;
-            let totalMonto = viajesOperacionHoy.reduce((acc, r) => acc + r.monto, 0);
-            let totalFletes = viajesOperacionHoy.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
+            let totalMonto = 0;
+            let totalFletes = 0;
+            const choferesConPendienteHoy = new Set();
 
-            let viajesFuturosPendientes = registrosGlobales.filter(r => esFechaProgramadaFutura(r) && !esRegistroEntregado(r)).length;
+            for (let i = 0; i < totalViajes; i++) {
+                const r = viajesOperacionHoy[i];
+                totalMonto += (r.monto || 0);
+                totalFletes += (parseFloat(r.transporte) || 0);
+                if (!esRegistroEntregado(r) && r.driverKey) {
+                    choferesConPendienteHoy.add(r.driverKey);
+                }
+            }
 
-            document.getElementById('kpiActiveDrivers').innerText = `${disponibles} / ${totalConductores}`;
-            document.getElementById('kpiTotalTrips').innerText = totalViajes;
-            document.getElementById('kpiInvoices').innerText = `$${totalMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            const totalConductores = Object.keys(driversData).length;
+            const disponibles = Math.max(0, totalConductores - choferesConPendienteHoy.size);
+
+            let viajesFuturosPendientes = 0;
+            let totalPend = 0;
+            if (Array.isArray(registrosGlobales)) {
+                for (let i = 0; i < registrosGlobales.length; i++) {
+                    const r = registrosGlobales[i];
+                    if (!esRegistroEntregado(r)) {
+                        totalPend++;
+                        if (r.fechaProgramada && r.fechaProgramada > hoyISO) {
+                            viajesFuturosPendientes++;
+                        }
+                    }
+                }
+            }
+
+            const elActiveDrivers = document.getElementById('kpiActiveDrivers');
+            if (elActiveDrivers) elActiveDrivers.innerText = `${disponibles} / ${totalConductores}`;
+
+            const elTotalTrips = document.getElementById('kpiTotalTrips');
+            if (elTotalTrips) elTotalTrips.innerText = totalViajes;
+
+            const elInvoices = document.getElementById('kpiInvoices');
+            if (elInvoices) elInvoices.innerText = `$${totalMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             
             const kpiFletes = document.getElementById('kpiTotalFletesHoy');
             if (kpiFletes) {
@@ -11814,7 +12009,6 @@
 
             const badgeMenu = document.getElementById('badgeContadorPendientes');
             if (badgeMenu) {
-                const totalPend = registrosGlobales.filter(r => !esRegistroEntregado(r)).length;
                 badgeMenu.innerText = totalPend;
             }
         }
@@ -11837,25 +12031,57 @@
             pendientesSearchDebounceTimer = setTimeout(renderPendientesTable, 120);
         }
 
+        function tieneJsonFacturaRapido(r) {
+            if (!r) return false;
+            if (r.jsonData || r.jsonRaw) return true;
+            if (r.subFacturas && Array.isArray(r.subFacturas) && r.subFacturas.some(s => s.jsonData || s.jsonRaw)) return true;
+            const f = String(r.factura || '').trim().toLowerCase();
+            if (!f) return false;
+            const numSolo = f.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+            try {
+                if (localStorage.getItem('doc_json_' + f)) return true;
+                if (numSolo) {
+                    if (localStorage.getItem('doc_json_' + numSolo)) return true;
+                    if (localStorage.getItem('doc_json_fact' + numSolo)) return true;
+                    if (localStorage.getItem('doc_json_ccf' + numSolo)) return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
         function renderPendientesTable() {
             const tbody = document.getElementById('pendientesTableBody');
             if (!tbody) return;
 
-            const hoyISO = new Date().toISOString().split('T')[0];
+            const ref = obtenerReferenciaPeriodosFecha();
+            const hoyISO = ref.hoyISO;
             const filtroTipo = document.getElementById('filtroTipoPendientes') ? document.getElementById('filtroTipoPendientes').value : 'todos';
             const searchVal = document.getElementById('pendientesSearchInput') ? String(document.getElementById('pendientesSearchInput').value).toLowerCase().trim() : '';
             const terms = searchVal ? searchVal.split(/\s+/).filter(Boolean) : [];
 
-            let todasPendientes = registrosGlobales.filter(r => !esRegistroEntregado(r));
+            let todasPendientes = [];
+            let pendientesHoyCount = 0;
+            let montoTotal = 0;
+            let fleteTotal = 0;
+
+            if (Array.isArray(registrosGlobales)) {
+                for (let i = 0; i < registrosGlobales.length; i++) {
+                    const r = registrosGlobales[i];
+                    if (!esRegistroEntregado(r)) {
+                        todasPendientes.push(r);
+                        montoTotal += (r.monto || 0);
+                        fleteTotal += (parseFloat(r.transporte) || 0);
+                        if (!r.fechaProgramada || r.fechaProgramada <= hoyISO) {
+                            pendientesHoyCount++;
+                        }
+                    }
+                }
+            }
 
             const badgeMenu = document.getElementById('badgeContadorPendientes');
             if (badgeMenu) {
                 badgeMenu.innerText = todasPendientes.length;
             }
-
-            const pendientesHoy = todasPendientes.filter(r => !r.fechaProgramada || r.fechaProgramada === hoyISO || r.fechaProgramada < hoyISO);
-            const montoTotal = todasPendientes.reduce((sum, r) => sum + r.monto, 0);
-            const fleteTotal = todasPendientes.reduce((sum, r) => sum + r.transporte, 0);
 
             const kpiTot = document.getElementById('kpiPendientesTotal');
             const kpiHoy = document.getElementById('kpiPendientesHoy');
@@ -11863,15 +12089,15 @@
             const kpiFlete = document.getElementById('kpiPendientesFlete');
 
             if (kpiTot) kpiTot.innerText = todasPendientes.length;
-            if (kpiHoy) kpiHoy.innerText = pendientesHoy.length;
+            if (kpiHoy) kpiHoy.innerText = pendientesHoyCount;
             if (kpiMonto) kpiMonto.innerText = `$${montoTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             if (kpiFlete) kpiFlete.innerText = `$${fleteTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
 
             let filtrados = todasPendientes;
             if (filtroTipo === 'hoy') {
-                filtrados = filtrados.filter(r => !esFechaProgramadaFutura(r));
+                filtrados = filtrados.filter(r => !r.fechaProgramada || r.fechaProgramada <= hoyISO);
             } else if (filtroTipo === 'futuros') {
-                filtrados = filtrados.filter(r => esFechaProgramadaFutura(r));
+                filtrados = filtrados.filter(r => r.fechaProgramada && r.fechaProgramada > hoyISO);
             }
 
             if (terms.length > 0) {
@@ -11906,7 +12132,7 @@
                     fechaDisplay = `<span class="text-slate-200 font-semibold block">${r.fecha || 'Hoy'}</span><span class="text-[10px] text-emerald-400 font-medium">Operación de Hoy</span>`;
                 }
 
-                const tieneDocJson = !!(r.jsonData || r.jsonRaw || (typeof obtenerJsonFacturaLocal === 'function' && obtenerJsonFacturaLocal(r.factura)));
+                const tieneDocJson = tieneJsonFacturaRapido(r);
 
                 html += `
                     <tr class="hover:bg-slate-900/60 transition-colors border-l-4 border-amber-500/80">
@@ -11958,14 +12184,23 @@
         function renderDriversKPIs() {
             const grid = document.getElementById('driversKpiGrid');
             if(!grid) return;
+            const viajesOperacionHoy = obtenerViajesOperacionHoy();
             let html = '';
 
             for (const [key, d] of Object.entries(driversData)) {
-                // Solo viajes del día de hoy
-                let viajesDriver = registrosGlobales.filter(r => (r.driverKey === key || (r.conductor && r.conductor.toLowerCase().trim() === d.name.toLowerCase().trim())) && esRegistroDeHoy(r));
-                let totalViajes = viajesDriver.length;
-                let transporteTotal = viajesDriver.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
-                let facturadoTotal = viajesDriver.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
+                const dNameLower = (d.name || '').toLowerCase().trim();
+                let totalViajes = 0;
+                let transporteTotal = 0;
+                let facturadoTotal = 0;
+
+                for (let i = 0; i < viajesOperacionHoy.length; i++) {
+                    const r = viajesOperacionHoy[i];
+                    if (r.driverKey === key || (r.conductor && r.conductor.toLowerCase().trim() === dNameLower)) {
+                        totalViajes++;
+                        transporteTotal += (parseFloat(r.transporte) || 0);
+                        facturadoTotal += (parseFloat(r.monto) || 0);
+                    }
+                }
 
                 html += `
                     <div onclick="abrirModalKpiDetalle('conductor_individual', '${key}')" title="Clic para ver detalle de viajes de ${d.name}" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-accentBlue/60 hover:bg-slate-800/60 rounded-xl p-4 space-y-2 transition-all group shadow-sm">
@@ -12001,14 +12236,22 @@
         function renderSucursalesKPIs() {
             const grid = document.getElementById('sucursalesKpiGrid');
             if(!grid) return;
+            const viajesOperacionHoy = obtenerViajesOperacionHoy();
             let html = '';
 
             sucursalesOficiales.forEach(suc => {
-                // Solo viajes del día de hoy
-                let itemsSuc = registrosGlobales.filter(r => r.origen === suc && esRegistroDeHoy(r));
-                let viajes = itemsSuc.length;
-                let transporteTotal = itemsSuc.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
-                let facturadoTotal = itemsSuc.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
+                let viajes = 0;
+                let transporteTotal = 0;
+                let facturadoTotal = 0;
+
+                for (let i = 0; i < viajesOperacionHoy.length; i++) {
+                    const r = viajesOperacionHoy[i];
+                    if (r.origen === suc) {
+                        viajes++;
+                        transporteTotal += (parseFloat(r.transporte) || 0);
+                        facturadoTotal += (parseFloat(r.monto) || 0);
+                    }
+                }
 
                 html += `
                     <div onclick="abrirModalKpiDetalle('sucursal_origen', '${suc}')" title="Clic para ver detalle de viajes desde ${suc}" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-emerald-500/60 hover:bg-slate-800/60 rounded-xl p-4 space-y-2 transition-all group shadow-sm">
@@ -12046,7 +12289,7 @@
             if(!tbody) return;
             
             // Solo viajes del día de hoy
-            let viajesOperacionHoy = registrosGlobales.filter(r => esRegistroDeHoy(r));
+            let viajesOperacionHoy = obtenerViajesOperacionHoy();
 
             const searchInput = document.getElementById('diarioSearchInput');
             const searchVal = searchInput ? String(searchInput.value).toLowerCase().trim() : '';
@@ -17465,35 +17708,37 @@
                 const facturaId = decodeURIComponent(facturaEncoded || '').trim();
                 if (!facturaId) return;
 
-            // 1. Buscar en registrosGlobales con coincidencia flexible por código y número
-            const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(facturaId) : facturaId.toLowerCase();
-            const factSoloNum = facturaId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-
-            let r = registrosGlobales.find(x => {
-                const f = String(x.factura || '').trim();
-                if (f.toLowerCase() === facturaId.toLowerCase()) return true;
-                if ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(f) === factNorm) return true;
-                if (factSoloNum) {
-                    const fSolo = f.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                    if (fSolo && fSolo === factSoloNum) return true;
-                }
+            function sonFacturasCoincidentes(f1, f2) {
+                if (!f1 || !f2) return false;
+                const s1 = String(f1).trim().toLowerCase();
+                const s2 = String(f2).trim().toLowerCase();
+                if (s1 === s2) return true;
+                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
+                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                if (n1 && n2 && n1 === n2) return true;
                 return false;
-            });
+            }
+
+            // 1. Buscar primero en la factura actual previsualizada si coincide
+            let r = null;
+            if (facturaActualPrevisualizada && sonFacturasCoincidentes(facturaActualPrevisualizada.factura, facturaId)) {
+                r = Object.assign({}, facturaActualPrevisualizada);
+            }
+
+            // 2. Buscar en registrosGlobales
+            if (!r && typeof registrosGlobales !== 'undefined') {
+                const regEncontrado = registrosGlobales.find(x => sonFacturasCoincidentes(x.factura, facturaId));
+                if (regEncontrado) {
+                    r = Object.assign({}, regEncontrado);
+                }
+            }
             
-            // 2. Si no es registro principal, buscar en viajes agrupados / multi-facturas
-            if (!r) {
+            // 3. Si no es registro principal, buscar en viajes agrupados / multi-facturas
+            if (!r && typeof registrosGlobales !== 'undefined') {
                 for (const reg of registrosGlobales) {
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
-                        const sub = reg.subFacturas.find(s => {
-                            const subFact = String(s.numero || s.factura || s.docCompleto || '').trim();
-                            if (subFact.toLowerCase() === facturaId.toLowerCase()) return true;
-                            if ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm) return true;
-                            if (factSoloNum) {
-                                const sSolo = subFact.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                                if (sSolo && sSolo === factSoloNum) return true;
-                            }
-                            return false;
-                        });
+                        const sub = reg.subFacturas.find(s => sonFacturasCoincidentes(s.numero || s.factura || s.docCompleto, facturaId));
                         if (sub) {
                             r = {
                                 ...reg,
@@ -17502,6 +17747,7 @@
                                 monto: Number(sub.monto) || 0,
                                 jsonData: sub.jsonData || null,
                                 jsonRaw: sub.jsonRaw || '',
+                                datosDte: sub.datosDte || null,
                                 drivePdfUrl: sub.drivePdfUrl || reg.drivePdfUrl || '',
                                 descripcion: `Factura parte del envío agrupado de ${reg.cliente}`
                             };
@@ -17511,7 +17757,7 @@
                 }
             }
 
-            // 3. Fallback de cortesía si es una factura no encontrada en memoria
+            // 4. Fallback de cortesía si es una factura no encontrada en memoria
             if (!r) {
                 r = {
                     factura: facturaId,
@@ -17528,6 +17774,14 @@
                     estado: 'Pendiente',
                     fecha: new Date().toISOString().split('T')[0]
                 };
+            }
+
+            // Si facturaActualPrevisualizada ya tenía datosDte o jsonData, heredarlos
+            if (facturaActualPrevisualizada && sonFacturasCoincidentes(facturaActualPrevisualizada.factura, r.factura)) {
+                if (!r.datosDte && facturaActualPrevisualizada.datosDte) r.datosDte = facturaActualPrevisualizada.datosDte;
+                if (!r.jsonData && facturaActualPrevisualizada.jsonData) r.jsonData = facturaActualPrevisualizada.jsonData;
+                if (!r.jsonRaw && facturaActualPrevisualizada.jsonRaw) r.jsonRaw = facturaActualPrevisualizada.jsonRaw;
+                if (!r.drivePdfUrl && facturaActualPrevisualizada.drivePdfUrl) r.drivePdfUrl = facturaActualPrevisualizada.drivePdfUrl;
             }
 
             facturaActualPrevisualizada = r;
@@ -17555,14 +17809,26 @@
             }
 
             // Extraer estructura oficial DTE / Comercial (10 campos oficiales)
-            let datosDte = null;
-            if (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') {
+            let datosDte = r.datosDte || null;
+            if (!datosDte && docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') {
                 datosDte = extraerDatosDocumentoIndividualJson(docJsonData);
             }
 
             if (datosDte) {
                 r.datosDte = datosDte;
                 facturaActualPrevisualizada.datosDte = datosDte;
+                if (datosDte.clienteValidoDte && (!r.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(r.cliente))) {
+                    r.cliente = datosDte.clienteValidoDte;
+                    facturaActualPrevisualizada.cliente = datosDte.clienteValidoDte;
+                }
+                if (datosDte.telefono && (!r.telefonoCliente || r.telefonoCliente === 'Sin registrar')) {
+                    r.telefonoCliente = datosDte.telefono;
+                    facturaActualPrevisualizada.telefonoCliente = datosDte.telefono;
+                }
+                if (datosDte.destinoValidoDte && (!r.destino || /destino\s*no\s*especificado|sin\s*direccion/i.test(r.destino))) {
+                    r.destino = datosDte.destinoValidoDte;
+                    facturaActualPrevisualizada.destino = datosDte.destinoValidoDte;
+                }
             }
             if (docJsonData) {
                 r.jsonData = docJsonData;
@@ -17758,12 +18024,13 @@
             const subtotalDocFinal = (datosDte && datosDte.subTotal > 0) ? datosDte.subTotal : montoDocFinal;
             const fleteNum = Number(r.transporte) || 0;
 
+            const dteRootObj = (docJsonData && docJsonData.dteJson) ? docJsonData.dteJson : (docJsonData?.DTE || docJsonData?.documento || docJsonData);
             const itemsArray = (datosDte && Array.isArray(datosDte.items) && datosDte.items.length > 0)
                 ? datosDte.items
-                : ((docJsonData && Array.isArray(docJsonData.cuerpoDocumento)) ? docJsonData.cuerpoDocumento :
-                  ((docJsonData && Array.isArray(docJsonData.items)) ? docJsonData.items :
-                  ((docJsonData && Array.isArray(docJsonData.productos)) ? docJsonData.productos :
-                  ((docJsonData && Array.isArray(docJsonData.lineas)) ? docJsonData.lineas : null))));
+                : ((dteRootObj && Array.isArray(dteRootObj.cuerpoDocumento)) ? dteRootObj.cuerpoDocumento :
+                  ((dteRootObj && Array.isArray(dteRootObj.items)) ? dteRootObj.items :
+                  ((dteRootObj && Array.isArray(dteRootObj.productos)) ? dteRootObj.productos :
+                  ((dteRootObj && Array.isArray(dteRootObj.lineas)) ? dteRootObj.lineas : null))));
 
             // Renderizar Banner Informativo de JSON y Drive en la Hoja (Solo para Administrador)
             const bannerJson = document.getElementById('prevDocBannerJson');
