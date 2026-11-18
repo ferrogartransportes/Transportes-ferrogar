@@ -3109,8 +3109,11 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                             <!-- Datos del Cliente -->
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                                <div class="font-bold text-slate-900 border-b border-slate-200 pb-1 flex items-center gap-1.5 uppercase text-[11px] tracking-wider text-blue-800">
-                                    <i class="fa-solid fa-user"></i> Datos del Cliente
+                                <div class="font-bold text-slate-900 border-b border-slate-200 pb-1 flex items-center justify-between uppercase text-[11px] tracking-wider text-blue-800">
+                                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-user"></i> Datos del Cliente</span>
+                                    <button id="btnCompararClienteDteSheet" type="button" onclick="abrirModalCompararClienteDte('sheet')" class="hidden px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 border border-blue-300 shadow-xs" title="Comparar y actualizar datos del cliente con el DTE">
+                                        <i class="fa-solid fa-user-check text-blue-600"></i> <span>Comparar con DTE</span>
+                                    </button>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block text-[11px]">Cliente / Razón Social:</span>
@@ -3413,6 +3416,188 @@
                     </button>
                     <button type="button" onclick="confirmarVinculacionDriveAceptada()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-lg flex items-center gap-1.5">
                         <i class="fa-solid fa-check"></i> <span>Aceptar y Vincular</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODAL: COMPARAR DATOS DE CLIENTE CON DTE ================= -->
+        <div id="modalCompararClienteDte" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[95] hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+            <div class="bg-darkCard border border-blue-500/40 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
+                <!-- Encabezado -->
+                <div class="flex items-start justify-between border-b border-slate-800 pb-3 gap-3 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg shadow-lg shrink-0">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                                Comparar Datos del Cliente con DTE
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                Compare la información actual con la del documento fiscal y seleccione qué datos desea actualizar o anexar a la ficha.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="cerrarModalCompararClienteDte()" class="text-slate-400 hover:text-white p-1 rounded-xl text-lg cursor-pointer transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Resumen de Documento -->
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 shrink-0">
+                    <div>
+                        <span class="text-slate-400">Documento:</span>
+                        <span id="compDteDocLabel" class="font-mono font-bold text-emerald-400 ml-1">---</span>
+                    </div>
+                    <div id="compDteNitNrcLabel" class="text-[11px] text-cyan-300 font-mono"></div>
+                </div>
+
+                <!-- Contenedor de Comparación con Scroll -->
+                <div class="space-y-3 overflow-y-auto flex-1 pr-1 text-xs">
+                    <!-- Fila 1: Nombre del Cliente -->
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-slate-300 font-bold border-b border-slate-800/80 pb-1">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-id-card text-blue-400"></i> Nombre / Razón Social</span>
+                            <span id="badgeDiffNombre" class="text-[10px] px-2 py-0.5 rounded-full font-semibold"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                                <span class="text-slate-400 block text-[10px] font-semibold">DATO ACTUAL REGISTRADO:</span>
+                                <span id="compCliNombreActual" class="font-bold text-slate-200">---</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-blue-950/40 border border-blue-500/30">
+                                <span class="text-blue-300 block text-[10px] font-semibold">SEGÚN DTE / FACTURA:</span>
+                                <span id="compCliNombreDte" class="font-bold text-blue-200">---</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 pt-1 text-[11px]">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionNombre" value="mantener" checked class="text-blue-600 focus:ring-0">
+                                <span>Mantener actual</span>
+                            </label>
+                            <label id="lblOpcionReemplazarNombre" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionNombre" value="reemplazar" class="text-blue-600 focus:ring-0">
+                                <span>Actualizar con nombre de DTE</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Fila 2: Teléfono -->
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-slate-300 font-bold border-b border-slate-800/80 pb-1">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-phone text-emerald-400"></i> Teléfono de Contacto</span>
+                            <span id="badgeDiffTelefono" class="text-[10px] px-2 py-0.5 rounded-full font-semibold"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                                <span class="text-slate-400 block text-[10px] font-semibold">TELÉFONO ACTUAL:</span>
+                                <span id="compCliTelefonoActual" class="font-bold text-slate-200">---</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30">
+                                <span class="text-emerald-300 block text-[10px] font-semibold">SEGÚN DTE / FACTURA:</span>
+                                <span id="compCliTelefonoDte" class="font-bold text-emerald-200">---</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 pt-1 text-[11px]">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionTelefono" value="mantener" checked class="text-emerald-600 focus:ring-0">
+                                <span>Mantener actual</span>
+                            </label>
+                            <label id="lblOpcionReemplazarTelefono" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionTelefono" value="reemplazar" class="text-emerald-600 focus:ring-0">
+                                <span>Reemplazar con teléfono DTE</span>
+                            </label>
+                            <label id="lblOpcionAnexarTelefono" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionTelefono" value="anexar" class="text-emerald-600 focus:ring-0">
+                                <span id="txtOpcionAnexarTelefono">Agregar como 2° teléfono (actual / nuevo)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Dirección de Entrega -->
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-slate-300 font-bold border-b border-slate-800/80 pb-1">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-amber-400"></i> Dirección de Entrega / Destino</span>
+                            <span id="badgeDiffDireccion" class="text-[10px] px-2 py-0.5 rounded-full font-semibold"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                                <span class="text-slate-400 block text-[10px] font-semibold">DIRECCIÓN ACTUAL:</span>
+                                <span id="compCliDireccionActual" class="font-medium text-slate-200">---</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-amber-950/40 border border-amber-500/30">
+                                <span class="text-amber-300 block text-[10px] font-semibold">SEGÚN DTE / FACTURA:</span>
+                                <span id="compCliDireccionDte" class="font-medium text-amber-200">---</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 pt-1 text-[11px]">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionDireccion" value="mantener" checked class="text-amber-600 focus:ring-0">
+                                <span>Mantener actual</span>
+                            </label>
+                            <label id="lblOpcionReemplazarDireccion" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionDireccion" value="reemplazar" class="text-amber-600 focus:ring-0">
+                                <span>Reemplazar con dirección DTE</span>
+                            </label>
+                            <label id="lblOpcionAnexarDireccion" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionDireccion" value="anexar" class="text-amber-600 focus:ring-0">
+                                <span>Combinar / Anexar dirección DTE</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Correo Electrónico (Email) -->
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between text-slate-300 font-bold border-b border-slate-800/80 pb-1">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-envelope text-cyan-400"></i> Correo Electrónico (Email)</span>
+                            <span id="badgeDiffCorreo" class="text-[10px] px-2 py-0.5 rounded-full font-semibold"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                            <div class="p-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                                <span class="text-slate-400 block text-[10px] font-semibold">CORREO ACTUAL REGISTRADO:</span>
+                                <span id="compCliCorreoActual" class="font-medium text-slate-200">---</span>
+                            </div>
+                            <div class="p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30">
+                                <span class="text-cyan-300 block text-[10px] font-semibold">SEGÚN DTE / FACTURA:</span>
+                                <span id="compCliCorreoDte" class="font-medium text-cyan-200">---</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-3 pt-1 text-[11px]">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionCorreo" value="mantener" checked class="text-cyan-600 focus:ring-0">
+                                <span>Mantener actual</span>
+                            </label>
+                            <label id="lblOpcionReemplazarCorreo" class="inline-flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                                <input type="radio" name="opcionAccionCorreo" value="reemplazar" class="text-cyan-600 focus:ring-0">
+                                <span>Guardar / Actualizar con correo DTE</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Opciones de Destino de la Actualización -->
+                    <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-700/80 space-y-2">
+                        <span class="text-slate-300 font-bold text-[11px] block">¿Dónde desea aplicar los cambios seleccionados?</span>
+                        <div class="flex flex-col sm:flex-row gap-3 text-[11px]">
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-slate-200 hover:text-white">
+                                <input type="checkbox" id="chkAplicarDocumentoActual" checked class="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0">
+                                <span>Actualizar en el envío / documento actual</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-slate-200 hover:text-white">
+                                <input type="checkbox" id="chkAplicarFichaCatalogo" checked class="rounded bg-slate-800 border-slate-700 text-emerald-600 focus:ring-0">
+                                <span>Actualizar ficha oficial en Catálogo & Google Sheets</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción Inferiores -->
+                <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800 shrink-0">
+                    <button type="button" onclick="cerrarModalCompararClienteDte()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="aplicarActualizacionClienteDte()" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> <span>Aplicar Cambios Seleccionados</span>
                     </button>
                 </div>
             </div>
@@ -6743,26 +6928,158 @@
             }
         }
 
+        /**
+         * Corrige caracteres rotos o mal codificados (como , U+FFFD o Mojibake Ã±/Ã³) en palabras comunes y textos de facturas
+         */
+        function repararTextoCodificado(str) {
+            if (!str || typeof str !== 'string') return str || '';
+            if (!str.includes('\uFFFD') && !str.includes('') && !str.includes('Ã')) {
+                return str;
+            }
+
+            let s = str;
+
+            // 1. Mojibake UTF-8 interpretado como Latin1 / Windows-1252 (ej: Ã± -> ñ, Ã³ -> ó)
+            const mojibakeMap = {
+                'Ã¡': 'á', 'Ã©': 'é', 'Ã­': 'í', 'Ã³': 'ó', 'Ãº': 'ú',
+                'Ã\x81': 'Á', 'Ã\x89': 'É', 'Ã\x8D': 'Í', 'Ã\x93': 'Ó', 'Ã\x9A': 'Ú',
+                'Ã±': 'ñ', 'Ã\x91': 'Ñ',
+                'Â°': '°', 'Âª': 'ª', 'Â¿': '¿', 'Â¡': '¡'
+            };
+            for (const m in mojibakeMap) {
+                s = s.split(m).join(mojibakeMap[m]);
+            }
+
+            // Función auxiliar para reemplazar preservando mayúsculas / minúsculas
+            function repCase(regex, targetWord) {
+                s = s.replace(regex, function(match) {
+                    if (match === match.toUpperCase()) return targetWord.toUpperCase();
+                    if (match[0] === match[0].toUpperCase()) return targetWord.charAt(0).toUpperCase() + targetWord.slice(1).toLowerCase();
+                    return targetWord.toLowerCase();
+                });
+            }
+
+            // 2. Símbolos de número con  (ej: N 71 -> N° 71)
+            s = s.replace(/N[\uFFFD]?\s*(\d+)/gi, 'N° $1');
+            s = s.replace(/N[\uFFFD]/g, 'N°');
+            s = s.replace(/[\uFFFD]\s*(\d+)/g, 'N° $1');
+
+            // 3. Palabras frecuentes en ferretería y facturas salvadoreñas con 
+            repCase(/art[\uFFFD]culo/gi, 'artículo');
+            repCase(/ferreter[\uFFFD]a/gi, 'ferretería');
+            repCase(/tuber[\uFFFD]a/gi, 'tubería');
+            repCase(/categor[\uFFFD]a/gi, 'categoría');
+            repCase(/garant[\uFFFD]a/gi, 'garantía');
+            repCase(/energ[\uFFFD]a/gi, 'energía');
+            repCase(/compa[\uFFFD]+a/gi, 'compañía');
+            repCase(/dise[\uFFFD]o/gi, 'diseño');
+            repCase(/dise[\uFFFD]a/gi, 'diseña');
+            repCase(/alba[\uFFFD]il/gi, 'albañil');
+            repCase(/ba[\uFFFD]o/gi, 'baño');
+            repCase(/ca[\uFFFD]uela/gi, 'cañuela');
+            repCase(/ca[\uFFFD]a/gi, 'caña');
+            repCase(/esta[\uFFFD]o/gi, 'estaño');
+            repCase(/pe[\uFFFD]a/gi, 'peña');
+            repCase(/mu[\uFFFD]oz/gi, 'muñoz');
+            repCase(/nu[\uFFFD]ez/gi, 'núñez');
+            repCase(/caba[\uFFFD]as/gi, 'cabañas');
+            repCase(/due[\uFFFD]as/gi, 'dueñas');
+            repCase(/espa[\uFFFD]a/gi, 'españa');
+            repCase(/espa[\uFFFD]ol/gi, 'español');
+            repCase(/se[\uFFFD]or/gi, 'señor');
+            repCase(/se[\uFFFD]ora/gi, 'señora');
+            repCase(/a[\uFFFD]o/gi, 'año');
+            repCase(/peque[\uFFFD]o/gi, 'pequeño');
+            repCase(/peque[\uFFFD]a/gi, 'pequeña');
+            repCase(/fabricaci[\uFFFD]n/gi, 'fabricación');
+            repCase(/direcci[\uFFFD]n/gi, 'dirección');
+            repCase(/construcci[\uFFFD]n/gi, 'construcción');
+            repCase(/instalaci[\uFFFD]n/gi, 'instalación');
+            repCase(/reparaci[\uFFFD]n/gi, 'reparación');
+            repCase(/emisi[\uFFFD]n/gi, 'emisión');
+            repCase(/recepci[\uFFFD]n/gi, 'recepción');
+            repCase(/devoluci[\uFFFD]n/gi, 'devolución');
+            repCase(/descripci[\uFFFD]n/gi, 'descripción');
+            repCase(/cami[\uFFFD]n/gi, 'camión');
+            repCase(/env[\uFFFD]o/gi, 'envío');
+            repCase(/gu[\uFFFD]a/gi, 'guía');
+            repCase(/d[\uFFFD]a/gi, 'día');
+            repCase(/n[\uFFFD]mero/gi, 'número');
+            repCase(/tel[\uFFFD]fono/gi, 'teléfono');
+            repCase(/el[\uFFFD]ctrico/gi, 'eléctrico');
+            repCase(/el[\uFFFD]ctrica/gi, 'eléctrica');
+            repCase(/met[\uFFFD]lico/gi, 'metálico');
+            repCase(/met[\uFFFD]lica/gi, 'metálica');
+            repCase(/pl[\uFFFD]stico/gi, 'plástico');
+            repCase(/l[\uFFFD]mina/gi, 'lámina');
+            repCase(/c[\uFFFD]digo/gi, 'código');
+
+            // Terminaciones
+            s = s.replace(/([a-zA-Z])c[\uFFFD]n/gi, '$1ción');
+            s = s.replace(/([a-zA-Z])s[\uFFFD]n/gi, '$1sión');
+            s = s.replace(/([a-zA-Z])r[\uFFFD]a/gi, '$1ría');
+            s = s.replace(/([a-zA-Z])t[\uFFFD]a/gi, '$1tía');
+            s = s.replace(/([a-zA-Z])l[\uFFFD]a/gi, '$1lía');
+
+            // Si aún queda  entre vocales (ej: año, diseño, cañuela, etc.)
+            s = s.replace(/([aeiou])[\uFFFD]([aeiou])/gi, function(match, v1, v2) {
+                const isUpper = (v1 === v1.toUpperCase() && v2 === v2.toUpperCase());
+                return v1 + (isUpper ? 'Ñ' : 'ñ') + v2;
+            });
+
+            // Limpiar cualquier  o \uFFFD residual suelto
+            s = s.replace(/[\uFFFD]/g, '');
+            return s;
+        }
+
+        /**
+         * Lee archivos de texto detectando automáticamente si vienen en UTF-8 o Windows-1252 (ANSI)
+         */
+        function leerArchivoTextoAutoCodificado(file, onSuccess, onError) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const buffer = e.target.result;
+                let text = '';
+                try {
+                    const decUtf8 = new TextDecoder('utf-8', { fatal: true });
+                    text = decUtf8.decode(buffer);
+                } catch(errUtf8) {
+                    try {
+                        const decWin = new TextDecoder('windows-1252');
+                        text = decWin.decode(buffer);
+                    } catch(errWin) {
+                        try {
+                            const decIso = new TextDecoder('iso-8859-1');
+                            text = decIso.decode(buffer);
+                        } catch(eIso) {
+                            text = '';
+                        }
+                    }
+                }
+                if (typeof onSuccess === 'function') onSuccess(text);
+            };
+            reader.onerror = function(err) {
+                if (typeof onError === 'function') onError(err);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         function cargarArchivoJsonAsignacion(event) {
             const file = event.target.files?.[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const contenido = e.target?.result;
+            leerArchivoTextoAutoCodificado(file, function(contenido) {
                 const txt = document.getElementById('textareaJsonAsignacion');
                 if (txt && typeof contenido === 'string') {
                     txt.value = contenido;
                     validarPreviewJsonAsignacion();
                     showToast('Archivo Cargado', `Se cargó el archivo "${file.name}" correctamente.`, 'info');
                 }
-                event.target.value = '';
-            };
-            reader.onerror = function() {
+            }, function() {
                 showToast('Error', 'No se pudo leer el archivo seleccionado.', 'error');
-                event.target.value = '';
-            };
-            reader.readAsText(file);
+            });
+            event.target.value = '';
         }
 
         function cargarPlantillaEjemploJsonAsignacion(tipo = 'simple') {
@@ -7726,20 +8043,39 @@
                     totalLetras = String(resumen.totalLetras).trim();
                 }
 
+                let correo = '';
+                let nitReceptor = '';
+                let nrcReceptor = '';
+
                 // Receptor / Cliente (Nota: en Factura 01, receptor puede ser null)
                 if (recep && typeof recep === 'object') {
-                    cliente = String(recep.nombre || recep.nombreComercial || recep.razonSocial || '').trim();
+                    cliente = repararTextoCodificado(String(recep.nombre || recep.nombreComercial || recep.razonSocial || '').trim());
                     telefono = String(recep.telefono || recep.celular || recep.tel || '').trim();
                     if (recep.direccion && typeof recep.direccion === 'object') {
-                        destino = String(recep.direccion.complemento || recep.direccion.direccion || '').trim();
+                        destino = repararTextoCodificado(String(recep.direccion.complemento || recep.direccion.direccion || '').trim());
                     } else if (typeof recep.direccion === 'string') {
-                        destino = recep.direccion.trim();
+                        destino = repararTextoCodificado(recep.direccion.trim());
                     }
+                    const rawEmail = String(recep.correo || recep.email || recep.mail || '').trim();
+                    if (rawEmail && !rawEmail.toUpperCase().includes('NOTIENE')) {
+                        correo = rawEmail;
+                    }
+                    nitReceptor = String(recep.nit || recep.numDocumento || '').trim();
+                    nrcReceptor = String(recep.nrc || '').trim();
                 } else {
                     cliente = (tipoDte === '01') ? 'Consumidor Final' : 'Cliente General';
                 }
 
-                if (!destino && dteRoot.destino) destino = String(dteRoot.destino).trim();
+                if (!destino && dteRoot.destino) destino = repararTextoCodificado(String(dteRoot.destino).trim());
+
+                let clienteValidoDte = cliente;
+                if (/cliente\s*sin\s*datos/i.test(cliente) || /consumidor\s*final/i.test(cliente)) {
+                    clienteValidoDte = '';
+                }
+                let destinoValidoDte = destino;
+                if (/sin\s*direccion/i.test(destino)) {
+                    destinoValidoDte = '';
+                }
 
                 // Items / Cuerpo de Documento
                 const rawItems = Array.isArray(dteRoot.cuerpoDocumento) ? dteRoot.cuerpoDocumento : (Array.isArray(dteRoot.items) ? dteRoot.items : []);
@@ -7747,7 +8083,7 @@
                     numItem: it.numItem || (idx + 1),
                     tipoItem: it.tipoItem || 1,
                     codigo: it.codigo || '',
-                    descripcion: it.descripcion || it.nombre || 'Artículo',
+                    descripcion: repararTextoCodificado(String(it.descripcion || it.nombre || 'Artículo').trim()),
                     cantidad: Number(it.cantidad || it.qty || 1),
                     uniMedida: it.uniMedida || it.unidadMedida || 99,
                     precioUni: Number(it.precioUni || it.precio || 0),
@@ -7804,16 +8140,31 @@
                     else monto = parseFloat(String(rawMonto).replace(/\$/g, '').replace(/,/g, '')) || 0;
                 }
 
-                cliente = String(getVal('cliente', 'customer', 'client', 'nombreCliente', 'nombre', 'receptor', 'razonSocial') || '').trim();
+                cliente = repararTextoCodificado(String(getVal('cliente', 'customer', 'client', 'nombreCliente', 'nombre', 'receptor', 'razonSocial') || '').trim());
                 telefono = String(getVal('telefono', 'phone', 'celular', 'tel', 'telefonoCliente') || '').trim();
-                destino = String(getVal('destino', 'direccion', 'address', 'lugar') || '').trim();
+                destino = repararTextoCodificado(String(getVal('destino', 'direccion', 'address', 'lugar') || '').trim());
+
+                let correo = '';
+                const rawCorreo = String(getVal('correo', 'email', 'mail', 'correoCliente') || '').trim();
+                if (rawCorreo && !rawCorreo.toUpperCase().includes('NOTIENE')) correo = rawCorreo;
+                let nitReceptor = String(getVal('nit', 'nitReceptor', 'numDocumento') || '').trim();
+                let nrcReceptor = String(getVal('nrc', 'nrcReceptor') || '').trim();
+
+                let clienteValidoDte = cliente;
+                if (/cliente\s*sin\s*datos/i.test(cliente) || /consumidor\s*final/i.test(cliente)) {
+                    clienteValidoDte = '';
+                }
+                let destinoValidoDte = destino;
+                if (/sin\s*direccion/i.test(destino)) {
+                    destinoValidoDte = '';
+                }
 
                 const rawItems = getVal('items', 'productos', 'cuerpoDocumento', 'detalle');
                 if (Array.isArray(rawItems)) {
                     items = rawItems.map((it, idx) => ({
                         numItem: it.numItem || (idx + 1),
                         codigo: it.codigo || '',
-                        descripcion: it.descripcion || it.nombre || 'Artículo',
+                        descripcion: repararTextoCodificado(String(it.descripcion || it.nombre || 'Artículo').trim()),
                         cantidad: Number(it.cantidad || it.qty || 1),
                         precioUni: Number(it.precioUni || it.precio || 0),
                         ventaGravada: Number(it.ventaGravada || it.monto || (Number(it.cantidad || 1) * Number(it.precioUni || 0)))
@@ -7830,23 +8181,28 @@
                 numeroCorto: numeroCorto || numero,
                 codigoGeneracion,
                 selloRecibido,
-                tipoEstablecimiento: tipoEstablecimiento || 'FG MATRIZ',
+                tipoEstablecimiento: repararTextoCodificado(tipoEstablecimiento || 'FG MATRIZ'),
                 fecEmi,
                 horEmi,
                 fechaHoraEmision: (fecEmi && horEmi) ? `${fecEmi} ${horEmi}` : (fecEmi || horEmi || ''),
-                controlInterno: controlInterno || '---',
-                formaPago: formaPago || 'Contado',
-                caja: caja || 'Caja Principal',
-                vendedor: vendedor || '---',
-                numeroDevolucion: numeroDevolucion || 'No aplica',
+                controlInterno: repararTextoCodificado(controlInterno || '---'),
+                formaPago: repararTextoCodificado(formaPago || 'Contado'),
+                caja: repararTextoCodificado(caja || 'Caja Principal'),
+                vendedor: repararTextoCodificado(vendedor || '---'),
+                numeroDevolucion: repararTextoCodificado(numeroDevolucion || 'No aplica'),
                 monto,
                 montoFormateado: `$${monto.toFixed(2)}`,
                 subTotal,
                 totalIva,
                 totalLetras,
                 cliente: cliente || 'Consumidor Final',
+                clienteValidoDte,
                 telefono,
                 destino,
+                destinoValidoDte,
+                correo,
+                nitReceptor,
+                nrcReceptor,
                 itemsCount: items.length,
                 items
             };
@@ -8159,16 +8515,15 @@
             const file = event.target.files && event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
+            leerArchivoTextoAutoCodificado(file, function(content) {
                 const txt = document.getElementById('textareaJsonFila');
                 if (txt) {
                     txt.value = content;
                     validarPreviewJsonFila();
                 }
-            };
-            reader.readAsText(file);
+            }, function(err) {
+                mostrarNotificacion('Error al leer el archivo JSON: ' + (err.message || err), 'error');
+            });
             event.target.value = '';
         }
 
@@ -8457,10 +8812,8 @@
                 }
 
                 const file = filesArray[fileIndex++];
-                const reader = new FileReader();
-                reader.onload = function(e) {
+                leerArchivoTextoAutoCodificado(file, function(content) {
                     try {
-                        const content = e.target.result;
                         let cleanVal = content.trim();
                         if (cleanVal.startsWith('```')) {
                             cleanVal = cleanVal.replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/, '').trim();
@@ -8517,12 +8870,10 @@
                         errores++;
                     }
                     procesarSiguienteArchivo();
-                };
-                reader.onerror = function() {
+                }, function() {
                     errores++;
                     procesarSiguienteArchivo();
-                };
-                reader.readAsText(file);
+                });
             }
 
             procesarSiguienteArchivo();
@@ -8706,6 +9057,11 @@
                                 <div class="flex items-center gap-2 flex-wrap">
                                     ${btnVerPdf}
                                     ${btnVincularJson}
+                                    ${tieneJsonParaVincular ? `
+                                        <button type="button" onclick="abrirModalCompararClienteDte('asignacion')" class="px-2.5 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer" title="Comparar o agregar datos a la ficha del cliente con el DTE">
+                                            <i class="fa-solid fa-user-check text-blue-400"></i> <span>Comparar Cliente</span>
+                                        </button>
+                                    ` : ''}
                                     <button type="button" onclick="quitarDocumentoDriveAsignacion()" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer" title="Desvincular archivo de Drive">
                                         <i class="fa-solid fa-xmark text-rose-400"></i> <span>Quitar</span>
                                     </button>
@@ -8814,6 +9170,9 @@
                     <span class="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm">
                         <i class="fa-solid fa-check text-cyan-400"></i> <span>JSON Vinculado (${datos?.itemsCount || 0} ítems)</span>
                     </span>
+                    <button type="button" onclick="abrirModalCompararClienteDte('asignacion')" class="px-2.5 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-sm transition-all cursor-pointer" title="Comparar o agregar datos a la ficha del cliente con el DTE">
+                        <i class="fa-solid fa-user-check text-blue-400"></i> <span>Comparar Cliente</span>
+                    </button>
                 `;
             }
 
@@ -9215,6 +9574,383 @@
             }
         }
 
+        // ==========================================
+        // COMPARADOR Y ACTUALIZADOR DE CLIENTES CON DTE (JSON)
+        // ==========================================
+        let contextoComparacionClienteDte = {
+            source: 'sheet',
+            actual: { nombre: '', telefono: '', direccion: '', correo: '' },
+            dte: { nombre: '', telefono: '', direccion: '', correo: '', nit: '', nrc: '', docNum: '' }
+        };
+
+        function abrirModalCompararClienteDte(source = 'sheet') {
+            let actualNombre = '';
+            let actualTelefono = '';
+            let actualDireccion = '';
+            let actualCorreo = '';
+
+            let dteNombre = '';
+            let dteTelefono = '';
+            let dteDireccion = '';
+            let dteCorreo = '';
+            let dteNit = '';
+            let dteNrc = '';
+            let docNumero = '';
+
+            if (source === 'asignacion') {
+                const inpCli = document.getElementById('manInputClient');
+                const inpTel = document.getElementById('manInputPhone');
+                const inpDir = document.getElementById('manInputDestination');
+                actualNombre = inpCli ? inpCli.value.trim() : '';
+                actualTelefono = inpTel ? inpTel.value.trim() : '';
+                actualDireccion = inpDir ? inpDir.value.trim() : '';
+
+                // Buscar correo en catálogo si existe
+                if (actualNombre && typeof catalogoClientes !== 'undefined') {
+                    const cEnCat = catalogoClientes.find(c => normalizarTextoClave(c.nombre) === normalizarTextoClave(actualNombre));
+                    if (cEnCat && cEnCat.correo) actualCorreo = cEnCat.correo;
+                }
+
+                // Obtener datos del DTE de asignación
+                let dteData = null;
+                if (window._datosDriveJsonPendiente && window._datosDriveJsonPendiente.datosDte) {
+                    dteData = window._datosDriveJsonPendiente.datosDte;
+                    docNumero = window._datosDriveJsonPendiente.num || '';
+                } else if (window.ultimoJsonImportadoAsignacion) {
+                    dteData = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(window.ultimoJsonImportadoAsignacion) : null;
+                }
+
+                if (dteData) {
+                    dteNombre = dteData.clienteValidoDte || (dteData.cliente !== 'Consumidor Final' && !/cliente\s*sin\s*datos/i.test(dteData.cliente) ? dteData.cliente : '');
+                    dteTelefono = dteData.telefono || '';
+                    dteDireccion = dteData.destinoValidoDte || (!/sin\s*direccion/i.test(dteData.destino) ? dteData.destino : '');
+                    dteCorreo = dteData.correo || '';
+                    dteNit = dteData.nitReceptor || '';
+                    dteNrc = dteData.nrcReceptor || '';
+                    if (!docNumero) docNumero = dteData.numero || dteData.numeroControl || '';
+                } else {
+                    showToast('Aviso', 'No hay ningún archivo JSON / DTE vinculado a este nuevo envío para comparar.', 'info');
+                    return;
+                }
+            } else {
+                // Modo 'sheet' (Ficha formal de factura actual)
+                if (!facturaActualPrevisualizada) {
+                    showToast('Aviso', 'No hay documento seleccionado.', 'warning');
+                    return;
+                }
+                const r = facturaActualPrevisualizada;
+                actualNombre = r.cliente || '';
+                actualTelefono = (r.telefonoCliente && r.telefonoCliente !== 'Sin registrar') ? r.telefonoCliente : '';
+                actualDireccion = (r.destino && r.destino !== 'Destino no especificado') ? r.destino : '';
+                docNumero = r.factura || '';
+
+                // Buscar correo en catálogo
+                if (actualNombre && typeof catalogoClientes !== 'undefined') {
+                    const cEnCat = catalogoClientes.find(c => normalizarTextoClave(c.nombre) === normalizarTextoClave(actualNombre));
+                    if (cEnCat && cEnCat.correo) actualCorreo = cEnCat.correo;
+                }
+                if (!actualCorreo && r.correo) actualCorreo = r.correo;
+
+                // Buscar DTE del documento actual
+                let jsonObj = r.jsonData || (r.dteJsonRaw ? (typeof r.dteJsonRaw === 'string' ? JSON.parse(r.dteJsonRaw) : r.dteJsonRaw) : null);
+                if (!jsonObj && typeof obtenerJsonFacturaLocal === 'function') {
+                    const localRaw = obtenerJsonFacturaLocal(r.factura);
+                    if (localRaw) {
+                        jsonObj = localRaw.parsed || localRaw;
+                        if (typeof jsonObj === 'string') {
+                            try { jsonObj = JSON.parse(jsonObj); } catch(e) {}
+                        }
+                    }
+                }
+
+                let dteData = null;
+                if (jsonObj && typeof extraerDatosDocumentoIndividualJson === 'function') {
+                    dteData = extraerDatosDocumentoIndividualJson(jsonObj);
+                }
+
+                if (dteData) {
+                    dteNombre = dteData.clienteValidoDte || (dteData.cliente !== 'Consumidor Final' && !/cliente\s*sin\s*datos/i.test(dteData.cliente) ? dteData.cliente : '');
+                    dteTelefono = dteData.telefono || '';
+                    dteDireccion = dteData.destinoValidoDte || (!/sin\s*direccion/i.test(dteData.destino) ? dteData.destino : '');
+                    dteCorreo = dteData.correo || '';
+                    dteNit = dteData.nitReceptor || '';
+                    dteNrc = dteData.nrcReceptor || '';
+                } else {
+                    showToast('Aviso', 'Esta factura no tiene archivo JSON (DTE) vinculado. Adjunte el JSON primero.', 'info');
+                    return;
+                }
+            }
+
+            contextoComparacionClienteDte = {
+                source,
+                actual: { nombre: actualNombre, telefono: actualTelefono, direccion: actualDireccion, correo: actualCorreo },
+                dte: { nombre: dteNombre, telefono: dteTelefono, direccion: dteDireccion, correo: dteCorreo, nit: dteNit, nrc: dteNrc, docNum: docNumero }
+            };
+
+            // Población de la interfaz
+            const docLbl = document.getElementById('compDteDocLabel');
+            if (docLbl) docLbl.textContent = docNumero || 'Documento';
+            const nitNrcEl = document.getElementById('compDteNitNrcLabel');
+            if (nitNrcEl) {
+                const parts = [];
+                if (dteNit) parts.push(`NIT: ${dteNit}`);
+                if (dteNrc) parts.push(`NRC: ${dteNrc}`);
+                nitNrcEl.textContent = parts.join(' • ');
+            }
+
+            // 1. Nombre
+            const elActNom = document.getElementById('compCliNombreActual');
+            const elDteNom = document.getElementById('compCliNombreDte');
+            const badgeNom = document.getElementById('badgeDiffNombre');
+            const lblReempNom = document.getElementById('lblOpcionReemplazarNombre');
+            if (elActNom) elActNom.textContent = actualNombre || '(Sin nombre registrado)';
+            if (elDteNom) elDteNom.textContent = dteNombre || '(Sin datos en DTE / Consumidor Final)';
+
+            const hayDiffNom = dteNombre && normalizarTextoClave(actualNombre) !== normalizarTextoClave(dteNombre);
+            if (!dteNombre) {
+                if (badgeNom) {
+                    badgeNom.textContent = 'Sin datos en DTE';
+                    badgeNom.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-400';
+                }
+                if (lblReempNom) lblReempNom.classList.add('hidden');
+            } else if (hayDiffNom) {
+                if (badgeNom) {
+                    badgeNom.textContent = 'Difiere de DTE';
+                    badgeNom.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                }
+                if (lblReempNom) lblReempNom.classList.remove('hidden');
+            } else {
+                if (badgeNom) {
+                    badgeNom.textContent = 'Coincide';
+                    badgeNom.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                }
+                if (lblReempNom) lblReempNom.classList.remove('hidden');
+            }
+            const rNom = document.querySelector('input[name="opcionAccionNombre"][value="mantener"]');
+            if (rNom) rNom.checked = true;
+
+            // 2. Teléfono
+            const elActTel = document.getElementById('compCliTelefonoActual');
+            const elDteTel = document.getElementById('compCliTelefonoDte');
+            const badgeTel = document.getElementById('badgeDiffTelefono');
+            const lblReempTel = document.getElementById('lblOpcionReemplazarTelefono');
+            const lblAnexarTel = document.getElementById('lblOpcionAnexarTelefono');
+            const txtAnexarTel = document.getElementById('txtOpcionAnexarTelefono');
+            if (elActTel) elActTel.textContent = actualTelefono || '(Sin teléfono)';
+            if (elDteTel) elDteTel.textContent = dteTelefono || '(Sin teléfono en DTE)';
+
+            const telActLimp = actualTelefono.replace(/[^0-9]/g, '');
+            const telDteLimp = dteTelefono.replace(/[^0-9]/g, '');
+            const hayDiffTel = dteTelefono && telActLimp !== telDteLimp;
+
+            if (!dteTelefono) {
+                if (badgeTel) {
+                    badgeTel.textContent = 'Sin teléfono en DTE';
+                    badgeTel.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-400';
+                }
+                if (lblReempTel) lblReempTel.classList.add('hidden');
+                if (lblAnexarTel) lblAnexarTel.classList.add('hidden');
+            } else if (hayDiffTel) {
+                if (badgeTel) {
+                    badgeTel.textContent = 'Difiere / Nuevo Teléfono';
+                    badgeTel.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                }
+                if (lblReempTel) lblReempTel.classList.remove('hidden');
+                if (lblAnexarTel) {
+                    lblAnexarTel.classList.remove('hidden');
+                    if (txtAnexarTel) {
+                        txtAnexarTel.textContent = actualTelefono ? `Agregar como 2° teléfono (${actualTelefono} / ${dteTelefono})` : `Guardar teléfono (${dteTelefono})`;
+                    }
+                }
+            } else {
+                if (badgeTel) {
+                    badgeTel.textContent = 'Coincide';
+                    badgeTel.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                }
+                if (lblReempTel) lblReempTel.classList.remove('hidden');
+                if (lblAnexarTel) lblAnexarTel.classList.add('hidden');
+            }
+            const rTel = document.querySelector('input[name="opcionAccionTelefono"][value="mantener"]');
+            if (rTel) rTel.checked = true;
+
+            // 3. Dirección
+            const elActDir = document.getElementById('compCliDireccionActual');
+            const elDteDir = document.getElementById('compCliDireccionDte');
+            const badgeDir = document.getElementById('badgeDiffDireccion');
+            const lblReempDir = document.getElementById('lblOpcionReemplazarDireccion');
+            const lblAnexarDir = document.getElementById('lblOpcionAnexarDireccion');
+            if (elActDir) elActDir.textContent = actualDireccion || '(Sin dirección)';
+            if (elDteDir) elDteDir.textContent = dteDireccion || '(Sin dirección en DTE)';
+
+            const hayDiffDir = dteDireccion && normalizarTextoClave(actualDireccion) !== normalizarTextoClave(dteDireccion);
+            if (!dteDireccion) {
+                if (badgeDir) {
+                    badgeDir.textContent = 'Sin dirección en DTE';
+                    badgeDir.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-400';
+                }
+                if (lblReempDir) lblReempDir.classList.add('hidden');
+                if (lblAnexarDir) lblAnexarDir.classList.add('hidden');
+            } else if (hayDiffDir) {
+                if (badgeDir) {
+                    badgeDir.textContent = 'Difiere de DTE';
+                    badgeDir.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                }
+                if (lblReempDir) lblReempDir.classList.remove('hidden');
+                if (lblAnexarDir) lblAnexarDir.classList.remove('hidden');
+            } else {
+                if (badgeDir) {
+                    badgeDir.textContent = 'Coincide';
+                    badgeDir.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                }
+                if (lblReempDir) lblReempDir.classList.remove('hidden');
+                if (lblAnexarDir) lblAnexarDir.classList.add('hidden');
+            }
+            const rDir = document.querySelector('input[name="opcionAccionDireccion"][value="mantener"]');
+            if (rDir) rDir.checked = true;
+
+            // 4. Correo
+            const elActCor = document.getElementById('compCliCorreoActual');
+            const elDteCor = document.getElementById('compCliCorreoDte');
+            const badgeCor = document.getElementById('badgeDiffCorreo');
+            const lblReempCor = document.getElementById('lblOpcionReemplazarCorreo');
+            if (elActCor) elActCor.textContent = actualCorreo || '(Sin correo registrado)';
+            if (elDteCor) elDteCor.textContent = dteCorreo || '(Sin correo en DTE)';
+
+            const hayDiffCor = dteCorreo && actualCorreo.toLowerCase().trim() !== dteCorreo.toLowerCase().trim();
+            if (!dteCorreo) {
+                if (badgeCor) {
+                    badgeCor.textContent = 'Sin correo en DTE';
+                    badgeCor.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-400';
+                }
+                if (lblReempCor) lblReempCor.classList.add('hidden');
+            } else if (hayDiffCor) {
+                if (badgeCor) {
+                    badgeCor.textContent = actualCorreo ? 'Difiere / Nuevo Correo' : 'Disponible en DTE';
+                    badgeCor.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30';
+                }
+                if (lblReempCor) lblReempCor.classList.remove('hidden');
+            } else {
+                if (badgeCor) {
+                    badgeCor.textContent = 'Coincide';
+                    badgeCor.className = 'text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                }
+                if (lblReempCor) lblReempCor.classList.remove('hidden');
+            }
+            const rCor = document.querySelector('input[name="opcionAccionCorreo"][value="mantener"]');
+            if (rCor) rCor.checked = true;
+
+            // Abrir modal
+            const modal = document.getElementById('modalCompararClienteDte');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function cerrarModalCompararClienteDte() {
+            const modal = document.getElementById('modalCompararClienteDte');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function aplicarActualizacionClienteDte() {
+            const ctx = contextoComparacionClienteDte;
+            if (!ctx) return;
+
+            const opcNom = document.querySelector('input[name="opcionAccionNombre"]:checked')?.value || 'mantener';
+            const opcTel = document.querySelector('input[name="opcionAccionTelefono"]:checked')?.value || 'mantener';
+            const opcDir = document.querySelector('input[name="opcionAccionDireccion"]:checked')?.value || 'mantener';
+            const opcCor = document.querySelector('input[name="opcionAccionCorreo"]:checked')?.value || 'mantener';
+
+            const act = ctx.actual;
+            const dte = ctx.dte;
+
+            // Determinar valores finales
+            let finalNombre = act.nombre;
+            if (opcNom === 'reemplazar' && dte.nombre) {
+                finalNombre = dte.nombre;
+            }
+
+            let finalTelefono = act.telefono;
+            if (opcTel === 'reemplazar' && dte.telefono) {
+                finalTelefono = dte.telefono;
+            } else if (opcTel === 'anexar' && dte.telefono) {
+                if (!act.telefono) finalTelefono = dte.telefono;
+                else if (!act.telefono.includes(dte.telefono)) finalTelefono = `${act.telefono} / ${dte.telefono}`;
+            }
+
+            let finalDireccion = act.direccion;
+            if (opcDir === 'reemplazar' && dte.direccion) {
+                finalDireccion = dte.direccion;
+            } else if (opcDir === 'anexar' && dte.direccion) {
+                if (!act.direccion || act.direccion === 'Sin dirección registrada') finalDireccion = dte.direccion;
+                else if (!act.direccion.toLowerCase().includes(dte.direccion.toLowerCase())) {
+                    finalDireccion = `${act.direccion} (Ref DTE: ${dte.direccion})`;
+                }
+            }
+
+            let finalCorreo = act.correo;
+            if (opcCor === 'reemplazar' && dte.correo) {
+                finalCorreo = dte.correo;
+            }
+
+            const aplicarDoc = document.getElementById('chkAplicarDocumentoActual')?.checked ?? true;
+            const aplicarCat = document.getElementById('chkAplicarFichaCatalogo')?.checked ?? true;
+
+            // 1. Aplicar en el documento / formulario actual
+            if (aplicarDoc) {
+                if (ctx.source === 'asignacion') {
+                    const inpCli = document.getElementById('manInputClient');
+                    const inpTel = document.getElementById('manInputPhone');
+                    const inpDir = document.getElementById('manInputDestination');
+                    if (inpCli && finalNombre) inpCli.value = finalNombre;
+                    if (inpTel && finalTelefono) inpTel.value = finalTelefono;
+                    if (inpDir && finalDireccion) inpDir.value = finalDireccion;
+                } else {
+                    // Modo sheet (Ficha de factura actual)
+                    if (facturaActualPrevisualizada) {
+                        facturaActualPrevisualizada.cliente = finalNombre;
+                        facturaActualPrevisualizada.telefonoCliente = finalTelefono;
+                        facturaActualPrevisualizada.destino = finalDireccion;
+                        if (finalCorreo) facturaActualPrevisualizada.correo = finalCorreo;
+
+                        // Actualizar registro en registrosGlobales si existe
+                        if (typeof registrosGlobales !== 'undefined' && Array.isArray(registrosGlobales)) {
+                            const found = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(facturaActualPrevisualizada.factura).trim().toLowerCase());
+                            if (found) {
+                                found.cliente = finalNombre;
+                                found.telefonoCliente = finalTelefono;
+                                found.destino = finalDireccion;
+                                if (finalCorreo) found.correo = finalCorreo;
+                            }
+                        }
+
+                        // Actualizar elementos visuales en modalPrevisualizarFactura
+                        const prevCli = document.getElementById('prevDocCliente');
+                        const prevTel = document.getElementById('prevDocTelefono');
+                        const prevDest = document.getElementById('prevDocDestino');
+                        if (prevCli) prevCli.textContent = finalNombre || '---';
+                        if (prevTel) prevTel.textContent = finalTelefono || 'Sin registrar';
+                        if (prevDest) prevDest.textContent = finalDireccion || 'Destino no especificado';
+                    }
+                }
+            }
+
+            // 2. Aplicar en Catálogo de Clientes y Google Sheets
+            if (aplicarCat && finalNombre) {
+                guardarClienteEnCatalogo(finalNombre, finalTelefono, finalDireccion, '', true, finalCorreo);
+
+                // Si hay correo, asociarlo al cliente en catalogoClientes
+                if (finalCorreo && typeof catalogoClientes !== 'undefined') {
+                    const claveBuscada = normalizarTextoClave(finalNombre);
+                    const idx = catalogoClientes.findIndex(c => normalizarTextoClave(c.nombre) === claveBuscada);
+                    if (idx >= 0) {
+                        catalogoClientes[idx].correo = finalCorreo;
+                        guardarCatalogoClientesEnLocalStorage();
+                    }
+                }
+            }
+
+            cerrarModalCompararClienteDte();
+            showToast('Cliente Actualizado', 'Los datos del cliente se actualizaron con éxito según sus preferencias.', 'success');
+        }
+
         async function buscarDrivePdfParaFacturaExistente(facturaId) {
             await buscarDocumentoDriveParaFacturaExistente(facturaId);
         }
@@ -9496,18 +10232,14 @@
                 showToast('Archivo de Respuesta (No Válido)', `"${file.name}" es el acuse de Hacienda, no la factura. Por favor elija el archivo con el número de factura (${facturaExistenteParaJsonId || 'ej. 12142'}).json.json.`, 'warning');
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
+            leerArchivoTextoAutoCodificado(file, function(content) {
                 const txt = document.getElementById('textareaJsonExistente');
                 if (txt) txt.value = content;
                 validarPreviewJsonExistente();
                 showToast('Archivo Cargado', `Se cargó "${file.name}" para validación.`, 'info');
-            };
-            reader.onerror = function() {
+            }, function() {
                 showToast('Error', 'No se pudo leer el archivo seleccionado.', 'error');
-            };
-            reader.readAsText(file);
+            });
             event.target.value = '';
         }
 
@@ -13236,7 +13968,8 @@
                     mapaUnicos.set(clave, {
                         nombre: String(c.nombre).trim(),
                         telefono: String(c.telefono || '').trim(),
-                        direccion: String(c.direccion || 'Sin dirección registrada').trim()
+                        direccion: String(c.direccion || 'Sin dirección registrada').trim(),
+                        correo: String(c.correo || '').trim()
                     });
                 } else {
                     const existente = mapaUnicos.get(clave);
@@ -13246,13 +13979,16 @@
                     if ((!existente.direccion || existente.direccion === 'Sin dirección registrada' || existente.direccion === 'Destino por coordinar') && c.direccion && c.direccion !== 'Sin dirección registrada' && c.direccion !== 'Destino por coordinar') {
                         existente.direccion = String(c.direccion).trim();
                     }
+                    if (!existente.correo && c.correo) {
+                        existente.correo = String(c.correo).trim();
+                    }
                 }
             });
             catalogoClientes = Array.from(mapaUnicos.values());
             guardarCatalogoClientesEnLocalStorage();
         }
 
-        function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '', sincronizarSheets = true) {
+        function guardarClienteEnCatalogo(nombre, telefono, direccion, linkUbicacion = '', sincronizarSheets = true, correo = '') {
             if (!nombre || String(nombre).trim() === '' || String(nombre).trim() === 'Uso Interno / Movimiento Logístico' || String(nombre).trim() === 'N/A') {
                 return;
             }
@@ -13266,6 +14002,7 @@
                     dirLimpia = '';
                 }
             }
+            let corLimpio = String(correo || '').trim();
 
             const claveBuscada = normalizarTextoClave(nomLimpio);
 
@@ -13286,11 +14023,17 @@
                 if (dirLimpia && dirLimpia !== 'Sin dirección registrada' && dirLimpia !== 'Destino por coordinar') {
                     catalogoClientes[idx].direccion = dirLimpia;
                 }
+                if (corLimpio) {
+                    catalogoClientes[idx].correo = corLimpio;
+                } else if (catalogoClientes[idx].correo) {
+                    corLimpio = catalogoClientes[idx].correo;
+                }
             } else {
                 catalogoClientes.push({
                     nombre: nomLimpio,
                     telefono: telLimpio || '',
-                    direccion: dirLimpia || 'Sin dirección registrada'
+                    direccion: dirLimpia || 'Sin dirección registrada',
+                    correo: corLimpio || ''
                 });
             }
 
@@ -13312,7 +14055,8 @@
                         client: {
                             nombre: nomLimpio,
                             telefono: telLimpio,
-                            direccion: dirLimpia
+                            direccion: dirLimpia,
+                            correo: corLimpio
                         }
                     })
                 }).catch(errCli => console.warn('Error al guardar cliente en Google Sheets:', errCli));
@@ -16748,19 +17492,19 @@
             }
 
             const sucEl = document.getElementById('prevDocSucursal');
-            if (sucEl) sucEl.textContent = (r.origen && r.origen !== 'N/A') ? r.origen : 'FG MATRIZ';
+            if (sucEl) sucEl.textContent = repararTextoCodificado((r.origen && r.origen !== 'N/A') ? r.origen : 'FG MATRIZ');
 
             const fechaEl = document.getElementById('prevDocFecha');
             if (fechaEl) fechaEl.textContent = formatearFechaDisplay(r.fechaProgramada || r.fecha);
 
             const horarioEl = document.getElementById('prevDocHorario');
-            if (horarioEl) horarioEl.textContent = r.horarioEntrega || r.hora || 'Jornada Diaria';
+            if (horarioEl) horarioEl.textContent = repararTextoCodificado(r.horarioEntrega || r.hora || 'Jornada Diaria');
 
             // Estado de Pago
             const estadoPagoEl = document.getElementById('prevDocEstadoPago');
             if (estadoPagoEl) {
                 const esCobro = r.estadoFactura && r.estadoFactura.includes('Cobrar');
-                estadoPagoEl.textContent = r.estadoFactura || (esCobro ? 'Factura no cancelada (Cobrar al cliente)' : 'Factura cancelada');
+                estadoPagoEl.textContent = repararTextoCodificado(r.estadoFactura || (esCobro ? 'Factura no cancelada (Cobrar al cliente)' : 'Factura cancelada'));
                 estadoPagoEl.className = esCobro 
                     ? 'px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800 border border-rose-300'
                     : 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
@@ -16771,21 +17515,30 @@
             if (estadoDespachoEl) {
                 const isDone = esRegistroEntregado(r);
                 if (isDone) r.estado = 'Entregado';
-                estadoDespachoEl.textContent = isDone ? 'Entregado' : (r.estado || 'Pendiente');
+                estadoDespachoEl.textContent = repararTextoCodificado(isDone ? 'Entregado' : (r.estado || 'Pendiente'));
                 estadoDespachoEl.className = isDone 
                     ? 'px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-300'
                     : 'px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-300';
             }
 
             // Datos del Cliente (mantener exactamente los de la hoja/registro)
+            const btnCompDte = document.getElementById('btnCompararClienteDteSheet');
+            if (btnCompDte) {
+                if (!esConductor && tieneJsonVinculado) {
+                    btnCompDte.classList.remove('hidden');
+                } else {
+                    btnCompDte.classList.add('hidden');
+                }
+            }
+
             const cliEl = document.getElementById('prevDocCliente');
-            if (cliEl) cliEl.textContent = r.cliente || 'Consumidor / Cliente';
+            if (cliEl) cliEl.textContent = repararTextoCodificado(r.cliente || 'Consumidor / Cliente');
 
             const telEl = document.getElementById('prevDocTelefono');
             if (telEl) telEl.textContent = (r.telefonoCliente && String(r.telefonoCliente).trim() !== '') ? r.telefonoCliente : 'Sin registrar';
 
             const destEl = document.getElementById('prevDocDestino');
-            if (destEl) destEl.textContent = r.destino || 'Destino no especificado';
+            if (destEl) destEl.textContent = repararTextoCodificado(r.destino || 'Destino no especificado');
 
             const mapContainer = document.getElementById('prevDocLinkMapContainer');
             const mapLink = document.getElementById('prevDocLinkMap');
@@ -16800,13 +17553,13 @@
 
             // Datos Conductor y Unidad
             const condEl = document.getElementById('prevDocConductor');
-            if (condEl) condEl.textContent = r.conductor || 'Sin Asignar';
+            if (condEl) condEl.textContent = repararTextoCodificado(r.conductor || 'Sin Asignar');
 
             const camEl = document.getElementById('prevDocCamion');
-            if (camEl) camEl.textContent = r.camion || '-';
+            if (camEl) camEl.textContent = repararTextoCodificado(r.camion || '-');
 
             const tipoCargaEl = document.getElementById('prevDocTipoCarga');
-            if (tipoCargaEl) tipoCargaEl.textContent = r.tipoViaje || (r.cantidadMercaderia ? r.cantidadMercaderia : 'Flete Estándar');
+            if (tipoCargaEl) tipoCargaEl.textContent = repararTextoCodificado(r.tipoViaje || (r.cantidadMercaderia ? r.cantidadMercaderia : 'Flete Estándar'));
 
             // 10 Datos Oficiales DTE / JSON en la Hoja de Factura/CCF
             const codGenEl = document.getElementById('prevDocCodigoGeneracion');
@@ -16819,7 +17572,7 @@
             if (selloEl) selloEl.textContent = datosDte?.selloRecibido || 'Sin Sello de Recepción';
 
             const tipoEstEl = document.getElementById('prevDocTipoEstablecimiento');
-            if (tipoEstEl) tipoEstEl.textContent = datosDte?.tipoEstablecimiento || (r.origen && r.origen !== 'N/A' ? r.origen : 'FG MATRIZ');
+            if (tipoEstEl) tipoEstEl.textContent = repararTextoCodificado(datosDte?.tipoEstablecimiento || (r.origen && r.origen !== 'N/A' ? r.origen : 'FG MATRIZ'));
 
             const fecHorEl = document.getElementById('prevDocFechaHoraEmision');
             if (fecHorEl) {
@@ -16827,21 +17580,21 @@
             }
 
             const ctrlIntEl = document.getElementById('prevDocControlInterno');
-            if (ctrlIntEl) ctrlIntEl.textContent = datosDte?.controlInterno || '---';
+            if (ctrlIntEl) ctrlIntEl.textContent = repararTextoCodificado(datosDte?.controlInterno || '---');
 
             const formaPagoEl = document.getElementById('prevDocFormaPago');
             if (formaPagoEl) {
-                formaPagoEl.textContent = datosDte?.formaPago || (r.estadoFactura ? r.estadoFactura.replace(/\(.*\)/, '').trim() : 'Contado');
+                formaPagoEl.textContent = repararTextoCodificado(datosDte?.formaPago || (r.estadoFactura ? r.estadoFactura.replace(/\(.*\)/, '').trim() : 'Contado'));
             }
 
             const cajaEl = document.getElementById('prevDocCaja');
-            if (cajaEl) cajaEl.textContent = datosDte?.caja || 'Caja 01';
+            if (cajaEl) cajaEl.textContent = repararTextoCodificado(datosDte?.caja || 'Caja 01');
 
             const vendedorEl = document.getElementById('prevDocVendedor');
-            if (vendedorEl) vendedorEl.textContent = datosDte?.vendedor || '---';
+            if (vendedorEl) vendedorEl.textContent = repararTextoCodificado(datosDte?.vendedor || '---');
 
             const numDevEl = document.getElementById('prevDocNumeroDevolucion');
-            if (numDevEl) numDevEl.textContent = datosDte?.numeroDevolucion || 'No aplica';
+            if (numDevEl) numDevEl.textContent = repararTextoCodificado(datosDte?.numeroDevolucion || 'No aplica');
 
             const badgeDte = document.getElementById('prevDocDteEstadoBadge');
             if (badgeDte) {
@@ -16892,6 +17645,9 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1.5 ml-auto">
+                                    <button type="button" onclick="abrirModalCompararClienteDte('sheet')" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Comparar y actualizar datos del cliente con este DTE">
+                                        <i class="fa-solid fa-user-check"></i> <span>Datos Cliente</span>
+                                    </button>
                                     ${drivePdfUrl ? `
                                     <a href="${drivePdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Ver archivo PDF en Google Drive">
                                         <i class="fa-solid fa-file-pdf"></i> <span>PDF Drive</span>
@@ -16946,14 +17702,14 @@
             if (itemsArray && itemsArray.length > 0) {
                 itemsArray.forEach((it, idx) => {
                     const num = it.numItem || it.item || (idx + 1);
-                    const desc = it.descripcion || it.nombre || it.producto || it.detalle || 'Artículo';
+                    const desc = repararTextoCodificado(it.descripcion || it.nombre || it.producto || it.detalle || 'Artículo');
                     const cant = Number(it.cantidad || it.qty || 1);
                     const pu = Number(it.precioUni || it.precio || it.precioUnitario || 0);
                     const tot = Number(it.ventaGravada || it.ventaExenta || it.ventaNoSuj || it.total || it.monto || (cant * pu) || 0);
                     const extraParts = [];
                     if (cant > 0 && pu > 0) extraParts.push(`P. Unit: $${pu.toFixed(2)}`);
-                    if (it.codigo) extraParts.push(`Cód: ${it.codigo}`);
-                    if (it.uniMedida || it.unidadMedida) extraParts.push(`UM: ${it.uniMedida || it.unidadMedida}`);
+                    if (it.codigo) extraParts.push(`Cód: ${repararTextoCodificado(it.codigo)}`);
+                    if (it.uniMedida || it.unidadMedida) extraParts.push(`UM: ${repararTextoCodificado(it.uniMedida || it.unidadMedida)}`);
                     itemsHtml += `
                         <tr class="hover:bg-slate-50 border-b border-slate-100">
                             <td class="py-2 px-3 text-center font-bold font-mono text-xs text-slate-700">${cant > 0 ? cant : num}</td>
@@ -16972,6 +17728,8 @@
                     const subLocalJson = (typeof obtenerJsonFacturaLocal === 'function') ? obtenerJsonFacturaLocal(subNum) : null;
                     const hasSubJson = !!(sub.jsonData || sub.jsonRaw || subLocalJson);
                     const subRawEscaped = encodeURIComponent(subNum);
+                    const subClienteRep = sub.cliente ? repararTextoCodificado(sub.cliente) : '';
+                    const rDescRep = r.descripcion ? repararTextoCodificado(r.descripcion) : 'Materiales de construcción';
                     itemsHtml += `
                         <tr class="hover:bg-slate-50 border-b border-slate-100">
                             <td class="py-2 px-3 text-center font-mono text-slate-500 text-xs">${idx + 1}</td>
@@ -16985,19 +17743,21 @@
                                             : `<button type="button" onclick="event.stopPropagation(); abrirModalAdjuntarJsonFacturaExistente('${subRawEscaped}')" class="px-2 py-0.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 border border-cyan-300 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 shadow-sm" title="Vincular archivo JSON a este documento"><i class="fa-solid fa-file-circle-plus"></i> <span>+ Adjuntar JSON</span></button>`)}
                                     </div>
                                 </div>
-                                <span class="text-[11px] text-slate-500 block">${sub.cliente ? 'Cliente: ' + sub.cliente + ' • ' : ''}${r.descripcion || 'Materiales de construcción'}</span>
+                                <span class="text-[11px] text-slate-500 block">${subClienteRep ? 'Cliente: ' + subClienteRep + ' • ' : ''}${rDescRep}</span>
                             </td>
                             <td class="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">$${subMonto.toFixed(2)}</td>
                         </tr>
                     `;
                 });
             } else {
+                const descGen = repararTextoCodificado(r.descripcion && r.descripcion !== 'N/A' ? r.descripcion : 'Venta y despacho de materiales');
+                const cargaGen = (r.cantidadMercaderia && r.cantidadMercaderia !== 'N/A') ? repararTextoCodificado(r.cantidadMercaderia) : '';
                 itemsHtml = `
                     <tr class="hover:bg-slate-50 border-b border-slate-100">
                         <td class="py-2 px-3 text-center font-mono text-slate-500 text-xs">1</td>
                         <td class="py-2 px-3 font-medium text-slate-800 text-xs">
-                            <span class="font-bold text-slate-900">${r.descripcion && r.descripcion !== 'N/A' ? r.descripcion : 'Venta y despacho de materiales'}</span>
-                            ${r.cantidadMercaderia && r.cantidadMercaderia !== 'N/A' ? `<span class="text-[11px] text-slate-500 block">Carga: ${r.cantidadMercaderia}</span>` : ''}
+                            <span class="font-bold text-slate-900">${descGen}</span>
+                            ${cargaGen ? `<span class="text-[11px] text-slate-500 block">Carga: ${cargaGen}</span>` : ''}
                         </td>
                         <td class="py-2 px-3 text-right font-mono font-bold text-slate-800 text-xs">$${montoDocFinal.toFixed(2)}</td>
                     </tr>
@@ -17913,15 +18673,16 @@
             const file = event.target.files && event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
+            leerArchivoTextoAutoCodificado(file, (content) => {
                 const txt = document.getElementById('textareaJsonCotizacion');
                 if (txt) {
-                    txt.value = e.target.result;
+                    txt.value = content;
                     validarPreviewJsonCotizacion();
                 }
-            };
-            reader.readAsText(file);
+            }, (err) => {
+                showToast('Error', 'No se pudo leer el archivo JSON: ' + (err.message || err), 'error');
+            });
+            event.target.value = '';
         }
 
         function analizarTextoPdfParaCotizacion(texto, nombreArchivo = '') {
