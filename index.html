@@ -7956,8 +7956,13 @@
             let totalIva = 0;
             let totalLetras = '';
             let cliente = '';
+            let clienteValidoDte = '';
             let telefono = '';
             let destino = '';
+            let destinoValidoDte = '';
+            let correo = '';
+            let nitReceptor = '';
+            let nrcReceptor = '';
             let items = [];
             let esDte = false;
 
@@ -7968,6 +7973,7 @@
                 const emisor = dteRoot.emisor || {};
                 const resumen = dteRoot.resumen || {};
                 const recep = dteRoot.receptor || null;
+                const ext = dteRoot.extension || rawObj.extension || null;
                 const docRel = dteRoot.documentoRelacionado || rawObj.documentoRelacionado || null;
                 const apendice = dteRoot.apendice || rawObj.apendice || [];
 
@@ -7994,7 +8000,7 @@
                 }
 
                 // 3. Sello de Recepción
-                selloRecibido = String(rawObj.selloRecibido || dteRoot.selloRecibido || ident.selloRecibido || rawObj.respuestaMH?.selloRecibido || '').trim();
+                selloRecibido = String(rawObj.selloRecibido || dteRoot.selloRecibido || ident.selloRecibido || rawObj.respuestaMH?.selloRecibido || dteRoot.respuestaMH?.selloRecibido || '').trim();
 
                 // 4. Tipo de Establecimiento
                 const rawTipoEst = String(emisor.tipoEstablecimiento || ident.tipoEstablecimiento || rawObj.tipoEstablecimiento || '').trim();
@@ -8003,41 +8009,53 @@
                 else if (rawTipoEst === '04') tipoEstablecimiento = 'Bodega (04)';
                 else if (rawTipoEst === '07') tipoEstablecimiento = 'Predio / Patio (07)';
                 else if (rawTipoEst) tipoEstablecimiento = rawTipoEst;
-                else if (emisor.codEstable) tipoEstablecimiento = `Establecimiento ${emisor.codEstable}`;
+                else if (emisor.codEstable || emisor.codEstableMH) tipoEstablecimiento = `Establecimiento ${emisor.codEstable || emisor.codEstableMH}`;
 
                 // 5. Fecha y Hora de Emisión
                 if (ident.fecEmi) fecEmi = String(ident.fecEmi).trim();
                 if (ident.horEmi) horEmi = String(ident.horEmi).trim();
 
                 // 6. N° de Control Interno
+                const codEst = emisor.codEstable || emisor.codEstableMH || '';
+                const codPto = emisor.codPuntoVenta || emisor.codPuntoVentaMH || '';
                 if (ident.motivoContin) controlInterno = String(ident.motivoContin).trim();
-                else if (emisor.codEstable && emisor.codPuntoVenta) controlInterno = `${emisor.codEstable}-${emisor.codPuntoVenta}`;
                 else if (ident.correlativoInterno) controlInterno = String(ident.correlativoInterno).trim();
                 else if (rawObj.controlInterno) controlInterno = String(rawObj.controlInterno).trim();
+                else if (codEst && codPto) controlInterno = `${codEst}-${codPto}`;
+                else if (codEst) controlInterno = String(codEst);
 
                 // 7. Forma de Pago
-                if (resumen.condicionOperacion !== undefined) {
+                let metodoPagoDesc = '';
+                if (Array.isArray(resumen.pagos) && resumen.pagos.length > 0) {
+                    const codP = String(resumen.pagos[0].codigo || '').trim();
+                    if (codP === '01') metodoPagoDesc = 'Efectivo';
+                    else if (codP === '02') metodoPagoDesc = 'Tarjeta Débito';
+                    else if (codP === '03') metodoPagoDesc = 'Tarjeta Crédito';
+                    else if (codP === '04') metodoPagoDesc = 'Cheque';
+                    else if (codP === '05') metodoPagoDesc = 'Transferencia';
+                    else if (codP === '08') metodoPagoDesc = 'Dinero Electrónico';
+                    else if (codP === '11') metodoPagoDesc = 'Bitcoin';
+                    else if (codP === '99') metodoPagoDesc = 'Otros';
+                }
+                if (resumen.condicionOperacion !== undefined && resumen.condicionOperacion !== null) {
                     const cond = Number(resumen.condicionOperacion);
-                    if (cond === 1) formaPago = 'Contado';
-                    else if (cond === 2) {
+                    if (cond === 1) {
+                        formaPago = (metodoPagoDesc && metodoPagoDesc !== 'Otros') ? `Contado (${metodoPagoDesc})` : 'Contado';
+                    } else if (cond === 2) {
                         const primerPago = Array.isArray(resumen.pagos) && resumen.pagos[0] ? resumen.pagos[0] : null;
                         const plazo = primerPago && primerPago.plazo ? primerPago.plazo : '';
                         const periodo = primerPago && primerPago.periodo ? primerPago.periodo : 'días';
                         formaPago = plazo ? `Crédito (${plazo} ${periodo})` : 'Crédito';
-                    } else if (cond === 3) formaPago = 'Otro';
+                    } else if (cond === 3) {
+                        formaPago = metodoPagoDesc || 'Otro';
+                    }
                 }
-                if (!formaPago && Array.isArray(resumen.pagos) && resumen.pagos.length > 0) {
-                    const codP = String(resumen.pagos[0].codigo || '');
-                    if (codP === '01') formaPago = 'Efectivo';
-                    else if (codP === '02') formaPago = 'Tarjeta Débito';
-                    else if (codP === '03') formaPago = 'Tarjeta Crédito';
-                    else if (codP === '04') formaPago = 'Cheque';
-                    else if (codP === '05') formaPago = 'Transferencia';
-                    else if (codP === '99') formaPago = 'Otros';
+                if (!formaPago && metodoPagoDesc) {
+                    formaPago = metodoPagoDesc;
                 }
 
                 // 8. Caja / Punto de Venta
-                if (emisor.codPuntoVenta) caja = `Caja / Punto ${emisor.codPuntoVenta}`;
+                if (codPto) caja = `Caja / Punto ${codPto}`;
                 else if (ident.puntoVenta) caja = `Punto ${ident.puntoVenta}`;
                 else if (rawObj.caja) caja = String(rawObj.caja).trim();
 
@@ -8045,6 +8063,7 @@
                 if (rawObj.vendedor) vendedor = String(rawObj.vendedor).trim();
                 else if (resumen.vendedor) vendedor = String(resumen.vendedor).trim();
                 else if (dteRoot.vendedor) vendedor = String(dteRoot.vendedor).trim();
+                else if (ext && ext.nombEntrega) vendedor = String(ext.nombEntrega).trim();
                 else if (rawObj.datosAdicionales && rawObj.datosAdicionales.vendedor) vendedor = String(rawObj.datosAdicionales.vendedor).trim();
 
                 // 10. Número de Devolución
@@ -8091,10 +8110,6 @@
                     totalLetras = String(resumen.totalLetras).trim();
                 }
 
-                let correo = '';
-                let nitReceptor = '';
-                let nrcReceptor = '';
-
                 // Receptor / Cliente (Nota: en Factura 01, receptor puede ser null)
                 if (recep && typeof recep === 'object') {
                     cliente = repararTextoCodificado(String(recep.nombre || recep.nombreComercial || recep.razonSocial || '').trim());
@@ -8116,11 +8131,11 @@
 
                 if (!destino && dteRoot.destino) destino = repararTextoCodificado(String(dteRoot.destino).trim());
 
-                let clienteValidoDte = cliente;
+                clienteValidoDte = cliente;
                 if (/cliente\s*sin\s*datos/i.test(cliente) || /consumidor\s*final/i.test(cliente)) {
                     clienteValidoDte = '';
                 }
-                let destinoValidoDte = destino;
+                destinoValidoDte = destino;
                 if (/sin\s*direccion/i.test(destino)) {
                     destinoValidoDte = '';
                 }
@@ -8192,17 +8207,16 @@
                 telefono = String(getVal('telefono', 'phone', 'celular', 'tel', 'telefonoCliente') || '').trim();
                 destino = repararTextoCodificado(String(getVal('destino', 'direccion', 'address', 'lugar') || '').trim());
 
-                let correo = '';
                 const rawCorreo = String(getVal('correo', 'email', 'mail', 'correoCliente') || '').trim();
                 if (rawCorreo && !rawCorreo.toUpperCase().includes('NOTIENE')) correo = rawCorreo;
-                let nitReceptor = String(getVal('nit', 'nitReceptor', 'numDocumento') || '').trim();
-                let nrcReceptor = String(getVal('nrc', 'nrcReceptor') || '').trim();
+                nitReceptor = String(getVal('nit', 'nitReceptor', 'numDocumento') || '').trim();
+                nrcReceptor = String(getVal('nrc', 'nrcReceptor') || '').trim();
 
-                let clienteValidoDte = cliente;
+                clienteValidoDte = cliente;
                 if (/cliente\s*sin\s*datos/i.test(cliente) || /consumidor\s*final/i.test(cliente)) {
                     clienteValidoDte = '';
                 }
-                let destinoValidoDte = destino;
+                destinoValidoDte = destino;
                 if (/sin\s*direccion/i.test(destino)) {
                     destinoValidoDte = '';
                 }
@@ -8927,27 +8941,104 @@
             procesarSiguienteArchivo();
         }
 
-        function guardarJsonFacturaLocal(facturaId, jsonRaw) {
+        function detectarTipoPrefijoFactura(facturaId, tipoHint = '') {
+            const s = String(facturaId || '').trim().toUpperCase();
+            const h = String(tipoHint || '').trim().toUpperCase();
+            if (/^(CCF|CREDITO)/.test(s) || s.includes('DTE-03-')) return 'CCF';
+            if (/^(FACTURA|FACT|FAC|FCF)/.test(s) || s.includes('DTE-01-')) return 'FACT';
+            if (h === 'CCF' || h.includes('CREDITO') || h === '03') return 'CCF';
+            if (h === 'FACTURA' || h === 'FACT' || h === '01') return 'FACT';
+            return '';
+        }
+
+        function extraerNumeroLimpioFactura(facturaId) {
+            const sId = String(facturaId || '').trim().toLowerCase();
+            const matchDte = sId.match(/^dte-\d{2}-[a-z0-9]+-0*(\d+)$/i);
+            if (matchDte) return matchDte[1];
+            const sinPrefijo = sId.replace(/^(factura|fact|fac|fcf|credito\s*fiscal|credito|ccf|dte)[-_\s]*/gi, '').trim();
+            return sinPrefijo.replace(/^0+/, '') || sinPrefijo;
+        }
+
+        function sonFacturasCoincidentesGlobal(f1, f2) {
+            if (!f1 || !f2) return false;
+            const s1 = String(f1).trim().toLowerCase();
+            const s2 = String(f2).trim().toLowerCase();
+            if (s1 === s2) return true;
+            if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
+            const t1 = detectarTipoPrefijoFactura(s1);
+            const t2 = detectarTipoPrefijoFactura(s2);
+            if (t1 && t2 && t1 !== t2) return false;
+            const n1 = extraerNumeroLimpioFactura(s1);
+            const n2 = extraerNumeroLimpioFactura(s2);
+            if (n1 && n2 && n1 === n2) return true;
+            return false;
+        }
+
+        function generarClavesLocalDocumento(prefix, facturaId, tipoHint = '', modoEliminar = false) {
+            if (!facturaId) return [];
+            const sId = String(facturaId).trim().toLowerCase();
+            const tipoDet = detectarTipoPrefijoFactura(sId, tipoHint);
+            const numLimpio = sId.replace(/^(factura|fact|fac|fcf|credito\s*fiscal|credito|ccf|dte)[-_\s]*/gi, '').trim();
+            const numSolo = extraerNumeroLimpioFactura(sId);
+
+            const keys = new Set([
+                prefix + sId,
+                prefix + sId.replace(/\s+/g, ''),
+                prefix + sId.replace(/[-_\s]/g, '')
+            ]);
+
+            if (tipoDet === 'CCF') {
+                if (numSolo) {
+                    keys.add(prefix + 'ccf' + numSolo);
+                    keys.add(prefix + 'ccf-' + numSolo);
+                    keys.add(prefix + 'ccf_' + numSolo);
+                }
+                if (numLimpio && numLimpio !== numSolo) {
+                    keys.add(prefix + 'ccf' + numLimpio);
+                    keys.add(prefix + 'ccf-' + numLimpio);
+                }
+                if (modoEliminar && numSolo) {
+                    keys.add(prefix + numSolo);
+                    if (numLimpio) keys.add(prefix + numLimpio);
+                }
+            } else if (tipoDet === 'FACT') {
+                if (numSolo) {
+                    keys.add(prefix + 'fact' + numSolo);
+                    keys.add(prefix + 'fact-' + numSolo);
+                    keys.add(prefix + 'fac' + numSolo);
+                    keys.add(prefix + 'fac-' + numSolo);
+                }
+                if (numLimpio && numLimpio !== numSolo) {
+                    keys.add(prefix + 'fact' + numLimpio);
+                    keys.add(prefix + 'fact-' + numLimpio);
+                }
+                if (modoEliminar && numSolo) {
+                    keys.add(prefix + numSolo);
+                    if (numLimpio) keys.add(prefix + numLimpio);
+                }
+            } else {
+                if (numLimpio) keys.add(prefix + numLimpio);
+                if (numSolo) {
+                    keys.add(prefix + numSolo);
+                    if (modoEliminar) {
+                        keys.add(prefix + 'fact' + numSolo);
+                        keys.add(prefix + 'fact-' + numSolo);
+                        keys.add(prefix + 'fac' + numSolo);
+                        keys.add(prefix + 'fac-' + numSolo);
+                        keys.add(prefix + 'ccf' + numSolo);
+                        keys.add(prefix + 'ccf-' + numSolo);
+                    }
+                }
+            }
+
+            return Array.from(keys);
+        }
+
+        function guardarJsonFacturaLocal(facturaId, jsonRaw, tipoHint = '') {
             if (!facturaId || !jsonRaw) return;
             try {
                 const rawStr = typeof jsonRaw === 'string' ? jsonRaw : JSON.stringify(jsonRaw);
-                const sId = String(facturaId).trim().toLowerCase();
-                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
-                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
-
-                const keys = new Set([
-                    'doc_json_' + sId,
-                    'doc_json_' + sId.replace(/\s+/g, ''),
-                    'doc_json_' + sId.replace(/[-_]/g, '')
-                ]);
-                if (numLimpio) keys.add('doc_json_' + numLimpio);
-                if (numSolo) {
-                    keys.add('doc_json_' + numSolo);
-                    keys.add('doc_json_fact' + numSolo);
-                    keys.add('doc_json_fact-' + numSolo);
-                    keys.add('doc_json_ccf' + numSolo);
-                    keys.add('doc_json_ccf-' + numSolo);
-                }
+                const keys = generarClavesLocalDocumento('doc_json_', facturaId, tipoHint, false);
                 keys.forEach(k => {
                     try { localStorage.setItem(k, rawStr); } catch(eK) {}
                 });
@@ -8956,32 +9047,29 @@
             }
         }
 
-        function obtenerJsonFacturaLocal(facturaId) {
+        function obtenerJsonFacturaLocal(facturaId, tipoHint = '') {
             if (!facturaId) return null;
             try {
-                const sId = String(facturaId).trim().toLowerCase();
-                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
-                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
-
-                const keys = [
-                    'doc_json_' + sId,
-                    'doc_json_' + sId.replace(/\s+/g, ''),
-                    'doc_json_' + sId.replace(/[-_]/g, '')
-                ];
-                if (numLimpio && !keys.includes('doc_json_' + numLimpio)) keys.push('doc_json_' + numLimpio);
-                if (numSolo) {
-                    if (!keys.includes('doc_json_' + numSolo)) keys.push('doc_json_' + numSolo);
-                    keys.push('doc_json_fact' + numSolo);
-                    keys.push('doc_json_fact-' + numSolo);
-                    keys.push('doc_json_ccf' + numSolo);
-                    keys.push('doc_json_ccf-' + numSolo);
+                const keys = generarClavesLocalDocumento('doc_json_', facturaId, tipoHint, false);
+                const tipoDet = detectarTipoPrefijoFactura(facturaId, tipoHint);
+                const numSolo = extraerNumeroLimpioFactura(facturaId);
+                if (numSolo && !keys.includes('doc_json_' + numSolo)) {
+                    keys.push('doc_json_' + numSolo);
                 }
 
                 for (const k of keys) {
                     const raw = localStorage.getItem(k);
                     if (raw) {
                         try {
-                            return { raw: raw, parsed: JSON.parse(raw) };
+                            const parsed = JSON.parse(raw);
+                            // Verificar que si el registro tiene tipo explícito (FACT vs CCF) no se cruce un tipo opuesto guardado en clave genérica
+                            if (tipoDet && parsed) {
+                                const rootDte = parsed.dteJson || parsed.DTE || parsed;
+                                const td = String(rootDte?.identificacion?.tipoDte || '').trim();
+                                if (tipoDet === 'CCF' && td === '01' && k === 'doc_json_' + numSolo) continue;
+                                if (tipoDet === 'FACT' && td === '03' && k === 'doc_json_' + numSolo) continue;
+                            }
+                            return { raw: raw, parsed: parsed };
                         } catch(eP) {
                             return { raw: raw, parsed: null };
                         }
@@ -8996,27 +9084,11 @@
         // ==========================================
         // INTEGRACIÓN CON GOOGLE DRIVE (PDFs Y JSONs)
         // ==========================================
-        function guardarDrivePdfFacturaLocal(facturaId, pdfData) {
+        function guardarDrivePdfFacturaLocal(facturaId, pdfData, tipoHint = '') {
             if (!facturaId || !pdfData) return;
             try {
                 const valStr = typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData);
-                const sId = String(facturaId).trim().toLowerCase();
-                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
-                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
-
-                const keys = new Set([
-                    'doc_drive_pdf_' + sId,
-                    'doc_drive_pdf_' + sId.replace(/\s+/g, ''),
-                    'doc_drive_pdf_' + sId.replace(/[-_]/g, '')
-                ]);
-                if (numLimpio) keys.add('doc_drive_pdf_' + numLimpio);
-                if (numSolo) {
-                    keys.add('doc_drive_pdf_' + numSolo);
-                    keys.add('doc_drive_pdf_fact' + numSolo);
-                    keys.add('doc_drive_pdf_fact-' + numSolo);
-                    keys.add('doc_drive_pdf_ccf' + numSolo);
-                    keys.add('doc_drive_pdf_ccf-' + numSolo);
-                }
+                const keys = generarClavesLocalDocumento('doc_drive_pdf_', facturaId, tipoHint, false);
                 keys.forEach(k => {
                     try { localStorage.setItem(k, valStr); } catch(eK) {}
                 });
@@ -9025,32 +9097,27 @@
             }
         }
 
-        function obtenerDrivePdfFacturaLocal(facturaId) {
+        function obtenerDrivePdfFacturaLocal(facturaId, tipoHint = '') {
             if (!facturaId) return null;
             try {
-                const sId = String(facturaId).trim().toLowerCase();
-                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
-                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
-
-                const keys = [
-                    'doc_drive_pdf_' + sId,
-                    'doc_drive_pdf_' + sId.replace(/\s+/g, ''),
-                    'doc_drive_pdf_' + sId.replace(/[-_]/g, '')
-                ];
-                if (numLimpio && !keys.includes('doc_drive_pdf_' + numLimpio)) keys.push('doc_drive_pdf_' + numLimpio);
-                if (numSolo) {
-                    if (!keys.includes('doc_drive_pdf_' + numSolo)) keys.push('doc_drive_pdf_' + numSolo);
-                    keys.push('doc_drive_pdf_fact' + numSolo);
-                    keys.push('doc_drive_pdf_fact-' + numSolo);
-                    keys.push('doc_drive_pdf_ccf' + numSolo);
-                    keys.push('doc_drive_pdf_ccf-' + numSolo);
+                const keys = generarClavesLocalDocumento('doc_drive_pdf_', facturaId, tipoHint, false);
+                const tipoDet = detectarTipoPrefijoFactura(facturaId, tipoHint);
+                const numSolo = extraerNumeroLimpioFactura(facturaId);
+                if (numSolo && !keys.includes('doc_drive_pdf_' + numSolo)) {
+                    keys.push('doc_drive_pdf_' + numSolo);
                 }
 
                 for (const k of keys) {
                     const raw = localStorage.getItem(k);
                     if (raw) {
                         try {
-                            return JSON.parse(raw);
+                            const parsed = JSON.parse(raw);
+                            if (tipoDet && parsed && parsed.fileName && k === 'doc_drive_pdf_' + numSolo) {
+                                const fnUp = String(parsed.fileName).toUpperCase();
+                                if (tipoDet === 'CCF' && (/^(FACT|FAC|FCF)/.test(fnUp) || fnUp.includes('DTE-01-'))) continue;
+                                if (tipoDet === 'FACT' && (/^(CCF|CREDITO)/.test(fnUp) || fnUp.includes('DTE-03-'))) continue;
+                            }
+                            return parsed;
                         } catch(eP) {
                             return { viewUrl: raw, previewUrl: raw, fileName: 'Documento.pdf' };
                         }
@@ -9062,12 +9129,16 @@
             }
         }
 
-        function removerDrivePdfFacturaLocal(facturaId) {
-            if (!facturaId) return;
-            try {
-                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
-                localStorage.removeItem(key);
-            } catch(e) {}
+        function removerDrivePdfFacturaLocal(facturaId, extraAliases = []) {
+            const lista = [facturaId, ...(Array.isArray(extraAliases) ? extraAliases : [])].filter(Boolean);
+            lista.forEach(id => {
+                try {
+                    const keys = generarClavesLocalDocumento('doc_drive_pdf_', id, '', true);
+                    keys.forEach(k => {
+                        try { localStorage.removeItem(k); } catch(eK) {}
+                    });
+                } catch(e) {}
+            });
         }
 
         let ultimoDrivePdfUrlAsignacion = '';
@@ -9101,7 +9172,8 @@
             }
 
             try {
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}`;
+                const tipoDocSel = document.getElementById('manInputTipoDoc')?.value || detectarTipoPrefijoFactura(num) || '';
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}&tipo=${encodeURIComponent(tipoDocSel)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
 
@@ -9329,7 +9401,8 @@
             showToast('Buscando en Drive', `Buscando documento #${num} en Google Drive...`, 'info');
 
             try {
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}`;
+                const tipoFila = fila.tipo || detectarTipoPrefijoFactura(num) || '';
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}&tipo=${encodeURIComponent(tipoFila)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
 
@@ -9380,16 +9453,16 @@
 
         function calcularSimilitudCliente(facturaId, nombreArchivo) {
             if (!nombreArchivo) return { porcentaje: 80, etiqueta: 'Coincidencia Parcial (80%)', nivel: 'moderada' };
-            const base = String(nombreArchivo).replace(/\.[^/.]+$/, '').trim().toLowerCase();
+            const base = String(nombreArchivo).replace(/(\.json|\.pdf|\.txt)+$/gi, '').replace(/[-_\s]*json$/gi, '').trim().toLowerCase();
             const fTarget = String(facturaId || '').trim().toLowerCase();
-            const numLimpio = fTarget.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/i, '').trim();
+            const numLimpio = fTarget.replace(/^(factura|fact|fac|fcf|credito\s*fiscal|credito|ccf|dte)[-_\s]*/i, '').trim();
             const numSoloDigitos = numLimpio.replace(/^0+/, '');
 
             if (base === fTarget || base === numLimpio || (numSoloDigitos && base === numSoloDigitos)) {
                 return { porcentaje: 100, etiqueta: '100% Coincidencia Exacta', nivel: 'alta' };
             }
 
-            if (new RegExp('^(fac|ccf|dte|factura|credito)[-_\\s]*0*' + (numSoloDigitos || numLimpio) + '$', 'i').test(base)) {
+            if (new RegExp('^(factura|fact|fac|fcf|ccf|dte|credito)[-_\\s]*0*' + (numSoloDigitos || numLimpio) + '$', 'i').test(base)) {
                 return { porcentaje: 98, etiqueta: '98% Coincidencia Alta', nivel: 'alta' };
             }
 
@@ -9410,16 +9483,24 @@
                 return;
             }
             const numDoc = String(facturaActualPrevisualizada.factura).trim();
-            await buscarDocumentoDriveParaFacturaExistente(numDoc);
+            await buscarDocumentoDriveParaFacturaExistente(numDoc, facturaActualPrevisualizada.tipoDocumento || '');
         }
 
-        async function buscarDocumentoDriveParaFacturaExistente(facturaId) {
+        async function buscarDocumentoDriveParaFacturaExistente(facturaId, tipoDocumentoHint = '') {
             const decId = decodeURIComponent(facturaId || '').trim();
             if (!decId) return;
 
             if (!scriptEndpoint) {
                 showToast('Configuración Requerida', 'El enlace de Google Apps Script no está configurado.', 'error');
                 return;
+            }
+
+            let tipoEsperado = String(tipoDocumentoHint || '').trim();
+            if (!tipoEsperado && facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, decId)) {
+                tipoEsperado = facturaActualPrevisualizada.tipoDocumento || '';
+            }
+            if (!tipoEsperado) {
+                tipoEsperado = detectarTipoPrefijoFactura(decId);
             }
 
             const btnTop = document.getElementById('btnBuscarDriveEnSheet');
@@ -9431,7 +9512,7 @@
             showToast('Buscando en Drive', `Buscando #${decId} en Google Drive...`, 'info');
 
             try {
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(decId)}`;
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(decId)}&tipo=${encodeURIComponent(tipoEsperado)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
 
@@ -9542,18 +9623,7 @@
 
             const decId = driveMatchPendiente.facturaId;
             const data = driveMatchPendiente.data;
-
-            function sonFacturasCoincidentes(f1, f2) {
-                if (!f1 || !f2) return false;
-                const s1 = String(f1).trim().toLowerCase();
-                const s2 = String(f2).trim().toLowerCase();
-                if (s1 === s2) return true;
-                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
-                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                if (n1 && n2 && n1 === n2) return true;
-                return false;
-            }
+            const sonFacturasCoincidentes = sonFacturasCoincidentesGlobal;
 
             let r = null;
             let esSubFactura = false;
@@ -9592,16 +9662,17 @@
 
             let vinculadosTxt = [];
             let drivePdfUrlFinal = '';
+            const tipoDocHint = (r && r.tipoDocumento) || (facturaActualPrevisualizada && facturaActualPrevisualizada.tipoDocumento) || detectarTipoPrefijoFactura(decId);
 
             // 1. Vincular PDF si existe
             if (data.pdf) {
                 drivePdfUrlFinal = data.pdf.previewUrl || data.pdf.viewUrl || '';
-                guardarDrivePdfFacturaLocal(decId, data.pdf);
+                guardarDrivePdfFacturaLocal(decId, data.pdf, tipoDocHint);
                 if (r && r.factura && r.factura !== decId) {
-                    guardarDrivePdfFacturaLocal(r.factura, data.pdf);
+                    guardarDrivePdfFacturaLocal(r.factura, data.pdf, tipoDocHint);
                 }
                 if (facturaActualPrevisualizada && facturaActualPrevisualizada.factura) {
-                    guardarDrivePdfFacturaLocal(facturaActualPrevisualizada.factura, data.pdf);
+                    guardarDrivePdfFacturaLocal(facturaActualPrevisualizada.factura, data.pdf, tipoDocHint);
                 }
 
                 if (r) {
@@ -9647,26 +9718,24 @@
 
                 if (parsedJ) {
                     const dDte = (typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(parsedJ) : null;
+                    const tipoDteHint = (dDte && dDte.tipo) ? dDte.tipo : tipoDocHint;
 
-                    // Guardar en localStorage bajo múltiples claves y alias
-                    guardarJsonFacturaLocal(decId, rawJ);
+                    // Guardar en localStorage bajo múltiples claves y alias del mismo tipo de documento
+                    guardarJsonFacturaLocal(decId, rawJ, tipoDteHint);
                     if (r && r.factura && r.factura !== decId) {
-                        guardarJsonFacturaLocal(r.factura, rawJ);
+                        guardarJsonFacturaLocal(r.factura, rawJ, tipoDteHint);
                     }
                     if (facturaActualPrevisualizada && facturaActualPrevisualizada.factura) {
-                        guardarJsonFacturaLocal(facturaActualPrevisualizada.factura, rawJ);
-                    }
-                    if (dDte && dDte.numeroCorto) {
-                        guardarJsonFacturaLocal(dDte.numeroCorto, rawJ);
+                        guardarJsonFacturaLocal(facturaActualPrevisualizada.factura, rawJ, tipoDteHint);
                     }
                     if (dDte && dDte.numero && dDte.numero !== decId) {
-                        guardarJsonFacturaLocal(dDte.numero, rawJ);
+                        guardarJsonFacturaLocal(dDte.numero, rawJ, tipoDteHint);
                     }
                     if (dDte && dDte.numeroControl) {
-                        guardarJsonFacturaLocal(dDte.numeroControl, rawJ);
+                        guardarJsonFacturaLocal(dDte.numeroControl, rawJ, tipoDteHint);
                     }
                     if (dDte && dDte.codigoGeneracion) {
-                        guardarJsonFacturaLocal(dDte.codigoGeneracion, rawJ);
+                        guardarJsonFacturaLocal(dDte.codigoGeneracion, rawJ, tipoDteHint);
                     }
 
                     // Construir resumen de mercadería
@@ -9834,17 +9903,29 @@
                 actualDireccion = (r.destino && r.destino !== 'Destino no especificado') ? r.destino : '';
                 docNumero = r.factura || '';
 
-                // Buscar correo en catálogo
+                // Buscar datos complementarios del cliente en el catálogo si faltan en el registro
                 if (actualNombre && typeof catalogoClientes !== 'undefined') {
                     const cEnCat = catalogoClientes.find(c => normalizarTextoClave(c.nombre) === normalizarTextoClave(actualNombre));
-                    if (cEnCat && cEnCat.correo) actualCorreo = cEnCat.correo;
+                    if (cEnCat) {
+                        if (!actualCorreo && cEnCat.correo) actualCorreo = cEnCat.correo;
+                        if (!actualTelefono && cEnCat.telefono) actualTelefono = cEnCat.telefono;
+                        if (!actualDireccion && cEnCat.direccion && cEnCat.direccion !== 'Sin dirección registrada') actualDireccion = cEnCat.direccion;
+                    }
                 }
                 if (!actualCorreo && r.correo) actualCorreo = r.correo;
 
                 // Buscar DTE del documento actual (en memoria, datosDte, jsonRaw o localStorage multi-clave)
-                let jsonObj = r.jsonData || (r.jsonRaw ? (typeof r.jsonRaw === 'string' ? JSON.parse(r.jsonRaw) : r.jsonRaw) : null);
+                let jsonObj = r.jsonData || null;
+                if (!jsonObj && r.jsonRaw) {
+                    if (typeof r.jsonRaw === 'string') {
+                        try { jsonObj = JSON.parse(r.jsonRaw); } catch(e) {}
+                    } else if (typeof r.jsonRaw === 'object') {
+                        jsonObj = r.jsonRaw;
+                    }
+                }
                 if (!jsonObj && typeof obtenerJsonFacturaLocal === 'function') {
-                    const localRaw = obtenerJsonFacturaLocal(r.factura) || obtenerJsonFacturaLocal(docNumero);
+                    const tipoH = r.tipoDocumento || detectarTipoPrefijoFactura(r.factura);
+                    const localRaw = obtenerJsonFacturaLocal(r.factura, tipoH) || obtenerJsonFacturaLocal(docNumero, tipoH);
                     if (localRaw) {
                         jsonObj = localRaw.parsed || localRaw;
                         if (typeof jsonObj === 'string') {
@@ -9854,17 +9935,37 @@
                 }
                 if (!jsonObj && r.subFacturas && Array.isArray(r.subFacturas)) {
                     for (const sub of r.subFacturas) {
-                        const subJ = sub.jsonData || (sub.jsonRaw ? (typeof sub.jsonRaw === 'string' ? JSON.parse(sub.jsonRaw) : sub.jsonRaw) : null) || (typeof obtenerJsonFacturaLocal === 'function' ? obtenerJsonFacturaLocal(sub.numero || sub.factura)?.parsed : null);
+                        let subJ = sub.jsonData || null;
+                        if (!subJ && sub.jsonRaw) {
+                            if (typeof sub.jsonRaw === 'string') {
+                                try { subJ = JSON.parse(sub.jsonRaw); } catch(e) {}
+                            } else if (typeof sub.jsonRaw === 'object') {
+                                subJ = sub.jsonRaw;
+                            }
+                        }
+                        if (!subJ && typeof obtenerJsonFacturaLocal === 'function') {
+                            subJ = obtenerJsonFacturaLocal(sub.numero || sub.factura, sub.tipo || '')?.parsed || null;
+                        }
                         if (subJ) { jsonObj = subJ; break; }
                     }
                 }
 
-                let dteData = r.datosDte || ((jsonObj && typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(jsonObj) : null);
+                let dteData = null;
+                if (jsonObj && typeof extraerDatosDocumentoIndividualJson === 'function') {
+                    dteData = extraerDatosDocumentoIndividualJson(jsonObj);
+                    if (dteData) {
+                        r.datosDte = dteData;
+                        facturaActualPrevisualizada.datosDte = dteData;
+                    }
+                }
+                if (!dteData && r.datosDte) {
+                    dteData = r.datosDte;
+                }
 
                 if (dteData) {
-                    dteNombre = dteData.clienteValidoDte || (dteData.cliente !== 'Consumidor Final' && !/cliente\s*sin\s*datos/i.test(dteData.cliente) ? dteData.cliente : '');
+                    dteNombre = dteData.clienteValidoDte || (dteData.cliente && dteData.cliente !== 'Consumidor Final' && !/cliente\s*sin\s*datos/i.test(dteData.cliente) ? dteData.cliente : '');
                     dteTelefono = dteData.telefono || '';
-                    dteDireccion = dteData.destinoValidoDte || (!/sin\s*direccion/i.test(dteData.destino) ? dteData.destino : '');
+                    dteDireccion = dteData.destinoValidoDte || (dteData.destino && !/sin\s*direccion/i.test(dteData.destino) ? dteData.destino : '');
                     dteCorreo = dteData.correo || '';
                     dteNit = dteData.nitReceptor || '';
                     dteNrc = dteData.nrcReceptor || '';
@@ -10105,7 +10206,7 @@
 
                         // Actualizar registro en registrosGlobales si existe
                         if (typeof registrosGlobales !== 'undefined' && Array.isArray(registrosGlobales)) {
-                            const found = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === String(facturaActualPrevisualizada.factura).trim().toLowerCase());
+                            const found = registrosGlobales.find(x => sonFacturasCoincidentesGlobal(x.factura, facturaActualPrevisualizada.factura));
                             if (found) {
                                 found.cliente = finalNombre;
                                 found.telefonoCliente = finalTelefono;
@@ -10258,12 +10359,16 @@
             abrirModalVerJsonFactura(r.factura, r.jsonRaw, r.jsonData);
         }
 
-        function removerJsonFacturaLocal(facturaId) {
-            if (!facturaId) return;
-            try {
-                const key = 'doc_json_' + String(facturaId).trim().toLowerCase();
-                localStorage.removeItem(key);
-            } catch(e) {}
+        function removerJsonFacturaLocal(facturaId, extraAliases = []) {
+            const lista = [facturaId, ...(Array.isArray(extraAliases) ? extraAliases : [])].filter(Boolean);
+            lista.forEach(id => {
+                try {
+                    const keys = generarClavesLocalDocumento('doc_json_', id, '', true);
+                    keys.forEach(k => {
+                        try { localStorage.removeItem(k); } catch(eK) {}
+                    });
+                } catch(e) {}
+            });
         }
 
         // ==========================================
@@ -10629,17 +10734,7 @@
             let subActualizada = null;
 
             // 1. Actualizar en registrosGlobales
-            function sonFacturasCoincidentes(f1, f2) {
-                if (!f1 || !f2) return false;
-                const s1 = String(f1).trim().toLowerCase();
-                const s2 = String(f2).trim().toLowerCase();
-                if (s1 === s2) return true;
-                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
-                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                if (n1 && n2 && n1 === n2) return true;
-                return false;
-            }
+            const sonFacturasCoincidentes = sonFacturasCoincidentesGlobal;
 
             if (typeof registrosGlobales !== 'undefined') {
                 for (const reg of registrosGlobales) {
@@ -10739,12 +10834,34 @@
             const decId = decodeURIComponent(facturaId || '').trim();
             if (!decId) return;
 
+            const extraAliases = new Set([decId]);
+            const recolectarAliases = (obj) => {
+                if (!obj) return;
+                if (obj.factura) extraAliases.add(String(obj.factura).trim());
+                if (obj.numero) extraAliases.add(String(obj.numero).trim());
+                if (obj.docCompleto) extraAliases.add(String(obj.docCompleto).trim());
+                if (obj.datosDte) {
+                    if (obj.datosDte.numero) extraAliases.add(String(obj.datosDte.numero).trim());
+                    if (obj.datosDte.numeroCorto) extraAliases.add(String(obj.datosDte.numeroCorto).trim());
+                    if (obj.datosDte.numeroControl) extraAliases.add(String(obj.datosDte.numeroControl).trim());
+                    if (obj.datosDte.codigoGeneracion) extraAliases.add(String(obj.datosDte.codigoGeneracion).trim());
+                }
+                const jd = obj.jsonData;
+                const dRoot = jd && (jd.dteJson || jd.DTE || jd);
+                if (dRoot && dRoot.identificacion) {
+                    if (dRoot.identificacion.numeroControl) extraAliases.add(String(dRoot.identificacion.numeroControl).trim());
+                    if (dRoot.identificacion.codigoGeneracion) extraAliases.add(String(dRoot.identificacion.codigoGeneracion).trim());
+                }
+            };
+
             let regActualizado = null;
             if (typeof registrosGlobales !== 'undefined') {
                 for (const reg of registrosGlobales) {
-                    if (String(reg.factura || '').trim().toLowerCase() === decId.toLowerCase()) {
+                    if (sonFacturasCoincidentesGlobal(reg.factura, decId)) {
+                        recolectarAliases(reg);
                         reg.jsonData = null;
                         reg.jsonRaw = '';
+                        reg.datosDte = null;
                         reg.drivePdfUrl = '';
                         reg.drivePdfName = '';
                         regActualizado = reg;
@@ -10752,11 +10869,13 @@
                     }
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
                         const sub = reg.subFacturas.find(s => 
-                            String(s.numero || s.factura || s.docCompleto || '').trim().toLowerCase() === decId.toLowerCase()
+                            sonFacturasCoincidentesGlobal(s.numero || s.factura || s.docCompleto, decId)
                         );
                         if (sub) {
+                            recolectarAliases(sub);
                             sub.jsonData = null;
                             sub.jsonRaw = '';
+                            sub.datosDte = null;
                             sub.drivePdfUrl = '';
                             sub.drivePdfName = '';
                             regActualizado = reg;
@@ -10766,22 +10885,26 @@
                 }
             }
 
-            if (facturaActualPrevisualizada) {
+            if (facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, decId)) {
+                recolectarAliases(facturaActualPrevisualizada);
                 facturaActualPrevisualizada.jsonData = null;
                 facturaActualPrevisualizada.jsonRaw = '';
+                facturaActualPrevisualizada.datosDte = null;
                 facturaActualPrevisualizada.drivePdfUrl = '';
                 facturaActualPrevisualizada.drivePdfName = '';
             }
 
-            removerJsonFacturaLocal(decId);
-            removerDrivePdfFacturaLocal(decId);
+            const aliasesArr = Array.from(extraAliases);
+            removerJsonFacturaLocal(decId, aliasesArr);
+            removerDrivePdfFacturaLocal(decId, aliasesArr);
 
-            if (regActualizado && typeof enviarDatosAGoogleSheets === 'function') {
+            if (typeof enviarDatosAGoogleSheets === 'function') {
                 enviarDatosAGoogleSheets({
                     action: 'removeTripJson',
-                    factura: decId,
-                    viajeFactura: regActualizado.factura,
-                    subFacturas: regActualizado.subFacturas || []
+                    factura: (regActualizado && regActualizado.factura) ? regActualizado.factura : decId,
+                    viajeFactura: (regActualizado && regActualizado.factura) ? regActualizado.factura : decId,
+                    subFacturas: (regActualizado && regActualizado.subFacturas) ? regActualizado.subFacturas : [],
+                    removeDrivePdf: true
                 }).catch(() => {});
             }
 
@@ -10791,10 +10914,10 @@
 
             const modalPrev = document.getElementById('modalPrevisualizarFactura');
             if (modalPrev && !modalPrev.classList.contains('hidden')) {
-                abrirModalPrevisualizarFactura(decId);
+                abrirModalPrevisualizarFactura((regActualizado && regActualizado.factura) ? regActualizado.factura : decId);
             }
 
-            showToast('Documento Desvinculado', `Se desvinculó el archivo JSON y PDF de ${decId}.`, 'info');
+            showToast('Documento Desvinculado', `Se desvinculó el archivo JSON y PDF de Drive de ${decId}.`, 'info');
         }
 
         function quitarJsonFacturaExistenteActualModal() {
@@ -12035,15 +12158,12 @@
             if (!r) return false;
             if (r.jsonData || r.jsonRaw) return true;
             if (r.subFacturas && Array.isArray(r.subFacturas) && r.subFacturas.some(s => s.jsonData || s.jsonRaw)) return true;
-            const f = String(r.factura || '').trim().toLowerCase();
+            const f = String(r.factura || '').trim();
             if (!f) return false;
-            const numSolo = f.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
             try {
-                if (localStorage.getItem('doc_json_' + f)) return true;
-                if (numSolo) {
-                    if (localStorage.getItem('doc_json_' + numSolo)) return true;
-                    if (localStorage.getItem('doc_json_fact' + numSolo)) return true;
-                    if (localStorage.getItem('doc_json_ccf' + numSolo)) return true;
+                const keys = generarClavesLocalDocumento('doc_json_', f, r.tipoDocumento || '', false);
+                for (let i = 0; i < keys.length; i++) {
+                    if (localStorage.getItem(keys[i])) return true;
                 }
             } catch(e) {}
             return false;
@@ -17708,17 +17828,7 @@
                 const facturaId = decodeURIComponent(facturaEncoded || '').trim();
                 if (!facturaId) return;
 
-            function sonFacturasCoincidentes(f1, f2) {
-                if (!f1 || !f2) return false;
-                const s1 = String(f1).trim().toLowerCase();
-                const s2 = String(f2).trim().toLowerCase();
-                if (s1 === s2) return true;
-                if (typeof normalizarTextoClave === 'function' && normalizarTextoClave(s1) === normalizarTextoClave(s2)) return true;
-                const n1 = s1.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                const n2 = s2.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
-                if (n1 && n2 && n1 === n2) return true;
-                return false;
-            }
+            const sonFacturasCoincidentes = sonFacturasCoincidentesGlobal;
 
             // 1. Buscar primero en la factura actual previsualizada si coincide
             let r = null;
@@ -17785,8 +17895,9 @@
             }
 
             facturaActualPrevisualizada = r;
+            const tipoDocLocalHint = r.tipoDocumento || detectarTipoPrefijoFactura(r.factura || facturaId);
             const localData = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(r.factura) : null;
-            const localJsonObj = (typeof obtenerJsonFacturaLocal === 'function') ? (obtenerJsonFacturaLocal(r.factura) || obtenerJsonFacturaLocal(facturaId)) : null;
+            const localJsonObj = (typeof obtenerJsonFacturaLocal === 'function') ? (obtenerJsonFacturaLocal(r.factura, tipoDocLocalHint) || obtenerJsonFacturaLocal(facturaId, tipoDocLocalHint)) : null;
 
             // Extraer JSON desde todas las fuentes posibles (memoria, jsonRaw de Sheets, localStorage multi-clave o subFacturas)
             let docJsonData = r.jsonData || null;
@@ -17862,7 +17973,7 @@
             }
 
             // Gestión de enlace al PDF oficial de Google Drive
-            const localDrivePdf = (typeof obtenerDrivePdfFacturaLocal === 'function') ? (obtenerDrivePdfFacturaLocal(r.factura) || obtenerDrivePdfFacturaLocal(facturaId)) : null;
+            const localDrivePdf = (typeof obtenerDrivePdfFacturaLocal === 'function') ? (obtenerDrivePdfFacturaLocal(r.factura, tipoDocLocalHint) || obtenerDrivePdfFacturaLocal(facturaId, tipoDocLocalHint)) : null;
             const drivePdfUrl = r.drivePdfUrl || (localDrivePdf ? (localDrivePdf.previewUrl || localDrivePdf.viewUrl) : null);
             const btnVerDrivePdf = document.getElementById('btnVerDrivePdfSheet');
             if (btnVerDrivePdf) {
@@ -17882,7 +17993,6 @@
                 }
             }
 
-            const modal = document.getElementById('modalPrevisualizarFactura');
             if (!modal) return;
 
             // Encabezados
@@ -18095,6 +18205,9 @@
                                     <a href="${drivePdfUrl}" target="_blank" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Ver archivo PDF en Google Drive">
                                         <i class="fa-solid fa-file-pdf"></i> <span>PDF Drive</span>
                                     </a>
+                                    <button type="button" onclick="quitarJsonFacturaExistenteActual()" class="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-[11px] font-bold cursor-pointer transition-colors" title="Desvincular archivo de Google Drive">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
                                     ` : `
                                     <button type="button" onclick="buscarDrivePdfParaFacturaExistente('${escapedFactura}')" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-sm" title="Buscar documento en Google Drive">
                                         <i class="fa-brands fa-google-drive text-amber-500"></i> <span>Buscar en Drive</span>
