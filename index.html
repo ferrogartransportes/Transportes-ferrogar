@@ -3111,13 +3111,23 @@
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                                 <div class="font-bold text-slate-900 border-b border-slate-200 pb-1 flex items-center justify-between uppercase text-[11px] tracking-wider text-blue-800">
                                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-user"></i> Datos del Cliente</span>
-                                    <button id="btnCompararClienteDteSheet" type="button" onclick="abrirModalCompararClienteDte('sheet')" class="hidden px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 border border-blue-300 shadow-xs" title="Comparar y actualizar datos del cliente con el DTE">
-                                        <i class="fa-solid fa-user-check text-blue-600"></i> <span>Comparar con DTE</span>
-                                    </button>
+                                    <div class="flex items-center gap-1.5">
+                                        <button id="btnVerFichaClienteSheet" type="button" onclick="verFichaClienteDesdeSheet()" class="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 border border-emerald-300 shadow-xs" title="Ver ficha completa y expediente del cliente">
+                                            <i class="fa-solid fa-address-card text-emerald-600"></i> <span>Ver Ficha</span>
+                                        </button>
+                                        <button id="btnCompararClienteDteSheet" type="button" onclick="abrirModalCompararClienteDte('sheet')" class="hidden px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded text-[10px] font-bold cursor-pointer transition-colors flex items-center gap-1 border border-blue-300 shadow-xs" title="Comparar y actualizar datos del cliente con el DTE">
+                                            <i class="fa-solid fa-user-check text-blue-600"></i> <span>Comparar con DTE</span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block text-[11px]">Cliente / Razón Social:</span>
-                                    <span id="prevDocCliente" class="font-bold text-slate-900 text-sm">---</span>
+                                    <div class="flex items-center justify-between gap-1">
+                                        <span id="prevDocCliente" onclick="verFichaClienteDesdeSheet()" class="font-bold text-slate-900 text-sm hover:text-blue-600 cursor-pointer transition-colors" title="Clic para ver ficha del cliente">---</span>
+                                        <button type="button" onclick="verFichaClienteDesdeSheet()" class="text-blue-600 hover:text-blue-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors" title="Abrir expediente del cliente">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <span class="text-slate-500 block text-[11px]">Teléfono de Contacto:</span>
@@ -3422,7 +3432,7 @@
         </div>
 
         <!-- ================= MODAL: COMPARAR DATOS DE CLIENTE CON DTE ================= -->
-        <div id="modalCompararClienteDte" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[95] hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div id="modalCompararClienteDte" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
             <div class="bg-darkCard border border-blue-500/40 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
                 <!-- Encabezado -->
                 <div class="flex items-start justify-between border-b border-slate-800 pb-3 gap-3 shrink-0">
@@ -4013,7 +4023,7 @@
         </div>
 
         <!-- ================= MODAL: EXPEDIENTE Y ANÁLISIS 360° DEL CLIENTE ================= -->
-        <div id="modalExpedienteCliente" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div id="modalExpedienteCliente" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-3 sm:p-5">
             <div class="bg-darkCard border border-cyan-500/40 rounded-3xl max-w-5xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col space-y-4">
                 
                 <!-- Encabezado del Perfil -->
@@ -4256,7 +4266,7 @@
         </div>
 
         <!-- ================= MODAL: DATOS DEL CLIENTE PARA CONDUCTORES (SOLO NOMBRE, TELÉFONO Y DIRECCIÓN) ================= -->
-        <div id="modalClienteConductor" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+        <div id="modalClienteConductor" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
             <div class="bg-darkCard border border-emerald-500/40 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative flex flex-col space-y-4">
                 <!-- Encabezado -->
                 <div class="flex items-start justify-between border-b border-slate-800 pb-3 gap-3">
@@ -8882,8 +8892,27 @@
         function guardarJsonFacturaLocal(facturaId, jsonRaw) {
             if (!facturaId || !jsonRaw) return;
             try {
-                const key = 'doc_json_' + String(facturaId).trim().toLowerCase();
-                localStorage.setItem(key, typeof jsonRaw === 'string' ? jsonRaw : JSON.stringify(jsonRaw));
+                const rawStr = typeof jsonRaw === 'string' ? jsonRaw : JSON.stringify(jsonRaw);
+                const sId = String(facturaId).trim().toLowerCase();
+                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
+                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
+
+                const keys = new Set([
+                    'doc_json_' + sId,
+                    'doc_json_' + sId.replace(/\s+/g, ''),
+                    'doc_json_' + sId.replace(/[-_]/g, '')
+                ]);
+                if (numLimpio) keys.add('doc_json_' + numLimpio);
+                if (numSolo) {
+                    keys.add('doc_json_' + numSolo);
+                    keys.add('doc_json_fact' + numSolo);
+                    keys.add('doc_json_fact-' + numSolo);
+                    keys.add('doc_json_ccf' + numSolo);
+                    keys.add('doc_json_ccf-' + numSolo);
+                }
+                keys.forEach(k => {
+                    try { localStorage.setItem(k, rawStr); } catch(eK) {}
+                });
             } catch(e) {
                 console.warn('Almacenamiento local lleno al guardar JSON:', e);
             }
@@ -8892,10 +8921,35 @@
         function obtenerJsonFacturaLocal(facturaId) {
             if (!facturaId) return null;
             try {
-                const key = 'doc_json_' + String(facturaId).trim().toLowerCase();
-                const raw = localStorage.getItem(key);
-                if (!raw) return null;
-                return { raw: raw, parsed: JSON.parse(raw) };
+                const sId = String(facturaId).trim().toLowerCase();
+                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
+                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
+
+                const keys = [
+                    'doc_json_' + sId,
+                    'doc_json_' + sId.replace(/\s+/g, ''),
+                    'doc_json_' + sId.replace(/[-_]/g, '')
+                ];
+                if (numLimpio && !keys.includes('doc_json_' + numLimpio)) keys.push('doc_json_' + numLimpio);
+                if (numSolo) {
+                    if (!keys.includes('doc_json_' + numSolo)) keys.push('doc_json_' + numSolo);
+                    keys.push('doc_json_fact' + numSolo);
+                    keys.push('doc_json_fact-' + numSolo);
+                    keys.push('doc_json_ccf' + numSolo);
+                    keys.push('doc_json_ccf-' + numSolo);
+                }
+
+                for (const k of keys) {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        try {
+                            return { raw: raw, parsed: JSON.parse(raw) };
+                        } catch(eP) {
+                            return { raw: raw, parsed: null };
+                        }
+                    }
+                }
+                return null;
             } catch(e) {
                 return null;
             }
@@ -8907,8 +8961,27 @@
         function guardarDrivePdfFacturaLocal(facturaId, pdfData) {
             if (!facturaId || !pdfData) return;
             try {
-                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
-                localStorage.setItem(key, typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData));
+                const valStr = typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData);
+                const sId = String(facturaId).trim().toLowerCase();
+                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
+                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
+
+                const keys = new Set([
+                    'doc_drive_pdf_' + sId,
+                    'doc_drive_pdf_' + sId.replace(/\s+/g, ''),
+                    'doc_drive_pdf_' + sId.replace(/[-_]/g, '')
+                ]);
+                if (numLimpio) keys.add('doc_drive_pdf_' + numLimpio);
+                if (numSolo) {
+                    keys.add('doc_drive_pdf_' + numSolo);
+                    keys.add('doc_drive_pdf_fact' + numSolo);
+                    keys.add('doc_drive_pdf_fact-' + numSolo);
+                    keys.add('doc_drive_pdf_ccf' + numSolo);
+                    keys.add('doc_drive_pdf_ccf-' + numSolo);
+                }
+                keys.forEach(k => {
+                    try { localStorage.setItem(k, valStr); } catch(eK) {}
+                });
             } catch(e) {
                 console.warn('Almacenamiento local lleno al guardar PDF Drive:', e);
             }
@@ -8917,14 +8990,35 @@
         function obtenerDrivePdfFacturaLocal(facturaId) {
             if (!facturaId) return null;
             try {
-                const key = 'doc_drive_pdf_' + String(facturaId).trim().toLowerCase();
-                const raw = localStorage.getItem(key);
-                if (!raw) return null;
-                try {
-                    return JSON.parse(raw);
-                } catch(e) {
-                    return { viewUrl: raw, previewUrl: raw, fileName: 'Documento.pdf' };
+                const sId = String(facturaId).trim().toLowerCase();
+                const numLimpio = sId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').trim();
+                const numSolo = numLimpio.replace(/^0+/, '') || numLimpio;
+
+                const keys = [
+                    'doc_drive_pdf_' + sId,
+                    'doc_drive_pdf_' + sId.replace(/\s+/g, ''),
+                    'doc_drive_pdf_' + sId.replace(/[-_]/g, '')
+                ];
+                if (numLimpio && !keys.includes('doc_drive_pdf_' + numLimpio)) keys.push('doc_drive_pdf_' + numLimpio);
+                if (numSolo) {
+                    if (!keys.includes('doc_drive_pdf_' + numSolo)) keys.push('doc_drive_pdf_' + numSolo);
+                    keys.push('doc_drive_pdf_fact' + numSolo);
+                    keys.push('doc_drive_pdf_fact-' + numSolo);
+                    keys.push('doc_drive_pdf_ccf' + numSolo);
+                    keys.push('doc_drive_pdf_ccf-' + numSolo);
                 }
+
+                for (const k of keys) {
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        try {
+                            return JSON.parse(raw);
+                        } catch(eP) {
+                            return { viewUrl: raw, previewUrl: raw, fileName: 'Documento.pdf' };
+                        }
+                    }
+                }
+                return null;
             } catch(e) {
                 return null;
             }
@@ -9651,10 +9745,10 @@
                 }
                 if (!actualCorreo && r.correo) actualCorreo = r.correo;
 
-                // Buscar DTE del documento actual
-                let jsonObj = r.jsonData || (r.dteJsonRaw ? (typeof r.dteJsonRaw === 'string' ? JSON.parse(r.dteJsonRaw) : r.dteJsonRaw) : null);
+                // Buscar DTE del documento actual (en memoria, datosDte, jsonRaw o localStorage multi-clave)
+                let jsonObj = r.jsonData || (r.jsonRaw ? (typeof r.jsonRaw === 'string' ? JSON.parse(r.jsonRaw) : r.jsonRaw) : null);
                 if (!jsonObj && typeof obtenerJsonFacturaLocal === 'function') {
-                    const localRaw = obtenerJsonFacturaLocal(r.factura);
+                    const localRaw = obtenerJsonFacturaLocal(r.factura) || obtenerJsonFacturaLocal(docNumero);
                     if (localRaw) {
                         jsonObj = localRaw.parsed || localRaw;
                         if (typeof jsonObj === 'string') {
@@ -9662,11 +9756,14 @@
                         }
                     }
                 }
-
-                let dteData = null;
-                if (jsonObj && typeof extraerDatosDocumentoIndividualJson === 'function') {
-                    dteData = extraerDatosDocumentoIndividualJson(jsonObj);
+                if (!jsonObj && r.subFacturas && Array.isArray(r.subFacturas)) {
+                    for (const sub of r.subFacturas) {
+                        const subJ = sub.jsonData || (sub.jsonRaw ? (typeof sub.jsonRaw === 'string' ? JSON.parse(sub.jsonRaw) : sub.jsonRaw) : null) || (typeof obtenerJsonFacturaLocal === 'function' ? obtenerJsonFacturaLocal(sub.numero || sub.factura)?.parsed : null);
+                        if (subJ) { jsonObj = subJ; break; }
+                    }
                 }
+
+                let dteData = r.datosDte || ((jsonObj && typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(jsonObj) : null);
 
                 if (dteData) {
                     dteNombre = dteData.clienteValidoDte || (dteData.cliente !== 'Consumidor Final' && !/cliente\s*sin\s*datos/i.test(dteData.cliente) ? dteData.cliente : '');
@@ -17346,30 +17443,66 @@
         // =========================================================================
         let facturaActualPrevisualizada = null;
 
+        function verFichaClienteDesdeSheet() {
+            if (!facturaActualPrevisualizada) {
+                showToast('Aviso', 'No hay documento seleccionado.', 'info');
+                return;
+            }
+            const cli = facturaActualPrevisualizada.cliente || '';
+            const cliNom = String(cli).trim();
+            if (!cliNom || cliNom === '---' || /consumidor\s*final/i.test(cliNom) || /cliente\s*sin\s*datos/i.test(cliNom)) {
+                showToast('Aviso', 'Este documento no tiene un cliente específico registrado (es Consumidor Final).', 'info');
+                return;
+            }
+            if (typeof abrirModalExpedienteCliente === 'function') {
+                abrirModalExpedienteCliente(encodeURIComponent(cliNom));
+            }
+        }
+
         function abrirModalPrevisualizarFactura(facturaEncoded) {
             const modal = document.getElementById('modalPrevisualizarFactura');
             try {
                 const facturaId = decodeURIComponent(facturaEncoded || '').trim();
                 if (!facturaId) return;
 
-            // 1. Buscar en registrosGlobales
+            // 1. Buscar en registrosGlobales con coincidencia flexible por código y número
             const factNorm = (typeof normalizarTextoClave === 'function') ? normalizarTextoClave(facturaId) : facturaId.toLowerCase();
-            let r = registrosGlobales.find(x => String(x.factura).trim().toLowerCase() === facturaId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(x.factura) === factNorm));
+            const factSoloNum = facturaId.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+
+            let r = registrosGlobales.find(x => {
+                const f = String(x.factura || '').trim();
+                if (f.toLowerCase() === facturaId.toLowerCase()) return true;
+                if ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(f) === factNorm) return true;
+                if (factSoloNum) {
+                    const fSolo = f.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                    if (fSolo && fSolo === factSoloNum) return true;
+                }
+                return false;
+            });
             
             // 2. Si no es registro principal, buscar en viajes agrupados / multi-facturas
             if (!r) {
                 for (const reg of registrosGlobales) {
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
                         const sub = reg.subFacturas.find(s => {
-                            const subFact = String(s.numero || s.factura).trim().toLowerCase();
-                            return subFact === facturaId.toLowerCase() || ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm);
+                            const subFact = String(s.numero || s.factura || s.docCompleto || '').trim();
+                            if (subFact.toLowerCase() === facturaId.toLowerCase()) return true;
+                            if ((typeof normalizarTextoClave === 'function') && normalizarTextoClave(subFact) === factNorm) return true;
+                            if (factSoloNum) {
+                                const sSolo = subFact.replace(/^(fac|factura|ccf|credito|dte)[-_\s]*/gi, '').replace(/^0+/, '');
+                                if (sSolo && sSolo === factSoloNum) return true;
+                            }
+                            return false;
                         });
                         if (sub) {
                             r = {
                                 ...reg,
-                                factura: sub.numero || sub.factura,
+                                factura: sub.numero || sub.factura || sub.docCompleto,
                                 tipoDocumento: sub.tipo || 'FACTURA',
                                 monto: Number(sub.monto) || 0,
+                                jsonData: sub.jsonData || null,
+                                jsonRaw: sub.jsonRaw || '',
+                                drivePdfUrl: sub.drivePdfUrl || reg.drivePdfUrl || '',
                                 descripcion: `Factura parte del envío agrupado de ${reg.cliente}`
                             };
                             break;
@@ -17400,29 +17533,40 @@
             facturaActualPrevisualizada = r;
             const localData = (typeof obtenerComprobanteLocal === 'function') ? obtenerComprobanteLocal(r.factura) : null;
             const localJsonObj = (typeof obtenerJsonFacturaLocal === 'function') ? (obtenerJsonFacturaLocal(r.factura) || obtenerJsonFacturaLocal(facturaId)) : null;
-            let docJsonData = r.jsonData || (localJsonObj ? localJsonObj.parsed : null);
-            if (typeof docJsonData === 'string') {
-                try { docJsonData = JSON.parse(docJsonData); } catch(e) {}
-            }
-            if (docJsonData && docJsonData.dteJson && typeof docJsonData.dteJson === 'object') {
-                docJsonData = docJsonData.dteJson;
-            } else if (docJsonData && docJsonData.DTE && typeof docJsonData.DTE === 'object') {
-                docJsonData = docJsonData.DTE;
-            } else if (docJsonData && docJsonData.documento && typeof docJsonData.documento === 'object') {
-                docJsonData = docJsonData.documento;
-            }
-            const docJsonRaw = r.jsonRaw || (localJsonObj ? localJsonObj.raw : '');
 
-            // Extraer estructura oficial DTE / Comercial si está disponible
-            let datosDte = (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') ? extraerDatosDocumentoIndividualJson(docJsonData) : null;
-            if (!datosDte && r.subFacturas && Array.isArray(r.subFacturas)) {
+            // Extraer JSON desde todas las fuentes posibles (memoria, jsonRaw de Sheets, localStorage multi-clave o subFacturas)
+            let docJsonData = r.jsonData || null;
+            let docJsonRaw = r.jsonRaw || (localJsonObj ? localJsonObj.raw : '');
+            if (!docJsonData && docJsonRaw) {
+                try { docJsonData = JSON.parse(docJsonRaw); } catch(e) {}
+            }
+            if (!docJsonData && localJsonObj) {
+                docJsonData = localJsonObj.parsed;
+            }
+            if (!docJsonData && r.subFacturas && Array.isArray(r.subFacturas)) {
                 for (const sub of r.subFacturas) {
-                    const subJ = sub.jsonData || (typeof obtenerJsonFacturaLocal === 'function' ? (obtenerJsonFacturaLocal(sub.numero || sub.factura)?.parsed) : null);
-                    if (subJ && typeof extraerDatosDocumentoIndividualJson === 'function') {
-                        datosDte = extraerDatosDocumentoIndividualJson(subJ);
-                        if (datosDte) break;
+                    const subJ = sub.jsonData || (sub.jsonRaw ? (typeof sub.jsonRaw === 'string' ? JSON.parse(sub.jsonRaw) : sub.jsonRaw) : null) || (typeof obtenerJsonFacturaLocal === 'function' ? obtenerJsonFacturaLocal(sub.numero || sub.factura)?.parsed : null);
+                    if (subJ) {
+                        docJsonData = subJ;
+                        if (sub.jsonRaw) docJsonRaw = sub.jsonRaw;
+                        break;
                     }
                 }
+            }
+
+            // Extraer estructura oficial DTE / Comercial (10 campos oficiales)
+            let datosDte = null;
+            if (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') {
+                datosDte = extraerDatosDocumentoIndividualJson(docJsonData);
+            }
+
+            if (datosDte) {
+                r.datosDte = datosDte;
+                facturaActualPrevisualizada.datosDte = datosDte;
+            }
+            if (docJsonData) {
+                r.jsonData = docJsonData;
+                facturaActualPrevisualizada.jsonData = docJsonData;
             }
 
             const tieneJsonVinculado = !!(docJsonData || docJsonRaw || datosDte || (r.subFacturas && r.subFacturas.some(s => s.jsonData || s.jsonRaw)));
