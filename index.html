@@ -3582,16 +3582,19 @@
 
                 <!-- Cuerpo con Scroll Interno -->
                 <div class="overflow-y-auto space-y-3.5 pr-1 flex-1">
-                    <!-- Insignia de Similitud y Resumen -->
-                    <div id="driveConfirmarSimilitudBadgeContainer" class="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-2 flex-wrap">
-                        <div>
-                            <span class="text-[11px] text-slate-400 block font-medium">Buscando Factura / CCF:</span>
-                            <strong id="driveConfirmarFacturaBuscada" class="text-sm font-bold text-white font-mono">---</strong>
+                    <!-- Insignia de Similitud Real y Desglose de Verificación -->
+                    <div id="driveConfirmarSimilitudBadgeContainer" class="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                                <span class="text-[11px] text-slate-400 block font-medium">Buscando Factura / CCF:</span>
+                                <strong id="driveConfirmarFacturaBuscada" class="text-sm font-bold text-white font-mono">---</strong>
+                            </div>
+                            <div id="driveConfirmarSimilitudBadge" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-xs">
+                                <i class="fa-solid fa-bullseye text-emerald-400"></i>
+                                <span id="driveConfirmarSimilitudTexto">100% Coincidencia Real</span>
+                            </div>
                         </div>
-                        <div id="driveConfirmarSimilitudBadge" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-xs">
-                            <i class="fa-solid fa-bullseye text-emerald-400"></i>
-                            <span id="driveConfirmarSimilitudTexto">100% Coincidencia Exacta</span>
-                        </div>
+                        <div id="driveConfirmarSimilitudDesglose" class="hidden pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-1.5 text-[10px]"></div>
                     </div>
 
                     <!-- Selector de Múltiples Coincidencias (Factura vs Crédito Fiscal o varias sucursales con el mismo número) -->
@@ -10969,6 +10972,219 @@
             return copy;
         }
 
+        function obtenerContextoReferenciaDocumentoDrive(facturaId, origen = 'sheet', extraParam = null) {
+            const ctx = {
+                factura: limpiarSufijoViajeFactura(facturaId || ''),
+                tipoDocumento: '',
+                fecha: '',
+                cliente: '',
+                monto: 0
+            };
+
+            if (origen === 'asignacion') {
+                ctx.tipoDocumento = document.getElementById('manInputTipoDocumento')?.value || detectarTipoPrefijoFactura(ctx.factura) || '';
+                ctx.fecha = normalizarFechaIsoCliente(document.getElementById('manInputFechaEmisionDrive')?.value || document.getElementById('manInputFechaProgramada')?.value || '');
+                ctx.cliente = (document.getElementById('manInputCliente')?.value || '').trim();
+                ctx.monto = parseFloat((document.getElementById('manInputMonto')?.value || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
+                return ctx;
+            }
+
+            if (origen === 'fila' && typeof filasFacturasAgrupadas !== 'undefined') {
+                const fRow = filasFacturasAgrupadas.find(f => f.id === extraParam);
+                if (fRow) {
+                    ctx.tipoDocumento = fRow.tipo || detectarTipoPrefijoFactura(fRow.numero || ctx.factura) || '';
+                    ctx.monto = parseFloat(String(fRow.monto || '0').replace(/\$/g, '').replace(/,/g, '')) || 0;
+                }
+                ctx.fecha = normalizarFechaIsoCliente(document.getElementById('manInputFechaEmisionDrive')?.value || document.getElementById('manInputFechaProgramada')?.value || '');
+                ctx.cliente = (document.getElementById('manInputCliente')?.value || '').trim();
+                return ctx;
+            }
+
+            // Origen 'sheet': buscar registro exacto abierto o en registrosGlobales
+            let refReg = null;
+            if (facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, facturaId)) {
+                refReg = facturaActualPrevisualizada;
+            } else if (typeof registrosGlobales !== 'undefined') {
+                refReg = registrosGlobales.find(x => sonFacturasCoincidentesGlobal(x.factura, facturaId));
+            }
+            if (refReg) {
+                ctx.tipoDocumento = refReg.tipoDocumento || detectarTipoPrefijoFactura(refReg.factura || ctx.factura) || '';
+                ctx.fecha = normalizarFechaIsoCliente(refReg.fechaProgramada || refReg.fecha || '');
+                ctx.cliente = String(refReg.cliente || '').trim();
+                ctx.monto = Number(refReg._montoFacturaOriginal) || Number(refReg.monto) || 0;
+            } else {
+                ctx.tipoDocumento = detectarTipoPrefijoFactura(ctx.factura) || '';
+            }
+            return ctx;
+        }
+
+        function esClienteGenericoComparacion(nom) {
+            const s = String(nom || '').trim().toLowerCase();
+            if (!s || s === 'n/a' || s === '---') return true;
+            return /consumidor\s*final|cliente\s*general|cliente\s*sin\s*datos|sin\s*asignar|consumidor\s*\/\s*cliente|uso\s*interno/.test(s);
+        }
+
+        /**
+         * Calcula la similitud REAL (0%-100%) comparando datos verdaderos entre el sistema y el documento de Drive:
+         * 1. Correlativo / Número (35 pts)
+         * 2. Tipo de documento FACTURA vs CCF (20 pts)
+         * 3. Fecha de Emisión (15 pts)
+         * 4. Cliente / Receptor (15 pts)
+         * 5. Monto Total $ (15 pts)
+         */
+        function calcularSimilitudRealDocumentoDrive(facturaId, itemDrive, ctxRef) {
+            const checks = [];
+            let ptsGanados = 0;
+            let ptsPosibles = 0;
+
+            const factLimpia = limpiarSufijoViajeFactura(facturaId || '');
+            const numDigBusq = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(factLimpia) : factLimpia.replace(/\D/g, '');
+            const tieneJson = !!(itemDrive && itemDrive.json);
+
+            // 1. NÚMERO / CORRELATIVO (35 pts)
+            ptsPosibles += 35;
+            let numDigDoc = '';
+            if (itemDrive && itemDrive.numeroControl) {
+                const mNc = String(itemDrive.numeroControl).match(/(\d+)$/);
+                if (mNc) numDigDoc = mNc[1].replace(/^0+/, '') || mNc[1];
+            }
+            if (!numDigDoc) {
+                const nomArch = itemDrive?.json?.fileName || itemDrive?.pdf?.fileName || '';
+                const baseNom = String(nomArch).replace(/(\.json|\.pdf|\.txt)+$/gi, '').replace(/[-_\s]*json$/gi, '');
+                const mB = baseNom.match(/(\d+)$/);
+                if (mB) numDigDoc = mB[1].replace(/^0+/, '') || mB[1];
+            }
+            if (numDigBusq && numDigDoc && numDigBusq === numDigDoc) {
+                ptsGanados += 35;
+                checks.push({ ok: 'exact', label: `Nº #${numDigBusq} exacto` });
+            } else if (numDigBusq && (String(itemDrive?.json?.fileName || '') + ' ' + String(itemDrive?.pdf?.fileName || '')).includes(numDigBusq)) {
+                ptsGanados += 22;
+                checks.push({ ok: 'partial', label: `Nº #${numDigBusq} parcial` });
+            } else {
+                checks.push({ ok: 'miss', label: `Nº no coincide` });
+            }
+
+            // 2. TIPO DE DOCUMENTO FACTURA vs CCF (20 pts)
+            const tipoEspRaw = String(ctxRef?.tipoDocumento || '').trim().toUpperCase();
+            const tipoEsp = tipoEspRaw ? ((tipoEspRaw === 'CCF' || tipoEspRaw.includes('CREDITO')) ? 'CCF' : 'FACTURA') : '';
+            const tipoDocRaw = String(itemDrive?.tipoDoc || '').trim().toUpperCase();
+            const tipoDoc = tipoDocRaw ? ((tipoDocRaw === 'CCF' || tipoDocRaw.includes('CREDITO')) ? 'CCF' : 'FACTURA') : '';
+            if (tipoEsp && tipoDoc) {
+                ptsPosibles += 20;
+                if (tipoEsp === tipoDoc) {
+                    ptsGanados += 20;
+                    checks.push({ ok: 'exact', label: `Tipo: ${tipoDoc}` });
+                } else {
+                    checks.push({ ok: 'miss', label: `Tipo distinto (${tipoDoc} vs ${tipoEsp})` });
+                }
+            }
+
+            // 3. FECHA DE EMISIÓN (15 pts)
+            const fechaEsp = normalizarFechaIsoCliente(ctxRef?.fecha || '');
+            const fechaDoc = normalizarFechaIsoCliente(itemDrive?.fechaEmision || '');
+            if (fechaEsp && fechaDoc) {
+                ptsPosibles += 15;
+                if (fechaEsp === fechaDoc) {
+                    ptsGanados += 15;
+                    checks.push({ ok: 'exact', label: `Fecha exacta (${fechaDoc})` });
+                } else {
+                    const d1 = new Date(fechaEsp + 'T00:00:00');
+                    const d2 = new Date(fechaDoc + 'T00:00:00');
+                    const diffDias = Math.round(Math.abs(d1 - d2) / 86400000);
+                    if (!isNaN(diffDias) && diffDias <= 3) {
+                        ptsGanados += 10;
+                        checks.push({ ok: 'partial', label: `Fecha cercana (${fechaDoc})` });
+                    } else if (fechaEsp.substring(0, 7) === fechaDoc.substring(0, 7)) {
+                        ptsGanados += 5;
+                        checks.push({ ok: 'partial', label: `Mismo mes (${fechaDoc})` });
+                    } else {
+                        checks.push({ ok: 'miss', label: `Fecha distinta (${fechaDoc})` });
+                    }
+                }
+            }
+
+            // 4. CLIENTE / RECEPTOR (15 pts)
+            const cliEsp = String(ctxRef?.cliente || '').trim();
+            const cliDoc = String(itemDrive?.cliente || '').trim();
+            if (!esClienteGenericoComparacion(cliEsp) && !esClienteGenericoComparacion(cliDoc)) {
+                ptsPosibles += 15;
+                const nEsp = normalizarTextoClave(cliEsp);
+                const nDoc = normalizarTextoClave(cliDoc);
+                if (nEsp && nDoc && (nEsp === nDoc || nEsp.includes(nDoc) || nDoc.includes(nEsp))) {
+                    ptsGanados += 15;
+                    checks.push({ ok: 'exact', label: `Cliente coincide` });
+                } else {
+                    const stopWords = new Set(['de', 'la', 'el', 'los', 'las', 'del', 'sa', 'cv', 'sadecv', 'sociedad', 'anonima', 'ltda', 'cia']);
+                    const toksEsp = cliEsp.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !stopWords.has(w));
+                    const toksDoc = new Set(cliDoc.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !stopWords.has(w)));
+                    let comunes = 0;
+                    toksEsp.forEach(w => { if (toksDoc.has(w)) comunes++; });
+                    const ratio = toksEsp.length > 0 ? (comunes / toksEsp.length) : 0;
+                    if (ratio >= 0.5) {
+                        ptsGanados += 10;
+                        checks.push({ ok: 'partial', label: `Cliente similar` });
+                    } else if (comunes >= 1) {
+                        ptsGanados += 5;
+                        checks.push({ ok: 'partial', label: `Cliente parcial` });
+                    } else {
+                        checks.push({ ok: 'miss', label: `Cliente distinto` });
+                    }
+                }
+            }
+
+            // 5. MONTO TOTAL $ (15 pts)
+            const mEsp = Number(ctxRef?.monto) || 0;
+            const mDoc = Number(itemDrive?.monto) || 0;
+            if (mEsp > 0 && mDoc > 0) {
+                ptsPosibles += 15;
+                const diffAbs = Math.abs(mEsp - mDoc);
+                const diffPct = diffAbs / Math.max(mEsp, mDoc);
+                if (diffAbs <= 0.05) {
+                    ptsGanados += 15;
+                    checks.push({ ok: 'exact', label: `Monto exacto ($${mDoc.toFixed(2)})` });
+                } else if (diffAbs <= 1.00 || diffPct <= 0.02) {
+                    ptsGanados += 11;
+                    checks.push({ ok: 'partial', label: `Monto cercano ($${mDoc.toFixed(2)})` });
+                } else if (diffPct <= 0.15) {
+                    ptsGanados += 7;
+                    checks.push({ ok: 'partial', label: `Monto aprox. ($${mDoc.toFixed(2)} vs $${mEsp.toFixed(2)})` });
+                } else {
+                    checks.push({ ok: 'miss', label: `Monto distinto ($${mDoc.toFixed(2)} vs $${mEsp.toFixed(2)})` });
+                }
+            }
+
+            let porcentaje = ptsPosibles > 0 ? Math.round((ptsGanados / ptsPosibles) * 100) : 0;
+
+            // Si es solo PDF sin JSON, no puede confirmar cliente/monto: reflejar transparencia real
+            if (!tieneJson) {
+                checks.push({ ok: 'info', label: `Solo PDF (sin JSON para validar monto/cliente)` });
+                if (porcentaje > 90 && !(fechaEsp && fechaDoc && fechaEsp === fechaDoc)) {
+                    porcentaje = 88;
+                }
+            }
+
+            let nivel = 'baja';
+            let etiqueta = `${porcentaje}% Coincidencia Baja — Revisar`;
+            if (porcentaje >= 95) {
+                nivel = 'alta';
+                etiqueta = porcentaje === 100 ? '100% Coincidencia Real Exacta' : `${porcentaje}% Coincidencia Muy Alta`;
+            } else if (porcentaje >= 75) {
+                nivel = 'media_alta';
+                etiqueta = `${porcentaje}% Coincidencia Alta`;
+            } else if (porcentaje >= 50) {
+                nivel = 'moderada';
+                etiqueta = `${porcentaje}% Coincidencia Parcial — Verificar`;
+            }
+
+            return {
+                porcentaje: porcentaje,
+                nivel: nivel,
+                etiqueta: etiqueta,
+                checks: checks,
+                criteriosEvaluados: checks.filter(c => c.ok !== 'info').length
+            };
+        }
+
         function abrirModalConfirmarVinculacionDrive(facturaId, data, origen = 'sheet', extraParam = null) {
             const rawLista = (Array.isArray(data?.coincidencias) && data.coincidencias.length > 0)
                 ? data.coincidencias
@@ -10981,10 +11197,28 @@
                     pdf: data?.pdf || null
                 }];
 
-            const coincidencias = rawLista.map(item => enriquecerCoincidenciaDrive(item, facturaId));
+            const ctxRef = obtenerContextoReferenciaDocumentoDrive(facturaId, origen, extraParam);
+
+            const coincidencias = rawLista.map(item => {
+                const enr = enriquecerCoincidenciaDrive(item, facturaId);
+                enr.similitudReal = calcularSimilitudRealDocumentoDrive(facturaId, enr, ctxRef);
+                return enr;
+            });
+
+            // Ordenar por mayor coincidencia REAL verificada (y desempatar por JSON+PDF y score)
+            coincidencias.sort((a, b) => {
+                const pA = a.similitudReal ? a.similitudReal.porcentaje : 0;
+                const pB = b.similitudReal ? b.similitudReal.porcentaje : 0;
+                if (pB !== pA) return pB - pA;
+                const cA = (a.json ? 2 : 0) + (a.pdf ? 1 : 0);
+                const cB = (b.json ? 2 : 0) + (b.pdf ? 1 : 0);
+                if (cB !== cA) return cB - cA;
+                return (b.score || 0) - (a.score || 0);
+            });
 
             driveMatchPendiente = {
                 facturaId: facturaId,
+                ctxRef: ctxRef,
                 data: Object.assign({}, data, {
                     json: coincidencias[0]?.json || data?.json || null,
                     pdf: coincidencias[0]?.pdf || data?.pdf || null,
@@ -11071,11 +11305,23 @@
                 const nomArchivo = escTxtDrive(item.json?.fileName || item.pdf?.fileName || 'Documento Drive');
                 const pdfUrl = item.pdf ? (item.pdf.previewUrl || item.pdf.viewUrl || '') : '';
 
+                const simRealItem = item.similitudReal || { porcentaje: 80, nivel: 'moderada' };
+                const pctReal = simRealItem.porcentaje;
+                const badgePctClase = pctReal >= 95
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                    : (pctReal >= 75
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-400/40'
+                        : (pctReal >= 50
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+                            : 'bg-rose-500/20 text-rose-300 border-rose-400/40'));
+                const badgePctReal = `<span class="px-1.5 py-0.5 rounded border text-[10px] font-extrabold font-mono ${badgePctClase}" title="Porcentaje real verificado con los datos del documento">${pctReal}%</span>`;
+
                 const metaPartes = [fechaTxt, itemsTxt].filter(Boolean);
                 const badgeFechaExacta = item.coincideFecha
                     ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold"><i class="fa-solid fa-calendar-check mr-0.5"></i>Fecha Exacta</span>`
                     : '';
                 const badgesArchivos = [
+                    badgePctReal,
                     badgeFechaExacta,
                     item.json ? `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[10px] font-semibold">JSON</span>` : '',
                     item.pdf ? `<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[10px] font-semibold">PDF</span>` : ''
@@ -11152,20 +11398,39 @@
                 }
             }
 
-            // Determinar Similitud
-            let simObj = chosen.similitud || data.pdf?.similitud || data.json?.similitud;
-            if (!simObj) {
-                const refNombre = data.pdf?.fileName || data.json?.fileName || '';
-                simObj = calcularSimilitudCliente(facturaId, refNombre);
-            }
+            // Determinar Similitud REAL verificada contra los datos del sistema (Número, Tipo, Fecha, Cliente, Monto)
+            const simObj = chosen.similitudReal || calcularSimilitudRealDocumentoDrive(facturaId, chosen, driveMatchPendiente.ctxRef || {});
             const badgeTexto = document.getElementById('driveConfirmarSimilitudTexto');
             const badgeEl = document.getElementById('driveConfirmarSimilitudBadge');
-            if (badgeTexto) badgeTexto.textContent = simObj.etiqueta || `${simObj.porcentaje || 95}% Coincidencia`;
+            const desgloseEl = document.getElementById('driveConfirmarSimilitudDesglose');
+            if (badgeTexto) badgeTexto.textContent = simObj.etiqueta || `${simObj.porcentaje}% Coincidencia Real`;
             if (badgeEl) {
-                if (simObj.nivel === 'alta' || (simObj.porcentaje >= 95)) {
+                if (simObj.porcentaje >= 95) {
                     badgeEl.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5 shadow-xs';
-                } else {
+                } else if (simObj.porcentaje >= 75) {
+                    badgeEl.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1.5 shadow-xs';
+                } else if (simObj.porcentaje >= 50) {
                     badgeEl.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 shadow-xs';
+                } else {
+                    badgeEl.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1.5 shadow-xs';
+                }
+            }
+            if (desgloseEl) {
+                if (Array.isArray(simObj.checks) && simObj.checks.length > 0) {
+                    desgloseEl.classList.remove('hidden');
+                    desgloseEl.innerHTML = simObj.checks.map(ch => {
+                        if (ch.ok === 'exact') {
+                            return `<span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold"><i class="fa-solid fa-check mr-1"></i>${escTxtDrive(ch.label)}</span>`;
+                        } else if (ch.ok === 'partial') {
+                            return `<span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold"><i class="fa-solid fa-circle-half-stroke mr-1"></i>${escTxtDrive(ch.label)}</span>`;
+                        } else if (ch.ok === 'miss') {
+                            return `<span class="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30 font-semibold"><i class="fa-solid fa-xmark mr-1"></i>${escTxtDrive(ch.label)}</span>`;
+                        }
+                        return `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 font-medium"><i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>${escTxtDrive(ch.label)}</span>`;
+                    }).join('');
+                } else {
+                    desgloseEl.innerHTML = '';
+                    desgloseEl.classList.add('hidden');
                 }
             }
 
