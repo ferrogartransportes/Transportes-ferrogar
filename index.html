@@ -9090,17 +9090,19 @@
 
         /**
          * Devuelve el monto que debe sumarse en Total Facturado para un registro individual.
-         * Si es un viaje adicional (Viaje 2, 3, 4...) de la misma factura/CCF, devuelve 0 para no duplicar facturación.
+         * - Si es un viaje adicional (Viaje 2, 3, 4...) de la misma factura/CCF, devuelve 0 para no duplicar facturación.
+         * - Si la factura tiene un JSON (DTE) vinculado, SIEMPRE toma el monto oficial del JSON (con IVA 13%) por encima del monto manual.
          */
         function obtenerMontoContabilizableRegistro(r) {
             if (!r) return 0;
             if (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura)) return 0;
+            if (r.datosDte && Number(r.datosDte.monto) > 0) return Number(r.datosDte.monto);
             return parseFloat(r.monto) || 0;
         }
 
         /**
-         * Suma el Total Facturado de una lista de viajes sin duplicar nunca facturas/CCF divididas en varios viajes.
-         * Solo suma el primer viaje de cada factura/CCF única; los viajes adicionales (2/4, 3/4, 4/4) no suman al facturado.
+         * Suma el Total Facturado de una lista de viajes sin duplicar nunca facturas/CCF divididas en varios viajes,
+         * priorizando SIEMPRE el monto oficial del JSON (DTE) cuando está vinculado.
          */
         function sumarMontoFacturadoUnico(lista) {
             if (!Array.isArray(lista) || lista.length === 0) return 0;
@@ -9117,7 +9119,10 @@
                     if (clavesContadas.has(clave)) continue;
                     clavesContadas.add(clave);
                 }
-                total += (parseFloat(r.monto) || 0);
+                const montoReal = (r.datosDte && Number(r.datosDte.monto) > 0)
+                    ? Number(r.datosDte.monto)
+                    : (parseFloat(r.monto) || 0);
+                total += montoReal;
             }
             return +total.toFixed(2);
         }
@@ -9196,6 +9201,7 @@
                 let montoMaster = 0;
                 let maxTotalExplicito = items.length;
 
+                let montoJsonOficial = 0;
                 items.forEach(it => {
                     const iv = extraerInfoViajeDeTexto(it.factura);
                     if (iv.viajeTotal > maxTotalExplicito) maxTotalExplicito = iv.viajeTotal;
@@ -9205,9 +9211,14 @@
                     if (!sharedDrivePdfUrl && it.drivePdfUrl) sharedDrivePdfUrl = it.drivePdfUrl;
                     if (!sharedDrivePdfName && it.drivePdfName) sharedDrivePdfName = it.drivePdfName;
                     if (!sharedTipoDoc && it.datosDte && it.datosDte.tipo) sharedTipoDoc = it.datosDte.tipo;
-                    const mCand = (it.datosDte && Number(it.datosDte.monto) > 0) ? Number(it.datosDte.monto) : (parseFloat(it.monto) || 0);
+                    if (it.datosDte && Number(it.datosDte.monto) > 0 && montoJsonOficial <= 0) {
+                        montoJsonOficial = Number(it.datosDte.monto);
+                    }
+                    const mCand = parseFloat(it.monto) || 0;
                     if (mCand > montoMaster) montoMaster = mCand;
                 });
+                // Si existe JSON vinculado, el monto oficial del JSON SIEMPRE prevalece sobre cualquier monto manual incorrecto
+                if (montoJsonOficial > 0) montoMaster = montoJsonOficial;
 
                 items.forEach((it, idx) => {
                     const iv = extraerInfoViajeDeTexto(it.factura);
@@ -9227,10 +9238,12 @@
                     if (sharedTipoDoc && !it.tipoDocumento) it.tipoDocumento = sharedTipoDoc;
 
                     if (idx === 0) {
-                        // Viaje principal: contabiliza el monto único de la factura
+                        // Viaje principal: contabiliza el monto único de la factura (priorizando siempre el JSON oficial)
                         it._esViajeAdicionalMismaFactura = (items.length === 1 && iv.esSecundario);
-                        if (!it._esViajeAdicionalMismaFactura && montoMaster > 0 && (parseFloat(it.monto) || 0) <= 0) {
-                            it.monto = montoMaster;
+                        if (!it._esViajeAdicionalMismaFactura && montoMaster > 0) {
+                            if (montoJsonOficial > 0 || (parseFloat(it.monto) || 0) <= 0) {
+                                it.monto = montoMaster;
+                            }
                         }
                     } else {
                         // Viajes 2, 3, 4...: NO suman al Total Facturado (solo cuentan sus fletes y entregas)
@@ -9243,6 +9256,7 @@
         /**
          * Recalcula automáticamente IVA 13% (tributos / totalIva), montoTotalOperacion y monto final
          * para TODOS los documentos que ya tienen un JSON vinculado (tanto registros principales como subFacturas).
+         * El monto oficial del JSON (DTE) SIEMPRE reemplaza cualquier monto manual incorrecto en el viaje principal.
          */
         function recalcularMontosTodosJsonVinculados() {
             if (typeof registrosGlobales === 'undefined' || !Array.isArray(registrosGlobales)) return;
@@ -9266,13 +9280,10 @@
                             r.jsonData = jObj;
                             r.datosDte = datos;
                             if (datos.subTotal > 0) r.subTotal = datos.subTotal;
-                            if (datos.monto > 0 && !esSec) {
-                                // Si es CCF y el monto almacenado anteriormente no incluía el IVA 13% (o estaba en 0), actualizarlo al total oficial con IVA (solo en viaje principal)
-                                const montoPrev = Number(r.monto) || 0;
-                                if (
-                                    montoPrev <= 0 ||
-                                    (datos.ivaSeSumaAlSubtotal && datos.totalIva > 0 && Math.abs(montoPrev - datos.subTotal) <= 0.05 && datos.monto > datos.subTotal + 0.005)
-                                ) {
+                            if (datos.monto > 0) {
+                                r._montoFacturaOriginal = datos.monto;
+                                // En el viaje principal, el monto oficial del JSON (con IVA 13%) SIEMPRE prevalece sobre el dato manual
+                                if (!esSec) {
                                     r.monto = datos.monto;
                                 }
                             }
@@ -9296,10 +9307,7 @@
                                     sf.jsonData = sfJson;
                                     sf.datosDte = dSf;
                                     if (dSf.monto > 0) {
-                                        const mSfPrev = Number(sf.monto) || 0;
-                                        if (mSfPrev <= 0 || (dSf.ivaSeSumaAlSubtotal && dSf.totalIva > 0 && Math.abs(mSfPrev - dSf.subTotal) <= 0.05 && dSf.monto > dSf.subTotal + 0.005)) {
-                                            sf.monto = dSf.monto;
-                                        }
+                                        sf.monto = dSf.monto;
                                     }
                                 }
                             }
@@ -11655,6 +11663,10 @@
                     // Actualizar registro(s) en memoria: TODOS los viajes hermanos reciben el JSON/PDF, pero SOLO el Viaje 1 actualiza su monto facturado
                     if (r) {
                         if (esSubFactura && subObj) {
+                            if (dDte && dDte.monto > 0) {
+                                guardarRespaldoMontoManualFactura(subObj.numero || subObj.factura || decId, subObj.monto, subObj.tipo || tipoDteHint);
+                                subObj._montoManualOriginal = (subObj._montoManualOriginal !== undefined) ? subObj._montoManualOriginal : (Number(subObj.monto) || 0);
+                            }
                             subObj.jsonData = parsedJ;
                             subObj.jsonRaw = rawJ;
                             subObj.datosDte = dDte;
@@ -11666,6 +11678,11 @@
                         } else {
                             viajesHermanos.forEach(h => {
                                 const esAdicH = !!(h._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(h.factura));
+                                // Respaldar el monto manual original ANTES de sobreescribirlo con el monto oficial del JSON (solo si aún no tenía respaldo)
+                                if (!esAdicH && dDte && dDte.monto > 0) {
+                                    guardarRespaldoMontoManualFactura(h.factura || decId, h.monto, h.tipoDocumento || tipoDteHint);
+                                    if (h._montoManualOriginal === undefined) h._montoManualOriginal = Number(h.monto) || 0;
+                                }
                                 h.jsonData = parsedJ;
                                 h.jsonRaw = rawJ;
                                 h.datosDte = dDte;
@@ -11761,9 +11778,19 @@
             const targetFacturaId = (r && r.factura) ? r.factura : (facturaActualPrevisualizada?.factura || decId);
             if (typeof renderAdminKPIs === 'function') renderAdminKPIs();
             if (typeof renderPendientesTable === 'function') renderPendientesTable();
-            // Recalcular estudio de mercado y estadísticas de productos JSON en tiempo real
+            if (typeof renderHistoricoTable === 'function') renderHistoricoTable();
+            if (typeof renderModuloFacturasCcf === 'function') renderModuloFacturasCcf();
+            if (typeof renderClientesTable === 'function') renderClientesTable();
+            // Recalcular estudio de mercado, Top 30 Clientes y estadísticas de productos JSON en tiempo real
             if (typeof renderEstudioMercadoClientes === 'function') {
                 renderEstudioMercadoClientes();
+            }
+            if (typeof refrescarExpedienteClienteAbiertoEnVivo === 'function') {
+                refrescarExpedienteClienteAbiertoEnVivo();
+            }
+            // Si la Ficha del Cliente está abierta en segundo plano, actualizar su Total Facturado y tabla al instante
+            if (typeof refrescarExpedienteClienteAbiertoEnVivo === 'function') {
+                refrescarExpedienteClienteAbiertoEnVivo();
             }
             // Refrescar inmediatamente la hoja formal para reflejar todos los datos y la tabla de mercadería
             if (typeof abrirModalPrevisualizarFactura === 'function') {
@@ -13116,8 +13143,13 @@
 
             if (chkActualizar && chkActualizar.checked && regActualizado) {
                 if (datos.monto > 0) {
-                    if (subActualizada) subActualizada.monto = datos.monto;
-                    else if (!regActualizado._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(regActualizado.factura)) {
+                    if (subActualizada) {
+                        guardarRespaldoMontoManualFactura(subActualizada.numero || subActualizada.factura || docTargetId, subActualizada.monto, subActualizada.tipo || datos.tipo || '');
+                        if (subActualizada._montoManualOriginal === undefined) subActualizada._montoManualOriginal = Number(subActualizada.monto) || 0;
+                        subActualizada.monto = datos.monto;
+                    } else if (!regActualizado._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(regActualizado.factura)) {
+                        guardarRespaldoMontoManualFactura(regActualizado.factura || docTargetId, regActualizado.monto, regActualizado.tipoDocumento || datos.tipo || '');
+                        if (regActualizado._montoManualOriginal === undefined) regActualizado._montoManualOriginal = Number(regActualizado.monto) || 0;
                         regActualizado.monto = datos.monto;
                     }
                 }
@@ -13175,6 +13207,9 @@
             if (typeof renderEstudioMercadoClientes === 'function') {
                 renderEstudioMercadoClientes();
             }
+            if (typeof refrescarExpedienteClienteAbiertoEnVivo === 'function') {
+                refrescarExpedienteClienteAbiertoEnVivo();
+            }
 
             // Si la hoja de Factura / CCF está abierta, refrescarla en tiempo real
             const modalPrev = document.getElementById('modalPrevisualizarFactura');
@@ -13186,11 +13221,78 @@
             showToast('JSON Vinculado', `Se vinculó con éxito el JSON al documento ${docTargetId}.`, 'success');
         }
 
+        const STORAGE_KEY_MONTO_MANUAL_BACKUP = 'logiflow_monto_manual_backup_v1';
+
+        function obtenerClaveRespaldoMontoManual(facturaId, tipoHint = '') {
+            const base = (typeof limpiarSufijoViajeFactura === 'function') ? limpiarSufijoViajeFactura(facturaId || '') : String(facturaId || '').trim();
+            if (!base) return '';
+            const numDig = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(base) : base.replace(/\D/g, '');
+            const tipoRaw = String(tipoHint || (typeof detectarTipoPrefijoFactura === 'function' ? detectarTipoPrefijoFactura(base) : '') || '').toUpperCase();
+            const tipoNorm = (tipoRaw === 'CCF' || tipoRaw.includes('CREDITO')) ? 'CCF' : (tipoRaw ? 'FACTURA' : 'DOC');
+            return numDig ? `${tipoNorm}:${numDig}` : `${tipoNorm}:${base.toLowerCase()}`;
+        }
+
+        function guardarRespaldoMontoManualFactura(facturaId, montoManual, tipoHint = '') {
+            try {
+                const clave = obtenerClaveRespaldoMontoManual(facturaId, tipoHint);
+                if (!clave) return;
+                const valNum = Number(montoManual);
+                if (isNaN(valNum)) return;
+                const mapa = JSON.parse(localStorage.getItem(STORAGE_KEY_MONTO_MANUAL_BACKUP) || '{}');
+                // Conservar siempre el primer respaldo (el monto manual original antes del primer JSON vinculado)
+                if (mapa[clave] === undefined) {
+                    mapa[clave] = { monto: valNum, ts: Date.now() };
+                    localStorage.setItem(STORAGE_KEY_MONTO_MANUAL_BACKUP, JSON.stringify(mapa));
+                }
+            } catch(e) {}
+        }
+
+        function obtenerRespaldoMontoManualFactura(facturaId, tipoHint = '') {
+            try {
+                const mapa = JSON.parse(localStorage.getItem(STORAGE_KEY_MONTO_MANUAL_BACKUP) || '{}');
+                const claves = [
+                    obtenerClaveRespaldoMontoManual(facturaId, tipoHint),
+                    obtenerClaveRespaldoMontoManual(facturaId, 'CCF'),
+                    obtenerClaveRespaldoMontoManual(facturaId, 'FACTURA'),
+                    obtenerClaveRespaldoMontoManual(facturaId, '')
+                ].filter(Boolean);
+                for (let i = 0; i < claves.length; i++) {
+                    if (mapa[claves[i]] && mapa[claves[i]].monto !== undefined && mapa[claves[i]].monto !== null) {
+                        return Number(mapa[claves[i]].monto);
+                    }
+                }
+            } catch(e) {}
+            return null;
+        }
+
+        function limpiarRespaldoMontoManualFactura(facturaId, tipoHint = '') {
+            try {
+                const mapa = JSON.parse(localStorage.getItem(STORAGE_KEY_MONTO_MANUAL_BACKUP) || '{}');
+                const claves = [
+                    obtenerClaveRespaldoMontoManual(facturaId, tipoHint),
+                    obtenerClaveRespaldoMontoManual(facturaId, 'CCF'),
+                    obtenerClaveRespaldoMontoManual(facturaId, 'FACTURA'),
+                    obtenerClaveRespaldoMontoManual(facturaId, '')
+                ].filter(Boolean);
+                let cambio = false;
+                claves.forEach(k => {
+                    if (mapa[k] !== undefined) {
+                        delete mapa[k];
+                        cambio = true;
+                    }
+                });
+                if (cambio) localStorage.setItem(STORAGE_KEY_MONTO_MANUAL_BACKUP, JSON.stringify(mapa));
+            } catch(e) {}
+        }
+
         function quitarJsonDeFacturaExistente(facturaId) {
             const decId = decodeURIComponent(facturaId || '').trim();
             if (!decId) return;
 
             const extraAliases = new Set([decId]);
+            const factBaseLimp = (typeof limpiarSufijoViajeFactura === 'function') ? limpiarSufijoViajeFactura(decId) : decId;
+            if (factBaseLimp && factBaseLimp !== decId) extraAliases.add(factBaseLimp);
+
             const recolectarAliases = (obj) => {
                 if (!obj) return;
                 if (obj.factura) extraAliases.add(String(obj.factura).trim());
@@ -13211,16 +13313,39 @@
             };
 
             let regActualizado = null;
+            let subActualizadaDel = null;
+            let viajesHermanosDel = [];
+            let montoRestaurado = null;
+
             if (typeof registrosGlobales !== 'undefined') {
                 for (const reg of registrosGlobales) {
                     if (sonFacturasCoincidentesGlobal(reg.factura, decId)) {
-                        recolectarAliases(reg);
-                        reg.jsonData = null;
-                        reg.jsonRaw = '';
-                        reg.datosDte = null;
-                        reg.drivePdfUrl = '';
-                        reg.drivePdfName = '';
                         regActualizado = reg;
+                        viajesHermanosDel = (typeof obtenerViajesHermanosMismaFactura === 'function')
+                            ? obtenerViajesHermanosMismaFactura(reg)
+                            : [reg];
+                        const viajePrincDel = viajesHermanosDel.find(h => !h._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(h.factura)) || reg;
+                        const backupM = obtenerRespaldoMontoManualFactura(viajePrincDel.factura || decId, viajePrincDel.tipoDocumento || '');
+                        if (backupM !== null && !isNaN(backupM)) {
+                            montoRestaurado = backupM;
+                        } else if (viajePrincDel._montoManualOriginal !== undefined && !isNaN(Number(viajePrincDel._montoManualOriginal))) {
+                            montoRestaurado = Number(viajePrincDel._montoManualOriginal);
+                        }
+
+                        viajesHermanosDel.forEach(h => {
+                            recolectarAliases(h);
+                            h.jsonData = null;
+                            h.jsonRaw = '';
+                            h.datosDte = null;
+                            h.drivePdfUrl = '';
+                            h.drivePdfName = '';
+                            const esAdicH = !!(h._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(h.factura));
+                            if (montoRestaurado !== null) {
+                                h._montoFacturaOriginal = montoRestaurado;
+                                if (!esAdicH) h.monto = montoRestaurado;
+                            }
+                            delete h._montoManualOriginal;
+                        });
                         break;
                     }
                     if (reg.subFacturas && Array.isArray(reg.subFacturas)) {
@@ -13229,11 +13354,21 @@
                         );
                         if (sub) {
                             recolectarAliases(sub);
+                            const backupSub = obtenerRespaldoMontoManualFactura(sub.numero || sub.factura || decId, sub.tipo || '');
+                            if (backupSub !== null && !isNaN(backupSub)) {
+                                montoRestaurado = backupSub;
+                                sub.monto = backupSub;
+                            } else if (sub._montoManualOriginal !== undefined) {
+                                montoRestaurado = Number(sub._montoManualOriginal);
+                                sub.monto = montoRestaurado;
+                            }
                             sub.jsonData = null;
                             sub.jsonRaw = '';
                             sub.datosDte = null;
                             sub.drivePdfUrl = '';
                             sub.drivePdfName = '';
+                            delete sub._montoManualOriginal;
+                            subActualizadaDel = sub;
                             regActualizado = reg;
                             break;
                         }
@@ -13248,35 +13383,60 @@
                 facturaActualPrevisualizada.datosDte = null;
                 facturaActualPrevisualizada.drivePdfUrl = '';
                 facturaActualPrevisualizada.drivePdfName = '';
+                if (montoRestaurado !== null) {
+                    const esAdicPrev = !!(facturaActualPrevisualizada._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(facturaActualPrevisualizada.factura));
+                    facturaActualPrevisualizada._montoFacturaOriginal = montoRestaurado;
+                    if (!esAdicPrev) facturaActualPrevisualizada.monto = montoRestaurado;
+                }
             }
 
             const aliasesArr = Array.from(extraAliases);
             removerJsonFacturaLocal(decId, aliasesArr);
             removerDrivePdfFacturaLocal(decId, aliasesArr);
+            limpiarRespaldoMontoManualFactura((regActualizado && regActualizado.factura) ? regActualizado.factura : decId, (regActualizado && regActualizado.tipoDocumento) || '');
+
+            const viajePrincipalSyncDel = (!subActualizadaDel && viajesHermanosDel.length > 0)
+                ? (viajesHermanosDel.find(h => !h._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(h.factura)) || regActualizado)
+                : regActualizado;
+            const facturasHermanasDel = viajesHermanosDel.map(h => h && h.factura).filter(Boolean);
 
             if (typeof enviarDatosAGoogleSheets === 'function') {
-                enviarDatosAGoogleSheets({
+                const payloadRemove = {
                     action: 'removeTripJson',
-                    factura: (regActualizado && regActualizado.factura) ? regActualizado.factura : decId,
-                    viajeFactura: (regActualizado && regActualizado.factura) ? regActualizado.factura : decId,
+                    factura: (viajePrincipalSyncDel && viajePrincipalSyncDel.factura) ? viajePrincipalSyncDel.factura : decId,
+                    viajeFactura: (viajePrincipalSyncDel && viajePrincipalSyncDel.factura) ? viajePrincipalSyncDel.factura : decId,
                     subFacturas: (regActualizado && regActualizado.subFacturas) ? regActualizado.subFacturas : [],
+                    facturasHermanas: facturasHermanasDel,
                     removeDrivePdf: true
-                }).catch(() => {});
+                };
+                if (montoRestaurado !== null) {
+                    payloadRemove.restaurarMonto = montoRestaurado;
+                }
+                enviarDatosAGoogleSheets(payloadRemove).catch(() => {});
             }
 
+            if (typeof sincronizarViajesMismaFacturaEnRegistros === 'function') {
+                sincronizarViajesMismaFacturaEnRegistros();
+            }
             if (typeof actualizarTodoAdmin === 'function') {
                 actualizarTodoAdmin();
             }
             if (typeof renderEstudioMercadoClientes === 'function') {
                 renderEstudioMercadoClientes();
             }
+            if (typeof refrescarExpedienteClienteAbiertoEnVivo === 'function') {
+                refrescarExpedienteClienteAbiertoEnVivo();
+            }
 
             const modalPrev = document.getElementById('modalPrevisualizarFactura');
             if (modalPrev && !modalPrev.classList.contains('hidden')) {
-                abrirModalPrevisualizarFactura((regActualizado && regActualizado.factura) ? regActualizado.factura : decId);
+                abrirModalPrevisualizarFactura((regActualizado && regActualizado.factura) ? regActualizado.factura : decId, regActualizado || facturaActualPrevisualizada || null);
             }
 
-            showToast('Documento Desvinculado', `Se desvinculó el archivo JSON y PDF de Drive de ${decId}.`, 'info');
+            const msgMontoRest = (montoRestaurado !== null)
+                ? ` Se restauró el monto manual anterior ($${Number(montoRestaurado).toFixed(2)}).`
+                : '';
+            showToast('Documento Desvinculado', `Se desvinculó el archivo JSON y PDF de Drive de ${decId}.${msgMontoRest}`, 'info');
         }
 
         function quitarJsonFacturaExistenteActualModal() {
@@ -20663,6 +20823,33 @@
         function cerrarModalExpedienteCliente() {
             const modal = document.getElementById('modalExpedienteCliente');
             if (modal) modal.classList.add('hidden');
+        }
+
+        /**
+         * Refresca en vivo los KPIs (Total Facturado, Ticket Promedio, Pedidos) y la tabla de compras
+         * de la Ficha del Cliente si se encuentra abierta, sin robar el z-index de la hoja de factura.
+         */
+        function refrescarExpedienteClienteAbiertoEnVivo() {
+            const modal = document.getElementById('modalExpedienteCliente');
+            if (!modal || modal.classList.contains('hidden') || !clienteExpedienteActual || !clienteExpedienteActual.nombre) return;
+            const normNom = normalizarTextoClave(clienteExpedienteActual.nombre);
+            const viajes = (typeof registrosGlobales !== 'undefined')
+                ? registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado')
+                : [];
+            const totalCompras = sumarMontoFacturadoUnico(viajes);
+            const totalPedidos = viajes.length;
+            const ticketPromedio = totalPedidos > 0 ? (totalCompras / totalPedidos) : 0;
+
+            const kpiTot = document.getElementById('expedienteKpiTotalCompras');
+            const kpiPed = document.getElementById('expedienteKpiTotalPedidos');
+            const kpiProm = document.getElementById('expedienteKpiTicketPromedio');
+            if (kpiTot) kpiTot.innerText = `$${totalCompras.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (kpiPed) kpiPed.innerText = `${totalPedidos} pedido${totalPedidos === 1 ? '' : 's'}`;
+            if (kpiProm) kpiProm.innerText = `$${ticketPromedio.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            if (typeof filtrarHistorialExpedienteCliente === 'function') {
+                filtrarHistorialExpedienteCliente();
+            }
         }
 
         function actualizarVistaExpedienteTelefono(cliente) {
