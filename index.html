@@ -630,6 +630,13 @@
                                                 <span class="hidden sm:inline">Drive</span>
                                             </button>
                                         </div>
+                                        <div class="mt-1.5 flex items-center gap-1.5">
+                                            <label for="manInputFechaEmisionDrive" class="text-[10px] text-slate-400 font-semibold whitespace-nowrap"><i class="fa-regular fa-calendar text-amber-400 mr-0.5"></i>Fecha Emisión:</label>
+                                            <input type="date" id="manInputFechaEmisionDrive" title="Opcional: Fecha de emisión del documento para buscar más rápido y exacto en Drive" class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-lg px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-amber-400">
+                                            <button type="button" onclick="const el=document.getElementById('manInputFechaEmisionDrive'); if(el) el.value='';" title="Limpiar fecha (buscar en cualquier fecha)" class="px-1.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 rounded-lg text-[10px] cursor-pointer">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
                                         <div id="driveDocStatusSimple" class="mt-1.5 text-[11px] hidden"></div>
                                     </div>
                                     <div>
@@ -5183,7 +5190,7 @@
         </div>
 
         <!-- Toast -->
-        <div id="toast" class="fixed bottom-6 right-6 max-w-sm bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex flex-col z-50 transform translate-y-24 opacity-0 transition-all duration-300">
+        <div id="toast" class="fixed bottom-6 right-6 max-w-sm bg-slate-900 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl flex flex-col z-[9999] transform translate-y-24 opacity-0 transition-all duration-300">
             <div class="flex items-center space-x-3">
                 <div id="toastIcon" class="w-7 h-7 shrink-0 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-check"></i></div>
                 <div class="flex-1 min-w-0">
@@ -6110,6 +6117,9 @@
             if (type === 'error') {
                 toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else if (type === 'warning') {
+                toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm';
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
             } else if (type === 'info') {
                 toastIcon.className = 'w-7 h-7 shrink-0 rounded-full bg-blue-500/20 text-accentBlue flex items-center justify-center text-sm';
                 toastIcon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
@@ -10207,15 +10217,26 @@
         const _promesasDriveEnVuelo = new Map();
         const DRIVE_CACHE_LOCAL_TTL_MS = 4 * 60 * 1000; // 4 minutos
 
+        function normalizarFechaIsoCliente(rawFecha) {
+            const s = String(rawFecha || '').trim();
+            if (!s) return '';
+            const mIso = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if (mIso) return `${mIso[1]}-${mIso[2].padStart(2, '0')}-${mIso[3].padStart(2, '0')}`;
+            const mLat = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+            if (mLat) return `${mLat[3]}-${mLat[2].padStart(2, '0')}-${mLat[1].padStart(2, '0')}`;
+            return '';
+        }
+
         /**
-         * Consulta ultra-rápida a Google Drive con caché en memoria local (0 ms en consultas repetidas)
-         * y deduplicación de peticiones simultáneas (evita doble consulta por doble clic).
+         * Consulta rápida a Google Drive por Número + Fecha de Emisión con caché local (0 ms en repetidas)
+         * y deduplicación de peticiones simultáneas. Nunca cachea resultados negativos (no encontrados).
          */
-        async function consultarDriveFacturaRapido(numero, tipoEsperado = '', forzarSinCache = false) {
+        async function consultarDriveFacturaRapido(numero, tipoEsperado = '', fechaEmision = '', forzarSinCache = false) {
             const numLimpioBusq = (typeof limpiarSufijoViajeFactura === 'function' ? limpiarSufijoViajeFactura(numero) : String(numero || '').trim()) || String(numero || '').trim();
             const numDig = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(numLimpioBusq) : numLimpioBusq.replace(/\D/g, '');
             const tipoNorm = String(tipoEsperado || '').trim().toUpperCase();
-            const cacheKey = `${tipoNorm || 'ALL'}_${numDig || numLimpioBusq.toLowerCase()}`;
+            const fechaNorm = normalizarFechaIsoCliente(fechaEmision);
+            const cacheKey = `${tipoNorm || 'ALL'}_${numDig || numLimpioBusq.toLowerCase()}_${fechaNorm || 'ANY'}`;
 
             if (!forzarSinCache && _cacheDriveBusquedaLocal.has(cacheKey)) {
                 const entry = _cacheDriveBusquedaLocal.get(cacheKey);
@@ -10229,7 +10250,10 @@
                 return await _promesasDriveEnVuelo.get(cacheKey);
             }
 
-            const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(numLimpioBusq)}&tipo=${encodeURIComponent(tipoNorm)}${forzarSinCache ? '&nocache=1' : ''}`;
+            let url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(numLimpioBusq)}&tipo=${encodeURIComponent(tipoNorm)}`;
+            if (fechaNorm) url += `&fecha=${encodeURIComponent(fechaNorm)}`;
+            if (forzarSinCache) url += '&nocache=1';
+
             const prom = (async () => {
                 const resp = await fetch(url);
                 const data = await resp.json();
@@ -10247,7 +10271,7 @@
             }
         }
 
-        async function buscarDocumentoEnGoogleDrive(optNumero) {
+        async function buscarDocumentoEnGoogleDrive(optNumero, forzarSinCache = false, sinFecha = false) {
             const inpFactura = document.getElementById('manInputFactura');
             const num = (optNumero || (inpFactura ? inpFactura.value : '') || '').trim();
             if (!num) {
@@ -10261,6 +10285,10 @@
                 return;
             }
 
+            const fechaDriveVal = sinFecha
+                ? ''
+                : ((document.getElementById('manInputFechaEmisionDrive')?.value || document.getElementById('manInputFechaProgramada')?.value || '').trim());
+
             const btnDrive = document.getElementById('btnBuscarDriveSimple');
             const statusEl = document.getElementById('driveDocStatusSimple');
             const originalBtnText = btnDrive ? btnDrive.innerHTML : '';
@@ -10271,12 +10299,12 @@
             }
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-amber-400"></i><span>Buscando archivos para <strong>#${num}</strong> en Google Drive...</span></div>`;
+                statusEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-amber-400"></i><span>Buscando <strong>#${escTxtDrive(num)}</strong>${fechaDriveVal ? ` (Fecha: <strong>${escTxtDrive(fechaDriveVal)}</strong>)` : ''} en Google Drive...</span></div>`;
             }
 
             try {
                 const tipoDocSel = document.getElementById('manInputTipoDocumento')?.value || document.getElementById('manInputTipoDoc')?.value || detectarTipoPrefijoFactura(num) || '';
-                const data = await consultarDriveFacturaRapido(num, tipoDocSel);
+                const data = await consultarDriveFacturaRapido(num, tipoDocSel, fechaDriveVal, forzarSinCache);
 
                 if (data && data.encontrado) {
                     const listaCoinc = Array.isArray(data.coincidencias) ? data.coincidencias : [];
@@ -10291,7 +10319,7 @@
                                     <div class="flex items-center gap-2">
                                         <span class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-layer-group"></i></span>
                                         <div>
-                                            <span class="font-bold text-amber-300">Se encontraron ${listaCoinc.length} documentos con #${num}</span>
+                                            <span class="font-bold text-amber-300">Se encontraron ${listaCoinc.length} documentos con #${escTxtDrive(num)}</span>
                                             <span class="block text-[11px] text-slate-300">Seleccione cuál Factura o Crédito Fiscal corresponde en la ventana emergente.</span>
                                         </div>
                                     </div>
@@ -10306,20 +10334,32 @@
                         aplicarResultadoDriveEnAsignacion(num, data);
                     }
                 } else {
+                    const numEsc = String(num).replace(/'/g, "\\'");
                     if (statusEl) {
+                        statusEl.classList.remove('hidden');
                         statusEl.innerHTML = `
-                            <div class="p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 text-xs text-amber-200 flex items-center justify-between gap-2">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-circle-exclamation"></i></span>
+                            <div class="p-3 rounded-xl bg-amber-950/75 border border-amber-500/50 text-xs text-amber-100 space-y-2 shadow-md">
+                                <div class="flex items-start gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xs shrink-0 mt-0.5"><i class="fa-solid fa-circle-exclamation"></i></span>
                                     <div>
-                                        <span class="font-bold text-amber-300">No encontrado en Google Drive</span>
-                                        <span class="block text-[11px] text-slate-300">${data?.mensaje || ('No se localizó archivo .json o .pdf con el número #' + num + ' en Drive ni sus subcarpetas.')}</span>
+                                        <span class="font-bold text-amber-300 block">No se encontró en Google Drive</span>
+                                        <span class="block text-[11px] text-slate-300">${escTxtDrive(data?.mensaje || ('No se localizó ningún archivo .json o .pdf para #' + num + (fechaDriveVal ? (' con fecha ' + fechaDriveVal) : '') + ' en Google Drive.'))}</span>
                                     </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-1.5 pl-8">
+                                    ${fechaDriveVal ? `
+                                    <button type="button" onclick="buscarDocumentoEnGoogleDrive('${numEsc}', true, true)" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/40 rounded-lg text-[11px] font-bold cursor-pointer transition-colors">
+                                        <i class="fa-solid fa-magnifying-glass mr-1"></i>Buscar sin filtro de fecha
+                                    </button>
+                                    ` : ''}
+                                    <button type="button" onclick="buscarDocumentoEnGoogleDrive('${numEsc}', true, false)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-[11px] font-bold cursor-pointer transition-colors">
+                                        <i class="fa-solid fa-rotate mr-1"></i>Reintentar
+                                    </button>
                                 </div>
                             </div>
                         `;
                     }
-                    showToast('No Encontrado', `No se encontró la factura #${num} en Google Drive.`, 'warning');
+                    showToast('No Encontrado en Drive', `No se encontró ningún archivo PDF ni JSON para #${num}${fechaDriveVal ? ` (${fechaDriveVal})` : ''} en Google Drive.`, 'warning');
                 }
             } catch(err) {
                 console.error('Error al buscar en Google Drive:', err);
@@ -10689,7 +10729,8 @@
 
             try {
                 const tipoFila = fila.tipo || detectarTipoPrefijoFactura(num) || '';
-                const data = await consultarDriveFacturaRapido(num, tipoFila);
+                const fechaFila = (document.getElementById('manInputFechaEmisionDrive')?.value || document.getElementById('manInputFechaProgramada')?.value || '').trim();
+                const data = await consultarDriveFacturaRapido(num, tipoFila, fechaFila);
 
                 if (data && data.encontrado) {
                     const listaCoinc = Array.isArray(data.coincidencias) ? data.coincidencias : [];
@@ -10787,10 +10828,14 @@
                 return;
             }
             const numDoc = String(facturaActualPrevisualizada.factura).trim();
-            await buscarDocumentoDriveParaFacturaExistente(numDoc, facturaActualPrevisualizada.tipoDocumento || '');
+            const fechaEmSheet = (facturaActualPrevisualizada.datosDte && facturaActualPrevisualizada.datosDte.fecEmi)
+                || facturaActualPrevisualizada.fechaProgramada
+                || facturaActualPrevisualizada.fecha
+                || '';
+            await buscarDocumentoDriveParaFacturaExistente(numDoc, facturaActualPrevisualizada.tipoDocumento || '', fechaEmSheet, false);
         }
 
-        async function buscarDocumentoDriveParaFacturaExistente(facturaId, tipoDocumentoHint = '') {
+        async function buscarDocumentoDriveParaFacturaExistente(facturaId, tipoDocumentoHint = '', fechaEmisionHint = '', forzarSinCache = false) {
             const decId = decodeURIComponent(facturaId || '').trim();
             if (!decId) return;
 
@@ -10800,13 +10845,21 @@
             }
 
             let tipoEsperado = String(tipoDocumentoHint || '').trim();
-            if (!tipoEsperado && facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, decId)) {
-                tipoEsperado = facturaActualPrevisualizada.tipoDocumento || '';
+            let fechaEsperada = String(fechaEmisionHint || '').trim();
+            if (facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, decId)) {
+                if (!tipoEsperado) tipoEsperado = facturaActualPrevisualizada.tipoDocumento || '';
+                if (!fechaEsperada && fechaEmisionHint !== null) {
+                    fechaEsperada = (facturaActualPrevisualizada.datosDte && facturaActualPrevisualizada.datosDte.fecEmi)
+                        || facturaActualPrevisualizada.fechaProgramada
+                        || facturaActualPrevisualizada.fecha
+                        || '';
+                }
             }
             const numParaBuscarDrive = (typeof limpiarSufijoViajeFactura === 'function' ? limpiarSufijoViajeFactura(decId) : decId) || decId;
             if (!tipoEsperado) {
                 tipoEsperado = detectarTipoPrefijoFactura(numParaBuscarDrive);
             }
+            const fechaNormSheet = (fechaEmisionHint === null) ? '' : normalizarFechaIsoCliente(fechaEsperada);
 
             const btnTop = document.getElementById('btnBuscarDriveEnSheet');
             const labelTop = document.getElementById('labelBtnBuscarDriveSheet');
@@ -10814,10 +10867,10 @@
             if (labelTop) labelTop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
             if (btnTop) btnTop.disabled = true;
 
-            showToast('Buscando en Drive', `Buscando #${numParaBuscarDrive} en Google Drive...`, 'info');
+            showToast('Buscando en Drive', `Buscando #${numParaBuscarDrive}${fechaNormSheet ? ` (Fecha: ${fechaNormSheet})` : ''} en Google Drive...`, 'info');
 
             try {
-                const data = await consultarDriveFacturaRapido(numParaBuscarDrive, tipoEsperado);
+                const data = await consultarDriveFacturaRapido(numParaBuscarDrive, tipoEsperado, fechaNormSheet, forzarSinCache);
 
                 if (labelTop) labelTop.innerHTML = origLabel || 'Buscar en Drive';
                 if (btnTop) btnTop.disabled = false;
@@ -10825,12 +10878,49 @@
                 if (data && data.encontrado) {
                     abrirModalConfirmarVinculacionDrive(decId, data);
                 } else {
-                    showToast('No Encontrado', `No se encontró archivo PDF ni JSON para #${decId} en Google Drive ni en las carpetas sincronizadas.`, 'warning');
+                    const msgNoEnc = data?.mensaje || `No se encontró ningún archivo PDF ni JSON para #${numParaBuscarDrive}${fechaNormSheet ? ` (Fecha: ${fechaNormSheet})` : ''} en Google Drive ni en las carpetas sincronizadas.`;
+                    showToast('No Encontrado en Drive', msgNoEnc, 'warning');
+
+                    // Mostrar aviso claro e inmediato dentro de la Hoja de Factura/CCF con opción de cambiar Fecha de Emisión o buscar sin fecha
+                    const bannerJson = document.getElementById('prevDocBannerJson');
+                    if (bannerJson) {
+                        const idEsc = encodeURIComponent(decId);
+                        const tipoEsc = String(tipoEsperado || '').replace(/'/g, "\\'");
+                        bannerJson.classList.remove('hidden');
+                        bannerJson.innerHTML = `
+                            <div class="mb-4 p-3.5 bg-amber-50 border-2 border-amber-400 rounded-xl space-y-2.5 text-xs text-amber-950 shadow-sm">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex items-start gap-2.5">
+                                        <span class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center text-sm shrink-0 shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                                        <div>
+                                            <strong class="font-extrabold text-amber-950 block text-xs">No se encontró en Google Drive (#${escTxtDrive(numParaBuscarDrive)})</strong>
+                                            <span class="text-[11px] text-amber-900 block">${escTxtDrive(msgNoEnc)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-amber-200">
+                                    <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-amber-300">
+                                        <label for="prevDocFechaDriveRetry" class="text-[10px] font-bold text-amber-900">Fecha Emisión:</label>
+                                        <input type="date" id="prevDocFechaDriveRetry" value="${escTxtDrive(fechaNormSheet)}" class="text-[11px] text-slate-800 font-semibold focus:outline-none">
+                                    </div>
+                                    <button type="button" onclick="buscarDocumentoDriveParaFacturaExistente('${idEsc}', '${tipoEsc}', document.getElementById('prevDocFechaDriveRetry')?.value || '', true)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors shadow-xs">
+                                        <i class="fa-solid fa-magnifying-glass"></i> <span>Buscar con esta Fecha</span>
+                                    </button>
+                                    <button type="button" onclick="buscarDocumentoDriveParaFacturaExistente('${idEsc}', '${tipoEsc}', null, true)" class="px-2.5 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-400 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors">
+                                        <i class="fa-solid fa-globe"></i> <span>Buscar sin Fecha</span>
+                                    </button>
+                                    <button type="button" onclick="abrirModalAdjuntarJsonFacturaExistenteActual()" class="px-2.5 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors ml-auto">
+                                        <i class="fa-solid fa-file-circle-plus"></i> <span>Adjuntar JSON Manual</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
                 }
             } catch(e) {
                 if (labelTop) labelTop.innerHTML = origLabel || 'Buscar en Drive';
                 if (btnTop) btnTop.disabled = false;
-                showToast('Error', 'No se pudo consultar Google Drive: ' + e.message, 'error');
+                showToast('Error al Consultar Drive', 'No se pudo consultar Google Drive: ' + e.message, 'error');
             }
         }
 
@@ -10982,7 +11072,11 @@
                 const pdfUrl = item.pdf ? (item.pdf.previewUrl || item.pdf.viewUrl || '') : '';
 
                 const metaPartes = [fechaTxt, itemsTxt].filter(Boolean);
+                const badgeFechaExacta = item.coincideFecha
+                    ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[10px] font-bold"><i class="fa-solid fa-calendar-check mr-0.5"></i>Fecha Exacta</span>`
+                    : '';
                 const badgesArchivos = [
+                    badgeFechaExacta,
                     item.json ? `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[10px] font-semibold">JSON</span>` : '',
                     item.pdf ? `<span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30 text-[10px] font-semibold">PDF</span>` : ''
                 ].filter(Boolean).join(' ');
