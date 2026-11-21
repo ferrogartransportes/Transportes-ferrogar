@@ -624,7 +624,7 @@
                                             </button>
                                         </div>
                                         <div class="relative">
-                                            <input type="text" id="manInputFactura" onkeydown="if(event.key==='Enter'){event.preventDefault(); buscarDocumentoEnGoogleDrive();}" autocomplete="off" placeholder="Ej. CCF-00428 o 428..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue pr-24">
+                                            <input type="text" id="manInputFactura" oninput="verificarFacturaExistenteMultiViajeAsignacion()" onblur="verificarFacturaExistenteMultiViajeAsignacion()" onkeydown="if(event.key==='Enter'){event.preventDefault(); buscarDocumentoEnGoogleDrive();}" autocomplete="off" placeholder="Ej. CCF-00428 o 428..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue pr-24">
                                             <button type="button" onclick="buscarDocumentoEnGoogleDrive()" title="Buscar archivo en carpeta de Google Drive" class="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer">
                                                 <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
                                                 <span class="hidden sm:inline">Drive</span>
@@ -635,6 +635,27 @@
                                     <div>
                                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Monto Mercancía Total ($)</label>
                                         <input type="text" id="manInputMonto" autocomplete="off" placeholder="Ej. $1,150.00" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-accentBlue">
+                                    </div>
+                                    <!-- Alerta Inteligente: Misma Factura / CCF detectada en viajes previos -->
+                                    <div id="alertaFacturaExistenteMultiViaje" class="hidden md:col-span-3 p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-400/50 text-xs text-indigo-100 space-y-2 shadow-md">
+                                        <div class="flex flex-wrap items-start justify-between gap-2">
+                                            <div class="flex items-start gap-2.5">
+                                                <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs shrink-0 mt-0.5"><i class="fa-solid fa-truck-fast"></i></span>
+                                                <div>
+                                                    <div id="alertaMultiViajeTitulo" class="font-bold text-indigo-200">Esta Factura / CCF ya tiene viaje(s) registrado(s)</div>
+                                                    <div id="alertaMultiViajeDetalle" class="text-[11px] text-slate-300">---</div>
+                                                </div>
+                                            </div>
+                                            <button type="button" onclick="copiarDatosDesdeViajeExistenteAsignacion()" class="px-2.5 py-1 bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-200 border border-indigo-400/40 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors shrink-0">
+                                                <i class="fa-solid fa-copy"></i> <span>Copiar Cliente, Destino y JSON</span>
+                                            </button>
+                                        </div>
+                                        <label class="flex items-start gap-2 pt-1.5 border-t border-indigo-500/30 cursor-pointer select-none">
+                                            <input type="checkbox" id="manCheckViajeAdicionalMismaFactura" onchange="actualizarEstadoCheckboxMultiViaje()" class="mt-0.5 w-4 h-4 rounded accent-indigo-500 cursor-pointer shrink-0">
+                                            <span class="text-[11px] text-indigo-100 leading-snug">
+                                                <strong>Es otro viaje de esta MISMA Factura / CCF</strong> (<span id="alertaMultiViajeNumeroNuevo" class="font-mono text-amber-300 font-bold">Viaje 2</span>) — <strong>NO volver a sumar al Total Facturado</strong> y compartir automáticamente el mismo archivo JSON y PDF de Drive entre todos sus viajes.
+                                            </span>
+                                        </label>
                                     </div>
                                 </div>
 
@@ -684,12 +705,17 @@
                                     </label>
                                     <select id="manInputCantidadViajes" onchange="cambiarCantidadViajesFactura()" class="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-bold">
                                         <option value="1">1 Viaje (Carga normal en 1 camión)</option>
-                                        <option value="2">2 Viajes (Factura grande - 2 camiones/fletes)</option>
-                                        <option value="3">3 Viajes (Factura grande - 3 camiones/fletes)</option>
-                                        <option value="4">4 Viajes (Factura grande - 4 camiones/fletes)</option>
-                                        <option value="5">5 Viajes (Factura grande - 5 camiones/fletes)</option>
+                                        <option value="2">2 Viajes (Misma factura - 2 camiones/fletes)</option>
+                                        <option value="3">3 Viajes (Misma factura - 3 camiones/fletes)</option>
+                                        <option value="4">4 Viajes (Misma factura - 4 camiones/fletes)</option>
+                                        <option value="5">5 Viajes (Misma factura - 5 camiones/fletes)</option>
+                                        <option value="6">6 Viajes (Misma factura - 6 camiones/fletes)</option>
+                                        <option value="7">7 Viajes (Misma factura - 7 camiones/fletes)</option>
+                                        <option value="8">8 Viajes (Misma factura - 8 camiones/fletes)</option>
+                                        <option value="9">9 Viajes (Misma factura - 9 camiones/fletes)</option>
+                                        <option value="10">10 Viajes (Misma factura - 10 camiones/fletes)</option>
                                     </select>
-                                    <p class="text-[10px] text-slate-400 mt-1">Si la mercadería requiere más de un camión, configure fletes y conductores por viaje.</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">Solo el Viaje 1 suma al <strong>Total Facturado</strong>; los demás viajes comparten automáticamente la misma factura/JSON/PDF y suman únicamente su flete.</p>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Horario Preferido</label>
@@ -3223,6 +3249,9 @@
                             </div>
                         </div>
 
+                        <!-- Aviso de Envío Multi-Viaje (Misma Factura / CCF en varios viajes) -->
+                        <div id="prevDocBannerMultiViaje" class="hidden"></div>
+
                         <!-- Estado de Pago y Entrega -->
                         <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                             <div class="flex items-center gap-2">
@@ -3378,16 +3407,31 @@
                                     <tbody id="prevDocTablaItemsBody" class="divide-y divide-slate-200"></tbody>
                                     <tfoot class="bg-slate-50 border-t-2 border-slate-300 font-bold text-xs text-slate-800">
                                         <tr>
-                                            <td colspan="2" class="py-2 px-3 text-right text-slate-600">Subtotal Mercadería:</td>
-                                            <td class="py-2 px-3 text-right" id="prevDocSubtotal">$0.00</td>
+                                            <td colspan="2" class="py-2 px-3 text-right text-slate-600" id="prevDocSubtotalLabel">Subtotal Mercadería:</td>
+                                            <td class="py-2 px-3 text-right font-mono" id="prevDocSubtotal">$0.00</td>
+                                        </tr>
+                                        <tr id="prevDocRowIva" class="hidden">
+                                            <td colspan="2" class="py-2 px-3 text-right text-indigo-700" id="prevDocIvaLabel">Impuesto al Valor Agregado 13%:</td>
+                                            <td class="py-2 px-3 text-right font-mono text-indigo-700" id="prevDocIva">$0.00</td>
+                                        </tr>
+                                        <tr id="prevDocRowMontoTotalOp" class="hidden bg-slate-100/80 border-t border-slate-200">
+                                            <td colspan="2" class="py-2 px-3 text-right text-slate-800" id="prevDocMontoTotalOpLabel">Monto Total Operación:</td>
+                                            <td class="py-2 px-3 text-right font-mono text-slate-900" id="prevDocMontoTotalOp">$0.00</td>
+                                        </tr>
+                                        <tr id="prevDocRowOtrosTributos" class="hidden">
+                                            <td colspan="2" class="py-2 px-3 text-right text-slate-600" id="prevDocOtrosTributosLabel">Percepción / Retención:</td>
+                                            <td class="py-2 px-3 text-right font-mono text-slate-700" id="prevDocOtrosTributos">$0.00</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2" class="py-2 px-3 text-right text-slate-600">Flete / Transporte:</td>
-                                            <td class="py-2 px-3 text-right text-blue-700" id="prevDocFlete">$0.00</td>
+                                            <td class="py-2 px-3 text-right font-mono text-blue-700" id="prevDocFlete">$0.00</td>
                                         </tr>
                                         <tr class="text-sm bg-slate-200/60 font-black text-slate-950 border-t border-slate-300">
                                             <td colspan="2" class="py-2.5 px-3 text-right uppercase tracking-wider">Total del Documento:</td>
                                             <td class="py-2.5 px-3 text-right text-emerald-800 font-mono text-base" id="prevDocTotal">$0.00</td>
+                                        </tr>
+                                        <tr id="prevDocRowTotalLetras" class="hidden bg-slate-50 border-t border-slate-200">
+                                            <td colspan="3" class="py-1.5 px-3 text-right text-[10px] font-semibold italic text-slate-500 uppercase" id="prevDocTotalLetras"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -6220,22 +6264,27 @@
                             }
                         });
 
-                        // Restaurar en memoria local los JSON sincronizados desde Sheets
+                        // Restaurar en memoria local los JSON sincronizados desde Sheets y recalcular IVA 13% + montoTotalOperacion en todos los JSON ya vinculados
                         registrosGlobales.forEach(r => {
                             if (r.jsonRaw) {
-                                guardarJsonFacturaLocal(r.factura, r.jsonRaw);
+                                guardarJsonFacturaLocal(r.factura, r.jsonRaw, r.tipoDocumento || '');
                             }
                             if (r.subFacturas && Array.isArray(r.subFacturas)) {
                                 r.subFacturas.forEach(sf => {
                                     const rawS = sf.jsonRaw || (sf.jsonData ? JSON.stringify(sf.jsonData) : '');
                                     if (rawS) {
-                                        if (sf.numero) guardarJsonFacturaLocal(sf.numero, rawS);
-                                        if (sf.factura) guardarJsonFacturaLocal(sf.factura, rawS);
-                                        if (sf.docCompleto) guardarJsonFacturaLocal(sf.docCompleto, rawS);
+                                        const tipoSf = sf.tipo || '';
+                                        if (sf.numero) guardarJsonFacturaLocal(sf.numero, rawS, tipoSf);
+                                        if (sf.factura) guardarJsonFacturaLocal(sf.factura, rawS, tipoSf);
+                                        if (sf.docCompleto) guardarJsonFacturaLocal(sf.docCompleto, rawS, tipoSf);
                                     }
                                 });
                             }
                         });
+
+                        if (typeof recalcularMontosTodosJsonVinculados === 'function') {
+                            recalcularMontosTodosJsonVinculados();
+                        }
 
                         sincronizarCatalogoClientesDesdeRegistros();
                     }
@@ -6534,10 +6583,10 @@
 
             let totalTrips = misViajesHoy.length;
             let totalTransport = misViajesHoy.reduce((sum, r) => sum + (Number(r.transporte) || 0), 0);
-            let totalAmount = misViajesHoy.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+            let totalAmount = sumarMontoFacturadoUnico(misViajesHoy);
 
             if (misViajesAtrasados.length > 0) {
-                const atrasadosMonto = misViajesAtrasados.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+                const atrasadosMonto = sumarMontoFacturadoUnico(misViajesAtrasados);
                 const atrasadosFlete = misViajesAtrasados.reduce((sum, r) => sum + (Number(r.transporte) || 0), 0);
                 document.getElementById('driverKpiTrips').innerHTML = `${misViajesHoy.length} <span class="text-[10px] text-amber-400 font-semibold block leading-tight">(+${misViajesAtrasados.length} pendiente${misViajesAtrasados.length > 1 ? 's' : ''} anterior${misViajesAtrasados.length > 1 ? 'es' : ''})</span>`;
                 document.getElementById('driverKpiTransport').innerHTML = `$${totalTransport.toFixed(2)} <span class="text-[10px] text-amber-400 font-semibold block leading-tight">(+$${atrasadosFlete.toFixed(2)} prev.)</span>`;
@@ -8255,6 +8304,9 @@
                     inp.placeholder = 'Ej. FAC-00125';
                 }
             }
+            if (typeof verificarFacturaExistenteMultiViajeAsignacion === 'function') {
+                verificarFacturaExistenteMultiViajeAsignacion();
+            }
         }
 
         function cambiarModalidadMultiFactura() {
@@ -8484,6 +8536,14 @@
             let monto = 0;
             let subTotal = 0;
             let totalIva = 0;
+            let ivaDescripcion = 'Impuesto al Valor Agregado 13%';
+            let tributosDetalle = [];
+            let totalTributos = 0;
+            let ivaPerci1 = 0;
+            let ivaRete1 = 0;
+            let reteRenta = 0;
+            let montoTotalOperacion = 0;
+            let ivaSeSumaAlSubtotal = false;
             let totalLetras = '';
             let cliente = '';
             let clienteValidoDte = '';
@@ -8675,18 +8735,95 @@
                     });
                 }
 
-                // Monto Total y Subtotal
-                const mVal = resumen.totalPagar !== undefined ? resumen.totalPagar : 
-                            (resumen.montoTotalOperacion !== undefined ? resumen.montoTotalOperacion : 
-                            (resumen.totalGravada !== undefined ? resumen.totalGravada : (dteRoot.monto || dteRoot.total || 0)));
-                monto = parseFloat(mVal) || 0;
+                // Monto Total, Subtotal, Tributos (IVA 13%) y Monto Total Operación
+                const rawItemsResumen = Array.isArray(dteRoot.cuerpoDocumento) ? dteRoot.cuerpoDocumento : (Array.isArray(dteRoot.items) ? dteRoot.items : []);
+                const sumaItemsNeto = rawItemsResumen.reduce((acc, it) => acc + (parseFloat(it.ventaGravada || it.ventaExenta || it.ventaNoSuj || it.monto || 0) || 0), 0);
 
-                subTotal = parseFloat(resumen.subTotal !== undefined ? resumen.subTotal : resumen.subTotalVentas || 0) || 0;
+                subTotal = parseFloat(
+                    (resumen.subTotal !== undefined && resumen.subTotal !== null && resumen.subTotal !== '') ? resumen.subTotal :
+                    ((resumen.subTotalVentas !== undefined && resumen.subTotalVentas !== null && resumen.subTotalVentas !== '') ? resumen.subTotalVentas :
+                    ((resumen.totalGravada !== undefined && resumen.totalGravada !== null && resumen.totalGravada !== '') ? resumen.totalGravada : sumaItemsNeto))
+                ) || 0;
 
-                if (resumen.totalIva !== undefined) {
-                    totalIva = parseFloat(resumen.totalIva) || 0;
-                } else if (Array.isArray(resumen.tributos)) {
-                    totalIva = resumen.tributos.reduce((acc, t) => acc + (parseFloat(t.valor) || 0), 0);
+                // 1. Extraer tributos del arreglo resumen.tributos (en CCF viene { codigo: "20", descripcion: "Impuesto al Valor Agregado 13%", valor: X })
+                let ivaDeTributos = 0;
+                if (Array.isArray(resumen.tributos) && resumen.tributos.length > 0) {
+                    resumen.tributos.forEach(t => {
+                        if (!t || typeof t !== 'object') return;
+                        const valT = parseFloat(t.valor) || 0;
+                        const codT = String(t.codigo || '').trim();
+                        const descT = repararTextoCodificado(String(t.descripcion || '').trim());
+                        tributosDetalle.push({ codigo: codT, descripcion: descT || 'Tributo', valor: valT });
+                        totalTributos += valT;
+                        if (codT === '20' || /iva|impuesto\s*al\s*valor\s*agregado/i.test(descT)) {
+                            ivaDeTributos += valT;
+                            if (descT) ivaDescripcion = descT;
+                        }
+                    });
+                    totalTributos = +totalTributos.toFixed(2);
+                    ivaDeTributos = +ivaDeTributos.toFixed(2);
+                }
+
+                // 2. Extraer IVA directo de resumen.totalIva (Factura DTE-01) o respaldo desde tributos / ítems
+                const ivaDirectoResumen = (resumen.totalIva !== undefined && resumen.totalIva !== null && resumen.totalIva !== '') ? (parseFloat(resumen.totalIva) || 0) : 0;
+                const ivaSumaItems = +rawItemsResumen.reduce((acc, it) => acc + (parseFloat(it.ivaItem) || 0), 0).toFixed(2);
+
+                if (ivaDeTributos > 0) {
+                    totalIva = ivaDeTributos;
+                } else if (ivaDirectoResumen > 0) {
+                    totalIva = +ivaDirectoResumen.toFixed(2);
+                } else if (totalTributos > 0) {
+                    totalIva = totalTributos;
+                } else if (ivaSumaItems > 0) {
+                    totalIva = ivaSumaItems;
+                }
+
+                // 3. Percepción / Retención IVA y Renta / No Gravado
+                ivaPerci1 = parseFloat(resumen.ivaPerci1 || resumen.ivaPerci || 0) || 0;
+                ivaRete1 = parseFloat(resumen.ivaRete1 || resumen.ivaRete || 0) || 0;
+                reteRenta = parseFloat(resumen.reteRenta || 0) || 0;
+                const totalNoGravado = parseFloat(resumen.totalNoGravado || 0) || 0;
+
+                const rawMontoTotalOp = (resumen.montoTotalOperacion !== undefined && resumen.montoTotalOperacion !== null && resumen.montoTotalOperacion !== '') ? (parseFloat(resumen.montoTotalOperacion) || 0) : 0;
+                const rawTotalPagar = (resumen.totalPagar !== undefined && resumen.totalPagar !== null && resumen.totalPagar !== '') ? (parseFloat(resumen.totalPagar) || 0) : 0;
+
+                // 4. Calcular montoTotalOperacion y totalPagar respetando la regla fiscal de CCF (03) vs Factura (01)
+                const esCcfDoc = (tipoDte === '03' || tipo === 'CCF');
+                if (esCcfDoc) {
+                    ivaSeSumaAlSubtotal = true;
+                    if (totalIva <= 0 && rawMontoTotalOp > subTotal + 0.005) {
+                        totalIva = +(rawMontoTotalOp - subTotal).toFixed(2);
+                    }
+                    const tributosASumar = totalTributos > 0 ? totalTributos : totalIva;
+                    const calculadoOp = +(subTotal + tributosASumar).toFixed(2);
+
+                    if (rawMontoTotalOp > 0 && (tributosASumar <= 0 || Math.abs(rawMontoTotalOp - calculadoOp) <= 0.05 || rawMontoTotalOp > subTotal + 0.005)) {
+                        montoTotalOperacion = +rawMontoTotalOp.toFixed(2);
+                    } else if (subTotal > 0 && tributosASumar > 0) {
+                        montoTotalOperacion = calculadoOp;
+                    } else {
+                        montoTotalOperacion = rawMontoTotalOp || calculadoOp || subTotal;
+                    }
+
+                    const calculadoPagar = +(montoTotalOperacion + ivaPerci1 - ivaRete1 - reteRenta + totalNoGravado).toFixed(2);
+                    if (rawTotalPagar > 0 && (tributosASumar <= 0 || Math.abs(rawTotalPagar - calculadoPagar) <= 0.05 || rawTotalPagar > subTotal + 0.005)) {
+                        monto = +rawTotalPagar.toFixed(2);
+                    } else {
+                        monto = calculadoPagar > 0 ? calculadoPagar : montoTotalOperacion;
+                    }
+                } else {
+                    if (totalTributos > 0 && (rawMontoTotalOp > subTotal + 0.005 || ivaDirectoResumen <= 0)) {
+                        ivaSeSumaAlSubtotal = true;
+                        const calculadoOpF = +(subTotal + totalTributos).toFixed(2);
+                        montoTotalOperacion = (rawMontoTotalOp > subTotal + 0.005) ? +rawMontoTotalOp.toFixed(2) : calculadoOpF;
+                        const calculadoPagarF = +(montoTotalOperacion + ivaPerci1 - ivaRete1 - reteRenta + totalNoGravado).toFixed(2);
+                        monto = (rawTotalPagar > subTotal + 0.005) ? +rawTotalPagar.toFixed(2) : calculadoPagarF;
+                    } else {
+                        ivaSeSumaAlSubtotal = false;
+                        montoTotalOperacion = rawMontoTotalOp > 0 ? +rawMontoTotalOp.toFixed(2) : subTotal;
+                        const calculadoPagarF = +(montoTotalOperacion + ivaPerci1 - ivaRete1 - reteRenta + totalNoGravado).toFixed(2);
+                        monto = rawTotalPagar > 0 ? +rawTotalPagar.toFixed(2) : (calculadoPagarF > 0 ? calculadoPagarF : (parseFloat(dteRoot.monto || dteRoot.total || 0) || subTotal));
+                    }
                 }
 
                 if (resumen.totalLetras) {
@@ -8839,6 +8976,14 @@
                 montoFormateado: `$${monto.toFixed(2)}`,
                 subTotal,
                 totalIva,
+                ivaDescripcion,
+                tributosDetalle,
+                totalTributos,
+                ivaPerci1,
+                ivaRete1,
+                reteRenta,
+                montoTotalOperacion: montoTotalOperacion || monto,
+                ivaSeSumaAlSubtotal,
                 totalLetras,
                 cliente: cliente || 'Consumidor Final',
                 clienteValidoDte,
@@ -8856,6 +9001,303 @@
             return null;
         }
     }
+
+        /**
+         * Limpia sufijos de envío multi-viaje como "(Viaje 1/4)", "[Viaje 2 de 4]", "(Viaje 2)", "- Viaje 3/4"
+         */
+        function limpiarSufijoViajeFactura(facturaStr) {
+            return String(facturaStr || '')
+                .replace(/\s*[\(\[]\s*viaje\s*\d+(?:\s*(?:\/|de)\s*\d+)?\s*[\)\]]/gi, '')
+                .replace(/\s*[-–]?\s*viaje\s*\d+(?:\s*(?:\/|de)\s*\d+)?\s*$/gi, '')
+                .trim();
+        }
+
+        /**
+         * Extrae información de número de viaje cuando la factura trae "(Viaje X/Y)" o "(Viaje X)"
+         */
+        function extraerInfoViajeDeTexto(facturaStr) {
+            const s = String(facturaStr || '');
+            const mFull = s.match(/viaje\s*(\d+)\s*(?:\/|de)\s*(\d+)/i);
+            if (mFull) {
+                const num = parseInt(mFull[1], 10) || 1;
+                const tot = parseInt(mFull[2], 10) || num;
+                return { viajeNum: num, viajeTotal: Math.max(num, tot), esSecundario: num > 1 };
+            }
+            const mSimple = s.match(/[\(\[]\s*viaje\s*(\d+)\s*[\)\]]|[-–]\s*viaje\s*(\d+)\s*$/i);
+            if (mSimple) {
+                const num = parseInt(mSimple[1] || mSimple[2], 10) || 1;
+                return { viajeNum: num, viajeTotal: num, esSecundario: num > 1 };
+            }
+            return { viajeNum: 0, viajeTotal: 0, esSecundario: false };
+        }
+
+        function esViajeSecundarioPorNombre(facturaStr) {
+            return extraerInfoViajeDeTexto(facturaStr).esSecundario;
+        }
+
+        /**
+         * Clave única de factura/CCF para agrupar múltiples viajes que transportan la MISMA factura o crédito fiscal.
+         * Distingue estrictamente FACTURA vs CCF y distintos clientes (o distintos UUID DTE).
+         */
+        function obtenerClaveUnicaDocumentoFacturado(r) {
+            if (!r) return '';
+            const factRaw = String(r.factura || '').trim();
+            if (!factRaw || factRaw === 'N/A' || factRaw.toLowerCase().startsWith('traslado')) return '';
+            if (factRaw.includes(' + ')) return ''; // Envío agrupado multi-factura
+
+            const codGen = String(
+                (r.datosDte && r.datosDte.codigoGeneracion) ||
+                (r.jsonData && r.jsonData.identificacion && r.jsonData.identificacion.codigoGeneracion) ||
+                (r.jsonData && r.jsonData.dteJson && r.jsonData.dteJson.identificacion && r.jsonData.dteJson.identificacion.codigoGeneracion) ||
+                ''
+            ).trim().toLowerCase();
+            if (codGen) return 'cg:' + codGen;
+
+            const baseFact = limpiarSufijoViajeFactura(factRaw);
+            const numDig = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(baseFact) : baseFact.replace(/\D/g, '');
+            if (!numDig) return '';
+
+            const tipoRaw = String(
+                (r.datosDte && r.datosDte.tipo) ||
+                r.tipoDocumento ||
+                (typeof detectarTipoPrefijoFactura === 'function' ? detectarTipoPrefijoFactura(baseFact) : '') ||
+                'FACTURA'
+            ).trim().toUpperCase();
+            const tipoNorm = (tipoRaw === 'CCF' || tipoRaw.includes('CREDITO')) ? 'CCF' : 'FACTURA';
+
+            const cliResuelto = (typeof resolverNombreClienteRenombrado === 'function')
+                ? resolverNombreClienteRenombrado(r.cliente || '')
+                : String(r.cliente || '');
+            const cliClave = (typeof normalizarTextoClave === 'function')
+                ? normalizarTextoClave(cliResuelto)
+                : String(cliResuelto).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            return `doc:${tipoNorm}:${numDig}:${cliClave || 'sincliente'}`;
+        }
+
+        /**
+         * Devuelve el monto que debe sumarse en Total Facturado para un registro individual.
+         * Si es un viaje adicional (Viaje 2, 3, 4...) de la misma factura/CCF, devuelve 0 para no duplicar facturación.
+         */
+        function obtenerMontoContabilizableRegistro(r) {
+            if (!r) return 0;
+            if (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura)) return 0;
+            return parseFloat(r.monto) || 0;
+        }
+
+        /**
+         * Suma el Total Facturado de una lista de viajes sin duplicar nunca facturas/CCF divididas en varios viajes.
+         * Solo suma el primer viaje de cada factura/CCF única; los viajes adicionales (2/4, 3/4, 4/4) no suman al facturado.
+         */
+        function sumarMontoFacturadoUnico(lista) {
+            if (!Array.isArray(lista) || lista.length === 0) return 0;
+            let total = 0;
+            const clavesContadas = new Set();
+            for (let i = 0; i < lista.length; i++) {
+                const r = lista[i];
+                if (!r) continue;
+                if (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura)) {
+                    continue;
+                }
+                const clave = r._claveUnicaFactura || obtenerClaveUnicaDocumentoFacturado(r);
+                if (clave) {
+                    if (clavesContadas.has(clave)) continue;
+                    clavesContadas.add(clave);
+                }
+                total += (parseFloat(r.monto) || 0);
+            }
+            return +total.toFixed(2);
+        }
+
+        /**
+         * Encuentra todos los viajes hermanos en registrosGlobales que comparten la MISMA factura/CCF.
+         */
+        function obtenerViajesHermanosMismaFactura(registroRef) {
+            if (!registroRef || typeof registrosGlobales === 'undefined' || !Array.isArray(registrosGlobales)) return [];
+            const claveRef = registroRef._claveUnicaFactura || obtenerClaveUnicaDocumentoFacturado(registroRef);
+            if (!claveRef) return [registroRef];
+            const hermanos = registrosGlobales.filter(x => {
+                if (!x) return false;
+                const kx = x._claveUnicaFactura || obtenerClaveUnicaDocumentoFacturado(x);
+                return kx && kx === claveRef;
+            });
+            if (!hermanos.includes(registroRef) && registrosGlobales.includes(registroRef)) {
+                hermanos.unshift(registroRef);
+            }
+            return hermanos;
+        }
+
+        /**
+         * Agrupa automáticamente viajes que comparten la misma factura/CCF:
+         * - Comparte JSON, datosDte y PDF de Drive entre todos los viajes hermanos.
+         * - Marca únicamente al Viaje 1 como contabilizable en Total Facturado; los Viajes 2, 3, 4... se marcan como adicionales (_esViajeAdicionalMismaFactura = true) para no duplicar ventas ni productos.
+         */
+        function sincronizarViajesMismaFacturaEnRegistros() {
+            if (typeof registrosGlobales === 'undefined' || !Array.isArray(registrosGlobales)) return;
+
+            const grupos = new Map();
+            registrosGlobales.forEach(r => {
+                if (!r) return;
+                r._esViajeAdicionalMismaFactura = false;
+                r._viajeNumero = 1;
+                r._totalViajesFactura = 1;
+                r._claveUnicaFactura = '';
+
+                const infoV = extraerInfoViajeDeTexto(r.factura);
+                if (infoV.esSecundario) {
+                    r._esViajeAdicionalMismaFactura = true;
+                    r._viajeNumero = infoV.viajeNum;
+                    r._totalViajesFactura = infoV.viajeTotal;
+                }
+
+                const clave = obtenerClaveUnicaDocumentoFacturado(r);
+                if (!clave) return;
+                r._claveUnicaFactura = clave;
+                if (!grupos.has(clave)) grupos.set(clave, []);
+                grupos.get(clave).push(r);
+            });
+
+            grupos.forEach((items, clave) => {
+                if (!items || items.length === 0) return;
+
+                // Ordenar para que el Viaje 1 quede siempre primero
+                items.sort((a, b) => {
+                    const ia = extraerInfoViajeDeTexto(a.factura);
+                    const ib = extraerInfoViajeDeTexto(b.factura);
+                    const na = ia.viajeNum > 0 ? ia.viajeNum : 999;
+                    const nb = ib.viajeNum > 0 ? ib.viajeNum : 999;
+                    if (na !== nb) return na - nb;
+                    const ma = (parseFloat(a.monto) || 0) > 0 ? 0 : 1;
+                    const mb = (parseFloat(b.monto) || 0) > 0 ? 0 : 1;
+                    if (ma !== mb) return ma - mb;
+                    return (a.ordenAsignacion || a.id || 0) - (b.ordenAsignacion || b.id || 0);
+                });
+
+                // Buscar mejor JSON, datosDte, PDF Drive y monto maestro dentro del grupo
+                let sharedJsonData = null;
+                let sharedJsonRaw = '';
+                let sharedDatosDte = null;
+                let sharedDrivePdfUrl = '';
+                let sharedDrivePdfName = '';
+                let sharedTipoDoc = '';
+                let montoMaster = 0;
+                let maxTotalExplicito = items.length;
+
+                items.forEach(it => {
+                    const iv = extraerInfoViajeDeTexto(it.factura);
+                    if (iv.viajeTotal > maxTotalExplicito) maxTotalExplicito = iv.viajeTotal;
+                    if (!sharedJsonData && it.jsonData) sharedJsonData = it.jsonData;
+                    if (!sharedJsonRaw && it.jsonRaw) sharedJsonRaw = it.jsonRaw;
+                    if (!sharedDatosDte && it.datosDte) sharedDatosDte = it.datosDte;
+                    if (!sharedDrivePdfUrl && it.drivePdfUrl) sharedDrivePdfUrl = it.drivePdfUrl;
+                    if (!sharedDrivePdfName && it.drivePdfName) sharedDrivePdfName = it.drivePdfName;
+                    if (!sharedTipoDoc && it.datosDte && it.datosDte.tipo) sharedTipoDoc = it.datosDte.tipo;
+                    const mCand = (it.datosDte && Number(it.datosDte.monto) > 0) ? Number(it.datosDte.monto) : (parseFloat(it.monto) || 0);
+                    if (mCand > montoMaster) montoMaster = mCand;
+                });
+
+                items.forEach((it, idx) => {
+                    const iv = extraerInfoViajeDeTexto(it.factura);
+                    it._claveUnicaFactura = clave;
+                    it._viajeNumero = iv.viajeNum > 0 ? iv.viajeNum : (idx + 1);
+                    it._totalViajesFactura = maxTotalExplicito;
+                    it._montoFacturaOriginal = montoMaster;
+
+                    // Compartir JSON y PDF de Drive con todos los viajes hermanos de esta misma factura
+                    if (sharedJsonData && !it.jsonData) it.jsonData = sharedJsonData;
+                    if (sharedJsonRaw && !it.jsonRaw) it.jsonRaw = sharedJsonRaw;
+                    if (sharedDatosDte && !it.datosDte) it.datosDte = sharedDatosDte;
+                    if (sharedDrivePdfUrl && !it.drivePdfUrl) {
+                        it.drivePdfUrl = sharedDrivePdfUrl;
+                        if (sharedDrivePdfName) it.drivePdfName = sharedDrivePdfName;
+                    }
+                    if (sharedTipoDoc && !it.tipoDocumento) it.tipoDocumento = sharedTipoDoc;
+
+                    if (idx === 0) {
+                        // Viaje principal: contabiliza el monto único de la factura
+                        it._esViajeAdicionalMismaFactura = (items.length === 1 && iv.esSecundario);
+                        if (!it._esViajeAdicionalMismaFactura && montoMaster > 0 && (parseFloat(it.monto) || 0) <= 0) {
+                            it.monto = montoMaster;
+                        }
+                    } else {
+                        // Viajes 2, 3, 4...: NO suman al Total Facturado (solo cuentan sus fletes y entregas)
+                        it._esViajeAdicionalMismaFactura = true;
+                    }
+                });
+            });
+        }
+
+        /**
+         * Recalcula automáticamente IVA 13% (tributos / totalIva), montoTotalOperacion y monto final
+         * para TODOS los documentos que ya tienen un JSON vinculado (tanto registros principales como subFacturas).
+         */
+        function recalcularMontosTodosJsonVinculados() {
+            if (typeof registrosGlobales === 'undefined' || !Array.isArray(registrosGlobales)) return;
+            registrosGlobales.forEach(r => {
+                if (!r) return;
+                try {
+                    const factBase = limpiarSufijoViajeFactura(r.factura || '');
+                    const esSec = esViajeSecundarioPorNombre(r.factura || '');
+                    const tipoHint = r.tipoDocumento || detectarTipoPrefijoFactura(factBase || r.factura || '');
+                    let jObj = r.jsonData || null;
+                    if (!jObj && r.jsonRaw) {
+                        try { jObj = JSON.parse(r.jsonRaw); } catch(e) {}
+                    }
+                    if (!jObj && typeof obtenerJsonFacturaLocal === 'function' && r.factura) {
+                        const loc = obtenerJsonFacturaLocal(r.factura, tipoHint) || (factBase && factBase !== r.factura ? obtenerJsonFacturaLocal(factBase, tipoHint) : null);
+                        if (loc && loc.parsed) jObj = loc.parsed;
+                    }
+                    if (jObj) {
+                        const datos = extraerDatosDocumentoIndividualJson(jObj);
+                        if (datos) {
+                            r.jsonData = jObj;
+                            r.datosDte = datos;
+                            if (datos.subTotal > 0) r.subTotal = datos.subTotal;
+                            if (datos.monto > 0 && !esSec) {
+                                // Si es CCF y el monto almacenado anteriormente no incluía el IVA 13% (o estaba en 0), actualizarlo al total oficial con IVA (solo en viaje principal)
+                                const montoPrev = Number(r.monto) || 0;
+                                if (
+                                    montoPrev <= 0 ||
+                                    (datos.ivaSeSumaAlSubtotal && datos.totalIva > 0 && Math.abs(montoPrev - datos.subTotal) <= 0.05 && datos.monto > datos.subTotal + 0.005)
+                                ) {
+                                    r.monto = datos.monto;
+                                }
+                            }
+                        }
+                    }
+
+                    if (Array.isArray(r.subFacturas)) {
+                        r.subFacturas.forEach(sf => {
+                            if (!sf) return;
+                            let sfJson = sf.jsonData || null;
+                            if (!sfJson && sf.jsonRaw) {
+                                try { sfJson = typeof sf.jsonRaw === 'string' ? JSON.parse(sf.jsonRaw) : sf.jsonRaw; } catch(e) {}
+                            }
+                            if (!sfJson && typeof obtenerJsonFacturaLocal === 'function') {
+                                const locSf = obtenerJsonFacturaLocal(sf.numero || sf.factura || sf.docCompleto || '', sf.tipo || '');
+                                if (locSf && locSf.parsed) sfJson = locSf.parsed;
+                            }
+                            if (sfJson) {
+                                const dSf = extraerDatosDocumentoIndividualJson(sfJson);
+                                if (dSf) {
+                                    sf.jsonData = sfJson;
+                                    sf.datosDte = dSf;
+                                    if (dSf.monto > 0) {
+                                        const mSfPrev = Number(sf.monto) || 0;
+                                        if (mSfPrev <= 0 || (dSf.ivaSeSumaAlSubtotal && dSf.totalIva > 0 && Math.abs(mSfPrev - dSf.subTotal) <= 0.05 && dSf.monto > dSf.subTotal + 0.005)) {
+                                            sf.monto = dSf.monto;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch(eRec) {}
+            });
+
+            // Agrupar viajes hermanos de la misma factura/CCF, compartir JSON/PDF y evitar doble conteo en Total Facturado
+            sincronizarViajesMismaFacturaEnRegistros();
+        }
 
         // ==========================================
         // BUSCADOR Y ASOCIADOR DE FACTURAS EXISTENTES POR SIMILITUD (DTE / JSON)
@@ -9925,9 +10367,13 @@
             }
 
             // Sincronizar automáticamente el selector Tipo Documento (FACTURA vs CCF) si fue identificado
-            const selTipoDoc = document.getElementById('manInputTipoDoc');
+            const selTipoDoc = document.getElementById('manInputTipoDocumento') || document.getElementById('manInputTipoDoc');
             if (selTipoDoc && (tipoDetectado === 'CCF' || tipoDetectado === 'FACTURA')) {
                 selTipoDoc.value = tipoDetectado;
+                if (typeof cambiarTipoDocumentoFiscal === 'function') cambiarTipoDocumentoFiscal();
+            }
+            if (typeof verificarFacturaExistenteMultiViajeAsignacion === 'function') {
+                verificarFacturaExistenteMultiViajeAsignacion();
             }
 
             const carpTxt = data.carpeta ? `Subcarpeta: <strong>${data.carpeta}</strong>` : 'Google Drive';
@@ -9983,6 +10429,127 @@
             }
 
             showToast('Documento en Drive', `Documento #${num} listo. Puedes pulsar "Vincular JSON" para completar los datos necesarios.`, 'success');
+        }
+
+        let _viajeBaseMultiExistenteAsignacion = null;
+
+        function verificarFacturaExistenteMultiViajeAsignacion() {
+            const box = document.getElementById('alertaFacturaExistenteMultiViaje');
+            const chk = document.getElementById('manCheckViajeAdicionalMismaFactura');
+            const inpFact = document.getElementById('manInputFactura');
+            const selTipo = document.getElementById('manInputTipoDocumento');
+            if (!box || !inpFact) return;
+
+            const raw = limpiarSufijoViajeFactura(inpFact.value || '');
+            const numDig = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(raw) : raw.replace(/\D/g, '');
+            if (!numDig || typeof registrosGlobales === 'undefined' || !Array.isArray(registrosGlobales)) {
+                box.classList.add('hidden');
+                if (chk) chk.checked = false;
+                _viajeBaseMultiExistenteAsignacion = null;
+                return;
+            }
+
+            const tipoSel = (selTipo && selTipo.value === 'FACTURA') ? 'FACTURA' : 'CCF';
+            const coincidentes = registrosGlobales.filter(r => {
+                if (!r || !r.factura) return false;
+                const fBase = limpiarSufijoViajeFactura(r.factura);
+                if (!fBase || fBase.includes(' + ') || fBase.toLowerCase().startsWith('traslado')) return false;
+                const nR = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(fBase) : fBase.replace(/\D/g, '');
+                if (!nR || nR !== numDig) return false;
+                const tR = String((r.datosDte && r.datosDte.tipo) || r.tipoDocumento || detectarTipoPrefijoFactura(fBase) || 'FACTURA').toUpperCase().includes('CCF') ? 'CCF' : 'FACTURA';
+                return tR === tipoSel;
+            });
+
+            if (coincidentes.length === 0) {
+                box.classList.add('hidden');
+                if (chk) chk.checked = false;
+                _viajeBaseMultiExistenteAsignacion = null;
+                return;
+            }
+
+            // Preferir el viaje principal (el que tiene monto > 0 o Viaje 1)
+            const viajeBase = coincidentes.find(x => !x._esViajeAdicionalMismaFactura && (parseFloat(x.monto) || 0) > 0) || coincidentes[0];
+            _viajeBaseMultiExistenteAsignacion = {
+                viajeBase: viajeBase,
+                todos: coincidentes,
+                siguienteNumero: coincidentes.length + 1
+            };
+
+            const montoRef = (viajeBase.datosDte && Number(viajeBase.datosDte.monto) > 0)
+                ? Number(viajeBase.datosDte.monto)
+                : (Number(viajeBase._montoFacturaOriginal) || Number(viajeBase.monto) || 0);
+            const tieneJsonBase = !!(viajeBase.jsonData || viajeBase.jsonRaw);
+            const tienePdfBase = !!(viajeBase.drivePdfUrl);
+
+            const titEl = document.getElementById('alertaMultiViajeTitulo');
+            const detEl = document.getElementById('alertaMultiViajeDetalle');
+            const numEl = document.getElementById('alertaMultiViajeNumeroNuevo');
+
+            if (titEl) {
+                titEl.textContent = `Esta ${tipoSel === 'CCF' ? 'CCF' : 'Factura'} #${numDig} ya tiene ${coincidentes.length} viaje${coincidentes.length !== 1 ? 's' : ''} registrado${coincidentes.length !== 1 ? 's' : ''}`;
+            }
+            if (detEl) {
+                const extras = [];
+                if (tieneJsonBase) extras.push('JSON vinculado');
+                if (tienePdfBase) extras.push('PDF Drive vinculado');
+                detEl.textContent = `Cliente: ${viajeBase.cliente || 'Sin especificar'} • Monto ya contabilizado: $${montoRef.toFixed(2)}${extras.length ? ' • ' + extras.join(' + ') : ''}`;
+            }
+            if (numEl) {
+                numEl.textContent = `Viaje ${coincidentes.length + 1}`;
+            }
+
+            // Auto-marcar el checkbox si el cliente en el formulario coincide o aún está vacío
+            const cliInput = (document.getElementById('manInputCliente')?.value || '').trim();
+            if (chk && box.classList.contains('hidden')) {
+                const mismoCliente = !cliInput || (normalizarTextoClave(cliInput) === normalizarTextoClave(viajeBase.cliente || ''));
+                chk.checked = mismoCliente;
+            }
+
+            box.classList.remove('hidden');
+            actualizarEstadoCheckboxMultiViaje();
+        }
+
+        function actualizarEstadoCheckboxMultiViaje() {
+            const chk = document.getElementById('manCheckViajeAdicionalMismaFactura');
+            const inpMonto = document.getElementById('manInputMonto');
+            if (!inpMonto) return;
+            if (chk && chk.checked) {
+                inpMonto.placeholder = '$0.00 (Ya sumado en Viaje 1)';
+            } else {
+                inpMonto.placeholder = 'Ej. $1,150.00';
+            }
+        }
+
+        function copiarDatosDesdeViajeExistenteAsignacion() {
+            if (!_viajeBaseMultiExistenteAsignacion || !_viajeBaseMultiExistenteAsignacion.viajeBase) return;
+            const vb = _viajeBaseMultiExistenteAsignacion.viajeBase;
+
+            const inpCli = document.getElementById('manInputCliente');
+            const inpTel = document.getElementById('manInputTelefonoCliente');
+            const inpDest = document.getElementById('manInputDestino');
+            const inpLink = document.getElementById('manInputLinkUbicacion');
+            const inpOrig = document.getElementById('manInputOrigen');
+            const chk = document.getElementById('manCheckViajeAdicionalMismaFactura');
+
+            if (inpCli && vb.cliente) inpCli.value = vb.cliente;
+            if (inpTel && vb.telefonoCliente) inpTel.value = vb.telefonoCliente;
+            if (inpDest && vb.destino) inpDest.value = vb.destino;
+            if (inpLink && vb.linkUbicacion) inpLink.value = vb.linkUbicacion;
+            if (inpOrig && vb.origen) inpOrig.value = vb.origen;
+            if (chk) chk.checked = true;
+            actualizarEstadoCheckboxMultiViaje();
+
+            // Heredar JSON y PDF Drive del viaje base automáticamente
+            if (vb.jsonData || vb.jsonRaw) {
+                window.ultimoJsonImportadoAsignacion = vb.jsonData || (vb.jsonRaw ? JSON.parse(vb.jsonRaw) : null);
+                window.ultimoJsonImportadoAsignacionRaw = vb.jsonRaw || (vb.jsonData ? JSON.stringify(vb.jsonData) : '');
+            }
+            if (vb.drivePdfUrl) {
+                window.ultimoDrivePdfUrlAsignacion = vb.drivePdfUrl;
+                window.ultimoDrivePdfNameAsignacion = vb.drivePdfName || 'Documento_Drive.pdf';
+            }
+
+            showToast('Datos Copiados', `Se copiaron cliente, destino${(vb.jsonData || vb.drivePdfUrl) ? ' y archivos JSON/PDF' : ''} del Viaje 1. Este viaje no duplicará el Total Facturado.`, 'success');
         }
 
         window._datosDriveJsonPendiente = null;
@@ -10196,8 +10763,9 @@
             if (!tipoEsperado && facturaActualPrevisualizada && sonFacturasCoincidentesGlobal(facturaActualPrevisualizada.factura, decId)) {
                 tipoEsperado = facturaActualPrevisualizada.tipoDocumento || '';
             }
+            const numParaBuscarDrive = (typeof limpiarSufijoViajeFactura === 'function' ? limpiarSufijoViajeFactura(decId) : decId) || decId;
             if (!tipoEsperado) {
-                tipoEsperado = detectarTipoPrefijoFactura(decId);
+                tipoEsperado = detectarTipoPrefijoFactura(numParaBuscarDrive);
             }
 
             const btnTop = document.getElementById('btnBuscarDriveEnSheet');
@@ -10206,10 +10774,10 @@
             if (labelTop) labelTop.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
             if (btnTop) btnTop.disabled = true;
 
-            showToast('Buscando en Drive', `Buscando #${decId} en Google Drive...`, 'info');
+            showToast('Buscando en Drive', `Buscando #${numParaBuscarDrive} en Google Drive...`, 'info');
 
             try {
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(decId)}&tipo=${encodeURIComponent(tipoEsperado)}`;
+                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(numParaBuscarDrive)}&tipo=${encodeURIComponent(tipoEsperado)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
 
@@ -10587,10 +11155,21 @@
             }
             const tipoDocHint = tipoElegidoDrive || (r && r.tipoDocumento) || (facturaActualPrevisualizada && facturaActualPrevisualizada.tipoDocumento) || detectarTipoPrefijoFactura(decId);
 
-            // 1. Vincular PDF si existe
+            // Detectar TODOS los viajes hermanos que comparten esta MISMA factura/CCF (ej. Viaje 1/4, 2/4, 3/4, 4/4)
+            const viajesHermanos = (!esSubFactura && r && typeof obtenerViajesHermanosMismaFactura === 'function')
+                ? obtenerViajesHermanosMismaFactura(r)
+                : (r ? [r] : []);
+            const facturasHermanas = viajesHermanos.map(h => h && h.factura).filter(Boolean);
+            const factBaseLimpia = (typeof limpiarSufijoViajeFactura === 'function') ? limpiarSufijoViajeFactura(decId) : decId;
+            const esViajeAdicionalR = !!(r && (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura)));
+
+            // 1. Vincular PDF si existe (compartido en todos los viajes hermanos de esta misma factura)
             if (data.pdf) {
                 drivePdfUrlFinal = data.pdf.previewUrl || data.pdf.viewUrl || '';
                 guardarDrivePdfFacturaLocal(decId, data.pdf, tipoDocHint);
+                if (factBaseLimpia && factBaseLimpia !== decId) {
+                    guardarDrivePdfFacturaLocal(factBaseLimpia, data.pdf, tipoDocHint);
+                }
                 if (r && r.factura && r.factura !== decId) {
                     guardarDrivePdfFacturaLocal(r.factura, data.pdf, tipoDocHint);
                 }
@@ -10603,8 +11182,12 @@
                         subObj.drivePdfUrl = drivePdfUrlFinal;
                         subObj.drivePdfName = data.pdf.fileName;
                     } else {
-                        r.drivePdfUrl = drivePdfUrlFinal;
-                        r.drivePdfName = data.pdf.fileName;
+                        viajesHermanos.forEach(h => {
+                            h.drivePdfUrl = drivePdfUrlFinal;
+                            h.drivePdfName = data.pdf.fileName;
+                            if (tipoElegidoDrive) h.tipoDocumento = tipoElegidoDrive;
+                            if (h.factura) guardarDrivePdfFacturaLocal(h.factura, data.pdf, tipoDocHint);
+                        });
                     }
                 }
 
@@ -10621,14 +11204,15 @@
                         body: JSON.stringify({
                             action: 'attachDrivePdf',
                             factura: (r && r.factura) ? r.factura : decId,
-                            drivePdfUrl: drivePdfUrlFinal
+                            drivePdfUrl: drivePdfUrlFinal,
+                            facturasHermanas: facturasHermanas
                         })
                     }).catch(() => {});
                 }
                 vinculadosTxt.push('PDF oficial');
             }
 
-            // 2. Vincular JSON si existe (cargar mercadería, productos, montos y 10 campos oficiales DTE)
+            // 2. Vincular JSON si existe (cargar mercadería, productos, montos y 10 campos oficiales DTE en TODOS los viajes hermanos sin duplicar facturación)
             if (data.json) {
                 let parsedJ = data.json.parsed;
                 let rawJ = data.json.raw || '';
@@ -10645,6 +11229,9 @@
 
                     // Guardar en localStorage bajo múltiples claves y alias del mismo tipo de documento
                     guardarJsonFacturaLocal(decId, rawJ, tipoDteHint);
+                    if (factBaseLimpia && factBaseLimpia !== decId) {
+                        guardarJsonFacturaLocal(factBaseLimpia, rawJ, tipoDteHint);
+                    }
                     if (r && r.factura && r.factura !== decId) {
                         guardarJsonFacturaLocal(r.factura, rawJ, tipoDteHint);
                     }
@@ -10668,7 +11255,7 @@
                         if (dDte.items.length > 3) descItems += ` y ${dDte.items.length - 3} artículos más`;
                     }
 
-                    // Actualizar registro en memoria y guardar datosDte para la hoja oficial
+                    // Actualizar registro(s) en memoria: TODOS los viajes hermanos reciben el JSON/PDF, pero SOLO el Viaje 1 actualiza su monto facturado
                     if (r) {
                         if (esSubFactura && subObj) {
                             subObj.jsonData = parsedJ;
@@ -10680,24 +11267,33 @@
                                 if (drivePdfUrlFinal) subObj.drivePdfUrl = drivePdfUrlFinal;
                             }
                         } else {
-                            r.jsonData = parsedJ;
-                            r.jsonRaw = rawJ;
-                            r.datosDte = dDte;
-                            if (dDte) {
-                                if (dDte.monto > 0) r.monto = dDte.monto;
-                                if (dDte.subTotal > 0) r.subTotal = dDte.subTotal;
-                                if (descItems) r.descripcion = descItems;
-                                if (drivePdfUrlFinal) r.drivePdfUrl = drivePdfUrlFinal;
-                                if (dDte.clienteValidoDte && (!r.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(r.cliente))) {
-                                    r.cliente = dDte.clienteValidoDte;
+                            viajesHermanos.forEach(h => {
+                                const esAdicH = !!(h._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(h.factura));
+                                h.jsonData = parsedJ;
+                                h.jsonRaw = rawJ;
+                                h.datosDte = dDte;
+                                if (tipoDteHint) h.tipoDocumento = tipoDteHint;
+                                if (h.factura) guardarJsonFacturaLocal(h.factura, rawJ, tipoDteHint);
+                                if (dDte) {
+                                    // Solo el viaje principal (Viaje 1) guarda el monto en r.monto; los viajes adicionales mantienen 0 para no duplicar facturación
+                                    if (dDte.monto > 0) {
+                                        h._montoFacturaOriginal = dDte.monto;
+                                        if (!esAdicH) h.monto = dDte.monto;
+                                    }
+                                    if (dDte.subTotal > 0) h.subTotal = dDte.subTotal;
+                                    if (descItems && (!h.descripcion || h.descripcion === 'Entrega Comercial')) h.descripcion = descItems;
+                                    if (drivePdfUrlFinal) h.drivePdfUrl = drivePdfUrlFinal;
+                                    if (dDte.clienteValidoDte && (!h.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(h.cliente))) {
+                                        h.cliente = dDte.clienteValidoDte;
+                                    }
+                                    if (dDte.telefono && (!h.telefonoCliente || h.telefonoCliente === 'Sin registrar')) {
+                                        h.telefonoCliente = dDte.telefono;
+                                    }
+                                    if (dDte.destinoValidoDte && (!h.destino || /destino\s*no\s*especificado|sin\s*direccion/i.test(h.destino))) {
+                                        h.destino = dDte.destinoValidoDte;
+                                    }
                                 }
-                                if (dDte.telefono && (!r.telefonoCliente || r.telefonoCliente === 'Sin registrar')) {
-                                    r.telefonoCliente = dDte.telefono;
-                                }
-                                if (dDte.destinoValidoDte && (!r.destino || /destino\s*no\s*especificado|sin\s*direccion/i.test(r.destino))) {
-                                    r.destino = dDte.destinoValidoDte;
-                                }
-                            }
+                            });
                         }
                     }
 
@@ -10707,9 +11303,14 @@
                         facturaActualPrevisualizada.jsonRaw = rawJ;
                         facturaActualPrevisualizada.datosDte = dDte;
                         if (dDte) {
-                            if (dDte.monto > 0) facturaActualPrevisualizada.monto = dDte.monto;
+                            if (dDte.monto > 0) {
+                                facturaActualPrevisualizada._montoFacturaOriginal = dDte.monto;
+                                if (!esViajeAdicionalR) facturaActualPrevisualizada.monto = dDte.monto;
+                            }
                             if (dDte.subTotal > 0) facturaActualPrevisualizada.subTotal = dDte.subTotal;
-                            if (descItems) facturaActualPrevisualizada.descripcion = descItems;
+                            if (descItems && (!facturaActualPrevisualizada.descripcion || facturaActualPrevisualizada.descripcion === 'Entrega Comercial')) {
+                                facturaActualPrevisualizada.descripcion = descItems;
+                            }
                             if (drivePdfUrlFinal) facturaActualPrevisualizada.drivePdfUrl = drivePdfUrlFinal;
                             if (dDte.clienteValidoDte && (!facturaActualPrevisualizada.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(facturaActualPrevisualizada.cliente))) {
                                 facturaActualPrevisualizada.cliente = dDte.clienteValidoDte;
@@ -10723,21 +11324,25 @@
                         }
                     }
 
-                    // Sincronizar con Google Sheets en segundo plano
+                    // Sincronizar con Google Sheets en segundo plano (propagando JSON y PDF a los viajes hermanos sin inflar montos)
                     if (scriptEndpoint) {
+                        const viajePrincipalSync = viajesHermanos.find(h => !h._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(h.factura)) || r;
+                        const montoSync = esViajeAdicionalR ? (Number(r?.monto) || 0) : (dDte?.monto || r?.monto);
                         fetch(scriptEndpoint, {
                             method: 'POST',
                             mode: 'no-cors',
                             headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify({
                                 action: 'updateTripJson',
-                                factura: (r && r.factura) ? r.factura : decId,
+                                factura: (viajePrincipalSync && viajePrincipalSync.factura) ? viajePrincipalSync.factura : ((r && r.factura) ? r.factura : decId),
                                 jsonData: parsedJ,
                                 jsonRaw: rawJ,
-                                monto: dDte?.monto || r?.monto,
-                                descripcion: descItems || r?.descripcion,
+                                monto: (!viajePrincipalSync || (!viajePrincipalSync._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(viajePrincipalSync.factura))) ? (dDte?.monto || viajePrincipalSync?.monto) : montoSync,
+                                tipoDocumento: tipoDteHint,
+                                descripcion: descItems || (viajePrincipalSync && viajePrincipalSync.descripcion) || r?.descripcion,
                                 drivePdfUrl: drivePdfUrlFinal,
-                                subFacturas: r?.subFacturas || null
+                                subFacturas: r?.subFacturas || null,
+                                facturasHermanas: facturasHermanas
                             })
                         }).catch(() => {});
                     }
@@ -10746,10 +11351,19 @@
                 }
             }
 
+            if (typeof sincronizarViajesMismaFacturaEnRegistros === 'function') {
+                sincronizarViajesMismaFacturaEnRegistros();
+            }
+
             cerrarModalConfirmarVinculacionDrive();
-            showToast('Documento Vinculado', `Se vinculó ${vinculadosTxt.join(' y ')} a la factura exitosamente.`, 'success');
+            const msgMultiHermanos = viajesHermanos.length > 1
+                ? ` Se compartió automáticamente en los ${viajesHermanos.length} viajes de esta factura (solo el Viaje 1 suma al Total Facturado).`
+                : '';
+            showToast('Documento Vinculado', `Se vinculó ${vinculadosTxt.join(' y ')} a la factura exitosamente.${msgMultiHermanos}`, 'success');
 
             const targetFacturaId = (r && r.factura) ? r.factura : (facturaActualPrevisualizada?.factura || decId);
+            if (typeof renderAdminKPIs === 'function') renderAdminKPIs();
+            if (typeof renderPendientesTable === 'function') renderPendientesTable();
             // Recalcular estudio de mercado y estadísticas de productos JSON en tiempo real
             if (typeof renderEstudioMercadoClientes === 'function') {
                 renderEstudioMercadoClientes();
@@ -12086,12 +12700,29 @@
                 facturaActualPrevisualizada.datosDte = datos;
             }
 
-            // 2. Si el usuario marcó actualizar también cliente y monto:
+            // 2. Si el usuario marcó actualizar también cliente y monto (solo actualiza monto en el Viaje 1, nunca en viajes adicionales):
             const chkActualizar = document.getElementById('chkActualizarDatosViajeDesdeJsonExistente');
+            const viajesHermanosManual = (!subActualizada && regActualizado && typeof obtenerViajesHermanosMismaFactura === 'function')
+                ? obtenerViajesHermanosMismaFactura(regActualizado)
+                : (regActualizado ? [regActualizado] : []);
+            const facturasHermanasManual = viajesHermanosManual.map(h => h && h.factura).filter(Boolean);
+
+            if (!subActualizada && viajesHermanosManual.length > 1) {
+                viajesHermanosManual.forEach(h => {
+                    h.jsonData = parsed;
+                    h.jsonRaw = cleanVal;
+                    h.datosDte = datos;
+                    if (datos.tipo) h.tipoDocumento = datos.tipo;
+                    if (h.factura) guardarJsonFacturaLocal(h.factura, cleanVal, datos.tipo || '');
+                });
+            }
+
             if (chkActualizar && chkActualizar.checked && regActualizado) {
                 if (datos.monto > 0) {
                     if (subActualizada) subActualizada.monto = datos.monto;
-                    else regActualizado.monto = datos.monto;
+                    else if (!regActualizado._esViajeAdicionalMismaFactura && !esViajeSecundarioPorNombre(regActualizado.factura)) {
+                        regActualizado.monto = datos.monto;
+                    }
                 }
                 if (datos.cliente && datos.cliente !== 'Consumidor Final') {
                     if (subActualizada) subActualizada.cliente = datos.cliente;
@@ -12103,18 +12734,23 @@
             }
 
             // 3. Guardar en localStorage
-            guardarJsonFacturaLocal(docTargetId, cleanVal);
+            const tipoManualHint = datos.tipo || (regActualizado && regActualizado.tipoDocumento) || '';
+            guardarJsonFacturaLocal(docTargetId, cleanVal, tipoManualHint);
+            const docBaseManual = limpiarSufijoViajeFactura(docTargetId);
+            if (docBaseManual && docBaseManual !== docTargetId) {
+                guardarJsonFacturaLocal(docBaseManual, cleanVal, tipoManualHint);
+            }
             if (datos.numero && datos.numero !== docTargetId) {
-                guardarJsonFacturaLocal(datos.numero, cleanVal);
+                guardarJsonFacturaLocal(datos.numero, cleanVal, tipoManualHint);
             }
             if (datos.numeroCorto && datos.numeroCorto !== docTargetId) {
-                guardarJsonFacturaLocal(datos.numeroCorto, cleanVal);
+                guardarJsonFacturaLocal(datos.numeroCorto, cleanVal, tipoManualHint);
             }
             if (datos.numeroControl && datos.numeroControl !== docTargetId) {
-                guardarJsonFacturaLocal(datos.numeroControl, cleanVal);
+                guardarJsonFacturaLocal(datos.numeroControl, cleanVal, tipoManualHint);
             }
 
-            // 4. Sincronizar en Google Sheets en segundo plano
+            // 4. Sincronizar en Google Sheets en segundo plano (propagando a viajes hermanos)
             if (regActualizado && typeof enviarDatosAGoogleSheets === 'function') {
                 enviarDatosAGoogleSheets({
                     action: 'updateTripJson',
@@ -12124,9 +12760,15 @@
                     jsonData: parsed,
                     jsonRaw: cleanVal,
                     monto: regActualizado.monto,
+                    tipoDocumento: tipoManualHint,
                     cliente: regActualizado.cliente,
-                    telefonoCliente: regActualizado.telefonoCliente
+                    telefonoCliente: regActualizado.telefonoCliente,
+                    facturasHermanas: facturasHermanasManual
                 }).catch(err => console.warn('Error sincronizando JSON con Sheets:', err));
+            }
+
+            if (typeof sincronizarViajesMismaFacturaEnRegistros === 'function') {
+                sincronizarViajesMismaFacturaEnRegistros();
             }
 
             // 5. Refrescar interfaces y estadísticas de productos JSON
@@ -12865,19 +13507,77 @@
                     const notasEnvio = (document.getElementById('manInputNotas')?.value || '').trim();
                     const catManualSel = document.getElementById('manInputCategoria')?.value || 'auto';
                     const catManualPrefix = (catManualSel && catManualSel !== 'auto') ? `[${catManualSel}] ` : '';
+
+                    // Si el usuario marcó que este envío es un viaje adicional de una MISMA Factura / CCF ya registrada:
+                    // NO volver a sumar al Total Facturado (monto = 0) y compartir JSON/PDF automáticamente entre todos sus viajes.
+                    const chkViajeAdic = document.getElementById('manCheckViajeAdicionalMismaFactura');
+                    const esViajeAdicionalMismaFact = !!(chkViajeAdic && chkViajeAdic.checked && _viajeBaseMultiExistenteAsignacion && _viajeBaseMultiExistenteAsignacion.viajeBase);
+                    let facturaParaGuardar = facturaFinal;
+                    let montoParaGuardar = montoVal;
+                    let tipoViajeLabel = "Entrega Comercial";
+                    let cantMercLabel = "Ver Factura";
+                    let prefijoViajeDesc = "";
+
+                    if (esViajeAdicionalMismaFact) {
+                        const infoBase = _viajeBaseMultiExistenteAsignacion;
+                        const vb = infoBase.viajeBase;
+                        const numViajeNuevo = infoBase.siguienteNumero || 2;
+                        if (!/\bviaje\s*\d+/i.test(facturaParaGuardar)) {
+                            facturaParaGuardar = `${facturaParaGuardar} (Viaje ${numViajeNuevo})`;
+                        }
+                        montoParaGuardar = 0; // Solo el Viaje 1 contabiliza el monto facturado
+                        tipoViajeLabel = `Entrega Comercial (Viaje ${numViajeNuevo} - Misma Factura)`;
+                        cantMercLabel = `Parte ${numViajeNuevo} (Misma Factura)`;
+                        prefijoViajeDesc = `[Viaje ${numViajeNuevo} - Misma Factura] `;
+
+                        // Heredar JSON / PDF del viaje base si el usuario no cargó uno nuevo ahora
+                        if (!jsonPrincipalData && !jsonPrincipalRaw && (vb.jsonData || vb.jsonRaw)) {
+                            jsonPrincipalData = vb.jsonData || null;
+                            jsonPrincipalRaw = vb.jsonRaw || (vb.jsonData ? JSON.stringify(vb.jsonData) : '');
+                        }
+                        if (!window.ultimoDrivePdfUrlAsignacion && vb.drivePdfUrl) {
+                            window.ultimoDrivePdfUrlAsignacion = vb.drivePdfUrl;
+                            window.ultimoDrivePdfNameAsignacion = vb.drivePdfName || '';
+                        }
+                    }
+
                     const descripcionFinal = desgloseDocsTexto 
-                        ? (userDesc ? `${desgloseDocsTexto} - ${catManualPrefix}${userDesc}` : `${desgloseDocsTexto} - ${catManualPrefix}`)
-                        : (`${catManualPrefix}${userDesc || 'Entrega Comercial'}`);
+                        ? `${prefijoViajeDesc}${userDesc ? `${desgloseDocsTexto} - ${catManualPrefix}${userDesc}` : `${desgloseDocsTexto} - ${catManualPrefix}`}`
+                        : (`${prefijoViajeDesc}${catManualPrefix}${userDesc || 'Entrega Comercial'}`);
 
                     const guardadoExitoso = registrarNuevoEnvio(
-                        origen, driverKey, camion, facturaFinal, cliente, montoVal, transporteVal,
+                        origen, driverKey, camion, facturaParaGuardar, cliente, montoParaGuardar, transporteVal,
                         descripcionFinal, destino, coords.lat, coords.lng, estadoFactura,
-                        "Entrega Comercial", "Ver Factura", horarioEntrega, fechaProgramada, linkUbicacion,
+                        tipoViajeLabel, cantMercLabel, horarioEntrega, fechaProgramada, linkUbicacion,
                         telefonoCliente, true, subFacturasData, jsonPrincipalData, jsonPrincipalRaw, notasEnvio
                     );
 
                     if (guardadoExitoso) {
+                        // Si se vinculó un JSON o PDF nuevo desde Drive en este viaje adicional, propagarlo a los viajes hermanos en Sheets
+                        if (esViajeAdicionalMismaFact && _viajeBaseMultiExistenteAsignacion && scriptEndpoint && (jsonPrincipalRaw || window.ultimoDrivePdfUrlAsignacion)) {
+                            const hFacts = (_viajeBaseMultiExistenteAsignacion.todos || []).map(x => x.factura).filter(Boolean);
+                            if (hFacts.length > 0) {
+                                fetch(scriptEndpoint, {
+                                    method: 'POST',
+                                    mode: 'no-cors',
+                                    headers: { 'Content-Type': 'text/plain' },
+                                    body: JSON.stringify({
+                                        action: jsonPrincipalRaw ? 'updateTripJson' : 'attachDrivePdf',
+                                        factura: hFacts[0],
+                                        jsonData: jsonPrincipalData || null,
+                                        jsonRaw: jsonPrincipalRaw || '',
+                                        drivePdfUrl: window.ultimoDrivePdfUrlAsignacion || '',
+                                        facturasHermanas: hFacts
+                                    })
+                                }).catch(() => {});
+                            }
+                        }
+
                         document.getElementById('adminManualForm').reset();
+                        const boxMultiEx = document.getElementById('alertaFacturaExistenteMultiViaje');
+                        if (boxMultiEx) boxMultiEx.classList.add('hidden');
+                        if (chkViajeAdic) chkViajeAdic.checked = false;
+                        _viajeBaseMultiExistenteAsignacion = null;
                         if (typeof actualizarPrevisualizacionCategoriasManual === 'function') {
                             actualizarPrevisualizacionCategoriasManual();
                         }
@@ -13305,6 +14005,9 @@
 
             // 2. ACTUALIZAR EN MEMORIA Y EN LA INTERFAZ AL INSTANTE (CERO CONGELAMIENTO)
             registrosGlobales.unshift(nuevoReg);
+            if (typeof sincronizarViajesMismaFacturaEnRegistros === 'function') {
+                sincronizarViajesMismaFacturaEnRegistros();
+            }
 
             // Guardar o actualizar en la base de datos de clientes (en memoria/local, ya que Sheets lo guarda automáticamente junto con el viaje)
             if (cliente && cliente !== 'N/A' && cliente !== 'Uso Interno / Movimiento Logístico') {
@@ -13420,13 +14123,12 @@
             const hoyISO = ref.hoyISO;
 
             let totalViajes = viajesOperacionHoy.length;
-            let totalMonto = 0;
+            let totalMonto = sumarMontoFacturadoUnico(viajesOperacionHoy);
             let totalFletes = 0;
             const choferesConPendienteHoy = new Set();
 
             for (let i = 0; i < totalViajes; i++) {
                 const r = viajesOperacionHoy[i];
-                totalMonto += (r.monto || 0);
                 totalFletes += (parseFloat(r.transporte) || 0);
                 if (!esRegistroEntregado(r) && r.driverKey) {
                     choferesConPendienteHoy.add(r.driverKey);
@@ -13528,13 +14230,13 @@
                     const r = registrosGlobales[i];
                     if (!esRegistroEntregado(r)) {
                         todasPendientes.push(r);
-                        montoTotal += (r.monto || 0);
                         fleteTotal += (parseFloat(r.transporte) || 0);
                         if (!r.fechaProgramada || r.fechaProgramada <= hoyISO) {
                             pendientesHoyCount++;
                         }
                     }
                 }
+                montoTotal = sumarMontoFacturadoUnico(todasPendientes);
             }
 
             const badgeMenu = document.getElementById('badgeContadorPendientes');
@@ -14089,7 +14791,7 @@
             let tViajes = filtrados.length;
             let tEntregados = filtrados.filter(r => r.estado === 'Entregado').length;
             let tTrans = filtrados.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
-            let tFact = filtrados.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
+            let tFact = sumarMontoFacturadoUnico(filtrados);
 
             const kpiViajes = document.getElementById('histKpiViajes');
             const kpiEntregados = document.getElementById('histKpiEntregados');
@@ -14990,7 +15692,7 @@
 
             const totalViajes = items.length;
             const totalFletes = items.reduce((acc, r) => acc + (parseFloat(r.transporte) || 0), 0);
-            const totalFact = items.reduce((acc, r) => acc + (parseFloat(r.monto) || 0), 0);
+            const totalFact = sumarMontoFacturadoUnico(items);
             const entregados = items.filter(r => esRegistroEntregado(r)).length;
 
             box.innerHTML = `
@@ -15174,7 +15876,7 @@
                 const entregados = viajesHoy.filter(r => esRegistroEntregado(r));
                 const pendientes = viajesHoy.filter(r => !esRegistroEntregado(r));
                 const totalFlete = viajesHoy.reduce((a, b) => a + (parseFloat(b.transporte) || 0), 0);
-                const totalMonto = viajesHoy.reduce((a, b) => a + (parseFloat(b.monto) || 0), 0);
+                const totalMonto = sumarMontoFacturadoUnico(viajesHoy);
 
                 const estaDisponible = pendientes.length === 0;
 
@@ -16623,7 +17325,7 @@
             return catalogoClientes.map(c => {
                 const normNom = normalizarTextoClave(c.nombre);
                 const viajesCli = registrosGlobales.filter(r => r.cliente && normalizarTextoClave(r.cliente) === normNom && r.estado !== 'Cancelado');
-                const totalCompras = viajesCli.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+                const totalCompras = sumarMontoFacturadoUnico(viajesCli);
                 const totalViajes = viajesCli.length;
 
                 // Rango y estrellas
@@ -17444,7 +18146,16 @@
                 return categoriasMap[catNom];
             };
 
+            const clavesFacturasProcesadasProd = new Set();
             viajes.forEach(r => {
+                // Evitar duplicar unidades/ventas cuando la MISMA factura/CCF salió dividida en varios viajes (ej. 4 viajes = 1 sola factura)
+                if (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura)) return;
+                const claveUnicaProd = r._claveUnicaFactura || obtenerClaveUnicaDocumentoFacturado(r);
+                if (claveUnicaProd) {
+                    if (clavesFacturasProcesadasProd.has(claveUnicaProd)) return;
+                    clavesFacturasProcesadasProd.add(claveUnicaProd);
+                }
+
                 const orig = (r.origen && r.origen !== 'N/A' && r.origen !== 'Sin Asignar') ? String(r.origen).trim() : 'FG MATRIZ';
                 const cliNom = String(r.cliente || 'Cliente').trim();
                 const cliClave = normalizarTextoClave(cliNom);
@@ -18484,7 +19195,7 @@
             // Recopilar todos los pedidos comerciales no cancelados
             const todosViajes = registrosGlobales.filter(r => r.cliente && r.cliente !== 'N/A' && r.cliente !== 'Uso Interno / Movimiento Logístico' && r.estado !== 'Cancelado');
             const totalPedidos = todosViajes.length;
-            const totalVentasGlobal = todosViajes.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+            const totalVentasGlobal = sumarMontoFacturadoUnico(todosViajes);
             const ticketPromedio = totalPedidos > 0 ? (totalVentasGlobal / totalPedidos) : 0;
 
             // 1. Análisis por Sucursal de Salida (Origen)
@@ -19480,7 +20191,7 @@
             if (nombreEl) nombreEl.innerText = cliente.nombre;
 
             // Calcular compras y rango
-            const totalCompras = viajes.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+            const totalCompras = sumarMontoFacturadoUnico(viajes);
             const totalPedidos = viajes.length;
             const ticketPromedio = totalPedidos > 0 ? (totalCompras / totalPedidos) : 0;
             const rawUlt = viajes.length > 0 ? (viajes[0].fechaProgramada || viajes[0].fecha || viajes[0].fechaHora || '') : '';
@@ -20206,7 +20917,7 @@
             doc.setFont('helvetica', 'bold');
             doc.text(`EXPEDIENTE E HISTORIAL DE COMPRAS: ${clienteExpedienteActual.nombre.toUpperCase()}`, 40, 32);
 
-            const totalCompras = viajesExpedienteFiltrados.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+            const totalCompras = sumarMontoFacturadoUnico(viajesExpedienteFiltrados);
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(148, 163, 184);
@@ -20379,7 +21090,7 @@
             const pendientes = lista.filter(r => r.estado === 'Pendiente').length;
             const retrasados = lista.filter(r => r.motivoRetraso && String(r.motivoRetraso).trim() !== '').length;
             const totalFletes = lista.reduce((sum, r) => sum + (Number(r.transporte) || 0), 0);
-            const totalFacturado = lista.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+            const totalFacturado = sumarMontoFacturadoUnico(lista);
 
             const kpiTot = document.getElementById('histEmpKpiTotal');
             const kpiEnt = document.getElementById('histEmpKpiEntregados');
@@ -20579,7 +21290,7 @@
                     '',
                     '',
                     '',
-                    `$${lista.reduce((s, r) => s + (Number(r.monto) || 0), 0).toFixed(2)}`,
+                    `$${sumarMontoFacturadoUnico(lista).toFixed(2)}`,
                     `$${lista.reduce((s, r) => s + (Number(r.transporte) || 0), 0).toFixed(2)}`,
                     '',
                     '',
@@ -20897,9 +21608,9 @@
                 }
             }
 
-            // Extraer estructura oficial DTE / Comercial (10 campos oficiales) — re-extraer si faltaba selloRecibido
+            // Extraer estructura oficial DTE / Comercial SIEMPRE actualizada desde el JSON vinculado (incluyendo IVA 13%, tributos y montoTotalOperacion)
             let datosDte = r.datosDte || null;
-            if (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function' && (!datosDte || !datosDte.selloRecibido)) {
+            if (docJsonData && typeof extraerDatosDocumentoIndividualJson === 'function') {
                 const extraido = extraerDatosDocumentoIndividualJson(docJsonData);
                 if (extraido) datosDte = extraido;
             }
@@ -20907,6 +21618,19 @@
             if (datosDte) {
                 r.datosDte = datosDte;
                 facturaActualPrevisualizada.datosDte = datosDte;
+                const esViajeAdicPrev = !!(r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura));
+                if (datosDte.monto > 0) {
+                    r._montoFacturaOriginal = datosDte.monto;
+                    facturaActualPrevisualizada._montoFacturaOriginal = datosDte.monto;
+                    if (!esViajeAdicPrev) {
+                        r.monto = datosDte.monto;
+                        facturaActualPrevisualizada.monto = datosDte.monto;
+                    }
+                }
+                if (datosDte.subTotal > 0) {
+                    r.subTotal = datosDte.subTotal;
+                    facturaActualPrevisualizada.subTotal = datosDte.subTotal;
+                }
                 if (datosDte.clienteValidoDte && (!r.cliente || /consumidor|cliente\s*general|sin\s*asignar/i.test(r.cliente))) {
                     r.cliente = datosDte.clienteValidoDte;
                     facturaActualPrevisualizada.cliente = datosDte.clienteValidoDte;
@@ -20981,7 +21705,7 @@
             const docNumero = document.getElementById('prevDocNumero');
             if (docNumero) docNumero.textContent = r.factura;
 
-            const isCCF = (r.tipoDocumento === 'CCF') || String(r.factura).toUpperCase().startsWith('CCF') || String(r.factura).toUpperCase().includes('CREDITO');
+            const isCCF = (datosDte && datosDte.tipo === 'CCF') || (r.tipoDocumento === 'CCF') || String(r.factura).toUpperCase().startsWith('CCF') || String(r.factura).toUpperCase().includes('CREDITO');
             const badgeTipo = document.getElementById('prevDocTipoBadge');
             if (badgeTipo) {
                 badgeTipo.textContent = isCCF ? 'COMPROBANTE DE CRÉDITO FISCAL' : 'FACTURA DE CONSUMIDOR FINAL';
@@ -21106,10 +21830,45 @@
                 }
             }
 
+            // Banner de Aviso Multi-Viaje (cuando la MISMA Factura / CCF sale en 2 o más viajes)
+            const bannerMultiEl = document.getElementById('prevDocBannerMultiViaje');
+            if (bannerMultiEl) {
+                const totViajesM = r._totalViajesFactura || extraerInfoViajeDeTexto(r.factura).viajeTotal || 1;
+                const numViajeM = r._viajeNumero || extraerInfoViajeDeTexto(r.factura).viajeNum || 1;
+                const esAdicM = !!(r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(r.factura));
+                if (totViajesM > 1 || esAdicM) {
+                    bannerMultiEl.classList.remove('hidden');
+                    if (esAdicM) {
+                        bannerMultiEl.innerHTML = `
+                            <div class="p-3 bg-indigo-50 border border-indigo-300 rounded-xl flex items-center gap-2.5 text-xs text-indigo-950 shadow-xs">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-truck-fast"></i></span>
+                                <div>
+                                    <strong class="font-bold text-indigo-900">Envío Multi-Viaje: Viaje ${numViajeM}${totViajesM > 1 ? ' de ' + totViajesM : ''} (Misma Factura / CCF)</strong>
+                                    <span class="block text-[11px] text-indigo-800">El monto facturado ya fue contabilizado en el <strong>Viaje 1</strong>; este viaje comparte el mismo JSON/PDF y <strong>no vuelve a sumar al Total Facturado</strong> (únicamente suma su flete).</span>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        bannerMultiEl.innerHTML = `
+                            <div class="p-3 bg-blue-50 border border-blue-300 rounded-xl flex items-center gap-2.5 text-xs text-blue-950 shadow-xs">
+                                <span class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-layer-group"></i></span>
+                                <div>
+                                    <strong class="font-bold text-blue-900">Envío Multi-Viaje: Viaje 1 de ${totViajesM} (Viaje Principal Facturado)</strong>
+                                    <span class="block text-[11px] text-blue-800">Esta factura/CCF se despacha en <strong>${totViajesM} viajes</strong>. Solo este Viaje 1 suma al Total Facturado; los archivos JSON y PDF se comparten automáticamente con los ${totViajesM} viajes.</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    bannerMultiEl.innerHTML = '';
+                    bannerMultiEl.classList.add('hidden');
+                }
+            }
+
             // Tabla de Items (extraer items detallados de JSON DTE/Comercial si existen)
             const itemsBody = document.getElementById('prevDocTablaItemsBody');
             let itemsHtml = '';
-            const montoDocFinal = (datosDte && datosDte.monto > 0) ? datosDte.monto : (Number(r.monto) || 0);
+            const montoDocFinal = (datosDte && datosDte.monto > 0) ? datosDte.monto : (Number(r._montoFacturaOriginal) || Number(r.monto) || 0);
             const subtotalDocFinal = (datosDte && datosDte.subTotal > 0) ? datosDte.subTotal : montoDocFinal;
             const fleteNum = Number(r.transporte) || 0;
 
@@ -21272,14 +22031,116 @@
             }
             if (itemsBody) itemsBody.innerHTML = itemsHtml;
 
+            const subtotalLabelEl = document.getElementById('prevDocSubtotalLabel');
             const subtotalEl = document.getElementById('prevDocSubtotal');
+            const rowIvaEl = document.getElementById('prevDocRowIva');
+            const ivaLabelEl = document.getElementById('prevDocIvaLabel');
+            const ivaEl = document.getElementById('prevDocIva');
+            const rowMontoOpEl = document.getElementById('prevDocRowMontoTotalOp');
+            const montoOpLabelEl = document.getElementById('prevDocMontoTotalOpLabel');
+            const montoOpEl = document.getElementById('prevDocMontoTotalOp');
+            const rowOtrosTribEl = document.getElementById('prevDocRowOtrosTributos');
+            const otrosTribLabelEl = document.getElementById('prevDocOtrosTributosLabel');
+            const otrosTribEl = document.getElementById('prevDocOtrosTributos');
+            const fleteEl = document.getElementById('prevDocFlete');
+            const totalEl = document.getElementById('prevDocTotal');
+            const rowLetrasEl = document.getElementById('prevDocRowTotalLetras');
+            const letrasEl = document.getElementById('prevDocTotalLetras');
+
+            const totalIvaDte = (datosDte && Number(datosDte.totalIva) > 0) ? Number(datosDte.totalIva) : 0;
+            const totalTributosDte = (datosDte && Number(datosDte.totalTributos) > 0) ? Number(datosDte.totalTributos) : totalIvaDte;
+            const ivaSeSuma = !!(datosDte && datosDte.ivaSeSumaAlSubtotal);
+            const ivaPerciDte = (datosDte && Number(datosDte.ivaPerci1) > 0) ? Number(datosDte.ivaPerci1) : 0;
+            const ivaReteDte = (datosDte && Number(datosDte.ivaRete1) > 0) ? Number(datosDte.ivaRete1) : 0;
+            const reteRentaDte = (datosDte && Number(datosDte.reteRenta) > 0) ? Number(datosDte.reteRenta) : 0;
+
+            // Calcular Monto Total Operación y Total del Documento garantizando la suma del IVA 13% en CCF
+            let montoTotalOpFinal = (datosDte && Number(datosDte.montoTotalOperacion) > 0) ? Number(datosDte.montoTotalOperacion) : montoDocFinal;
+            let montoDocConIvaFinal = montoDocFinal;
+
+            if (ivaSeSuma && totalTributosDte > 0) {
+                const sumaEsperadaOp = +(subtotalDocFinal + totalTributosDte).toFixed(2);
+                if (montoTotalOpFinal <= subtotalDocFinal + 0.005) {
+                    montoTotalOpFinal = sumaEsperadaOp;
+                }
+                const totalEsperadoDoc = +(montoTotalOpFinal + ivaPerciDte - ivaReteDte - reteRentaDte).toFixed(2);
+                if (montoDocConIvaFinal <= subtotalDocFinal + 0.005) {
+                    montoDocConIvaFinal = totalEsperadoDoc;
+                }
+            }
+
+            if (subtotalLabelEl) {
+                if (datosDte && ivaSeSuma) {
+                    subtotalLabelEl.textContent = 'Subtotal Mercadería (sin IVA):';
+                } else if (datosDte && totalIvaDte > 0) {
+                    subtotalLabelEl.textContent = 'Subtotal Mercadería (IVA incluido):';
+                } else {
+                    subtotalLabelEl.textContent = 'Subtotal Mercadería:';
+                }
+            }
             if (subtotalEl) subtotalEl.textContent = `$${subtotalDocFinal.toFixed(2)}`;
 
-            const fleteEl = document.getElementById('prevDocFlete');
-            if (fleteEl) fleteEl.textContent = `$${fleteNum.toFixed(2)}`;
+            // Fila de IVA 13% (desde resumen.tributos "Impuesto al Valor Agregado 13%" en CCF o resumen.totalIva en Facturas)
+            if (rowIvaEl && ivaLabelEl && ivaEl) {
+                if (datosDte && (totalIvaDte > 0 || (ivaSeSuma && totalTributosDte > 0))) {
+                    const ivaValMostrar = ivaSeSuma ? totalTributosDte : totalIvaDte;
+                    const descIvaBase = (datosDte.ivaDescripcion && String(datosDte.ivaDescripcion).trim()) ? datosDte.ivaDescripcion.trim() : 'Impuesto al Valor Agregado 13%';
+                    rowIvaEl.classList.remove('hidden');
+                    if (ivaSeSuma) {
+                        ivaLabelEl.textContent = `${descIvaBase}:`;
+                        ivaLabelEl.className = 'py-2 px-3 text-right text-indigo-700 font-bold';
+                        ivaEl.textContent = `+$${ivaValMostrar.toFixed(2)}`;
+                        ivaEl.className = 'py-2 px-3 text-right font-mono text-indigo-700 font-bold';
+                    } else {
+                        ivaLabelEl.textContent = `${descIvaBase} (incluido en factura):`;
+                        ivaLabelEl.className = 'py-1.5 px-3 text-right text-slate-500 font-semibold text-[11px]';
+                        ivaEl.textContent = `$${ivaValMostrar.toFixed(2)}`;
+                        ivaEl.className = 'py-1.5 px-3 text-right font-mono text-slate-500 font-semibold text-[11px]';
+                    }
+                } else {
+                    rowIvaEl.classList.add('hidden');
+                }
+            }
 
-            const totalEl = document.getElementById('prevDocTotal');
-            if (totalEl) totalEl.textContent = `$${(montoDocFinal + fleteNum).toFixed(2)}`;
+            // Fila de Monto Total Operación (Subtotal + IVA 13% en CCF)
+            if (rowMontoOpEl && montoOpLabelEl && montoOpEl) {
+                if (datosDte && ivaSeSuma && totalTributosDte > 0) {
+                    rowMontoOpEl.classList.remove('hidden');
+                    montoOpLabelEl.textContent = 'Monto Total Operación (Subtotal + IVA):';
+                    montoOpEl.textContent = `$${montoTotalOpFinal.toFixed(2)}`;
+                } else {
+                    rowMontoOpEl.classList.add('hidden');
+                }
+            }
+
+            // Fila de Percepción / Retención (IVA Percibido 1%, IVA Retenido 1%, Retención Renta) si aplica
+            if (rowOtrosTribEl && otrosTribLabelEl && otrosTribEl) {
+                const partesAj = [];
+                if (ivaPerciDte > 0) partesAj.push(`+ IVA Percibido 1% ($${ivaPerciDte.toFixed(2)})`);
+                if (ivaReteDte > 0) partesAj.push(`- IVA Retenido 1% ($${ivaReteDte.toFixed(2)})`);
+                if (reteRentaDte > 0) partesAj.push(`- Retención Renta ($${reteRentaDte.toFixed(2)})`);
+                if (partesAj.length > 0) {
+                    const netoAj = +(ivaPerciDte - ivaReteDte - reteRentaDte).toFixed(2);
+                    rowOtrosTribEl.classList.remove('hidden');
+                    otrosTribLabelEl.textContent = `${partesAj.join(' • ')}:`;
+                    otrosTribEl.textContent = `${netoAj >= 0 ? '+' : '-'}$${Math.abs(netoAj).toFixed(2)}`;
+                } else {
+                    rowOtrosTribEl.classList.add('hidden');
+                }
+            }
+
+            if (fleteEl) fleteEl.textContent = `$${fleteNum.toFixed(2)}`;
+            if (totalEl) totalEl.textContent = `$${(montoDocConIvaFinal + fleteNum).toFixed(2)}`;
+
+            // Total en letras oficial del DTE si existe
+            if (rowLetrasEl && letrasEl) {
+                if (datosDte && datosDte.totalLetras) {
+                    rowLetrasEl.classList.remove('hidden');
+                    letrasEl.textContent = `SON: ${repararTextoCodificado(datosDte.totalLetras)}`;
+                } else {
+                    rowLetrasEl.classList.add('hidden');
+                }
+            }
 
             // Renderizar sección de Notas & Observaciones de la Factura / CCF
             renderizarSeccionNotasEnSheet(r, esConductor);
@@ -21680,7 +22541,7 @@
 
             const todosViajes = registrosGlobales.filter(r => r.cliente && r.cliente !== 'N/A' && r.cliente !== 'Uso Interno / Movimiento Logístico' && r.estado !== 'Cancelado');
             const totalPedidos = todosViajes.length;
-            const totalVentasGlobal = todosViajes.reduce((sum, r) => sum + (Number(r.monto) || 0), 0);
+            const totalVentasGlobal = sumarMontoFacturadoUnico(todosViajes);
             const ticketPromedio = totalPedidos > 0 ? (totalVentasGlobal / totalPedidos) : 0;
 
             const sucursalesStats = {};
@@ -23408,18 +24269,24 @@
                     });
                 }
 
-                // 2. Registro principal si no es traslado interno
+                // 2. Registro principal si no es traslado interno (evitando duplicar viajes adicionales de la MISMA factura/CCF)
                 const factPrincipal = String(r.factura || '').trim();
                 const esTraslado = factPrincipal.toLowerCase().startsWith('traslado') || (r.tipoViaje && r.tipoViaje.toLowerCase().includes('traslado'));
                 if (factPrincipal && !esTraslado) {
-                    const kPrinc = factPrincipal.toLowerCase();
-                    if (!idsVistos.has(kPrinc)) {
-                        idsVistos.add(kPrinc);
+                    if (r._esViajeAdicionalMismaFactura || esViajeSecundarioPorNombre(factPrincipal)) {
+                        return;
+                    }
+                    const claveUnicaDoc = r._claveUnicaFactura || obtenerClaveUnicaDocumentoFacturado(r) || factPrincipal.toLowerCase();
+                    if (!idsVistos.has(claveUnicaDoc)) {
+                        idsVistos.add(claveUnicaDoc);
 
                         const isCCF = (r.tipoDocumento === 'CCF') || factPrincipal.toUpperCase().startsWith('CCF') || factPrincipal.toUpperCase().includes('CREDITO');
                         const tipo = r.tipoDocumento || (isCCF ? 'CCF' : 'FACTURA');
-                        const monto = Number(r.monto) || 0;
-                        const localJson = (typeof obtenerJsonFacturaLocal === 'function') ? obtenerJsonFacturaLocal(factPrincipal) : null;
+                        const monto = (r.datosDte && Number(r.datosDte.monto) > 0) ? Number(r.datosDte.monto) : (Number(r._montoFacturaOriginal) || Number(r.monto) || 0);
+                        const factBaseLimp = limpiarSufijoViajeFactura(factPrincipal);
+                        const localJson = (typeof obtenerJsonFacturaLocal === 'function')
+                            ? (obtenerJsonFacturaLocal(factPrincipal, tipo) || (factBaseLimp !== factPrincipal ? obtenerJsonFacturaLocal(factBaseLimp, tipo) : null))
+                            : null;
                         const hasJson = !!(r.jsonData || r.jsonRaw || localJson);
                         const jsonData = r.jsonData || (localJson ? localJson.parsed : null);
                         const jsonRaw = r.jsonRaw || (localJson ? localJson.raw : '');
@@ -23428,6 +24295,7 @@
                             factura: factPrincipal,
                             tipo: tipo,
                             monto: monto,
+                            totalViajes: r._totalViajesFactura || 1,
                             cliente: r.cliente || 'Consumidor Final',
                             telefonoCliente: r.telefonoCliente || '',
                             destino: r.destino || 'Destino no especificado',
