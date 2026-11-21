@@ -10203,6 +10203,50 @@
         let ultimoDrivePdfUrlAsignacion = '';
         let ultimoDrivePdfNameAsignacion = '';
 
+        const _cacheDriveBusquedaLocal = new Map();
+        const _promesasDriveEnVuelo = new Map();
+        const DRIVE_CACHE_LOCAL_TTL_MS = 4 * 60 * 1000; // 4 minutos
+
+        /**
+         * Consulta ultra-rápida a Google Drive con caché en memoria local (0 ms en consultas repetidas)
+         * y deduplicación de peticiones simultáneas (evita doble consulta por doble clic).
+         */
+        async function consultarDriveFacturaRapido(numero, tipoEsperado = '', forzarSinCache = false) {
+            const numLimpioBusq = (typeof limpiarSufijoViajeFactura === 'function' ? limpiarSufijoViajeFactura(numero) : String(numero || '').trim()) || String(numero || '').trim();
+            const numDig = (typeof extraerNumeroLimpioFactura === 'function') ? extraerNumeroLimpioFactura(numLimpioBusq) : numLimpioBusq.replace(/\D/g, '');
+            const tipoNorm = String(tipoEsperado || '').trim().toUpperCase();
+            const cacheKey = `${tipoNorm || 'ALL'}_${numDig || numLimpioBusq.toLowerCase()}`;
+
+            if (!forzarSinCache && _cacheDriveBusquedaLocal.has(cacheKey)) {
+                const entry = _cacheDriveBusquedaLocal.get(cacheKey);
+                if (entry && (Date.now() - entry.ts) < DRIVE_CACHE_LOCAL_TTL_MS && entry.data && entry.data.encontrado) {
+                    return Object.assign({}, entry.data, { desdeCacheLocal: true });
+                }
+                _cacheDriveBusquedaLocal.delete(cacheKey);
+            }
+
+            if (!forzarSinCache && _promesasDriveEnVuelo.has(cacheKey)) {
+                return await _promesasDriveEnVuelo.get(cacheKey);
+            }
+
+            const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(numLimpioBusq)}&tipo=${encodeURIComponent(tipoNorm)}${forzarSinCache ? '&nocache=1' : ''}`;
+            const prom = (async () => {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data && data.encontrado) {
+                    _cacheDriveBusquedaLocal.set(cacheKey, { ts: Date.now(), data: data });
+                }
+                return data;
+            })();
+
+            _promesasDriveEnVuelo.set(cacheKey, prom);
+            try {
+                return await prom;
+            } finally {
+                _promesasDriveEnVuelo.delete(cacheKey);
+            }
+        }
+
         async function buscarDocumentoEnGoogleDrive(optNumero) {
             const inpFactura = document.getElementById('manInputFactura');
             const num = (optNumero || (inpFactura ? inpFactura.value : '') || '').trim();
@@ -10227,14 +10271,12 @@
             }
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-amber-400"></i><span>Buscando archivos para <strong>#${num}</strong> en Google Drive y subcarpetas...</span></div>`;
+                statusEl.innerHTML = `<div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2"><i class="fa-solid fa-spinner fa-spin text-amber-400"></i><span>Buscando archivos para <strong>#${num}</strong> en Google Drive...</span></div>`;
             }
 
             try {
-                const tipoDocSel = document.getElementById('manInputTipoDoc')?.value || detectarTipoPrefijoFactura(num) || '';
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}&tipo=${encodeURIComponent(tipoDocSel)}`;
-                const resp = await fetch(url);
-                const data = await resp.json();
+                const tipoDocSel = document.getElementById('manInputTipoDocumento')?.value || document.getElementById('manInputTipoDoc')?.value || detectarTipoPrefijoFactura(num) || '';
+                const data = await consultarDriveFacturaRapido(num, tipoDocSel);
 
                 if (data && data.encontrado) {
                     const listaCoinc = Array.isArray(data.coincidencias) ? data.coincidencias : [];
@@ -10647,9 +10689,7 @@
 
             try {
                 const tipoFila = fila.tipo || detectarTipoPrefijoFactura(num) || '';
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(num)}&tipo=${encodeURIComponent(tipoFila)}`;
-                const resp = await fetch(url);
-                const data = await resp.json();
+                const data = await consultarDriveFacturaRapido(num, tipoFila);
 
                 if (data && data.encontrado) {
                     const listaCoinc = Array.isArray(data.coincidencias) ? data.coincidencias : [];
@@ -10777,9 +10817,7 @@
             showToast('Buscando en Drive', `Buscando #${numParaBuscarDrive} en Google Drive...`, 'info');
 
             try {
-                const url = `${scriptEndpoint}?action=searchDriveInvoice&numero=${encodeURIComponent(numParaBuscarDrive)}&tipo=${encodeURIComponent(tipoEsperado)}`;
-                const resp = await fetch(url);
-                const data = await resp.json();
+                const data = await consultarDriveFacturaRapido(numParaBuscarDrive, tipoEsperado);
 
                 if (labelTop) labelTop.innerHTML = origLabel || 'Buscar en Drive';
                 if (btnTop) btnTop.disabled = false;
